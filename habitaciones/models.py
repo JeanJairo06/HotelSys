@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from config.choices import EstadoHabitacion
 from hoteles.models import Hotel
@@ -82,3 +83,27 @@ class Tarifa(models.Model):
 
     def __str__(self):
         return f'{self.nombre} - {self.tipo_habitacion.nombre}'
+
+    def clean(self):
+        errors = {}
+
+        if self.fecha_inicio and self.fecha_fin:
+            if self.fecha_fin < self.fecha_inicio:
+                errors['fecha_fin'] = 'La fecha final debe ser mayor o igual a la fecha inicial.'
+
+        if self.tipo_habitacion_id and self.fecha_inicio and self.fecha_fin:
+            tarifas_solapadas = Tarifa.objects.filter(
+                tipo_habitacion=self.tipo_habitacion,
+                fecha_inicio__lte=self.fecha_fin,
+                fecha_fin__gte=self.fecha_inicio,
+            ).exclude(pk=self.pk)
+
+            if tarifas_solapadas.exists():
+                errors['fecha_inicio'] = 'Ya existe una tarifa vigente para ese tipo de habitación en ese rango.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

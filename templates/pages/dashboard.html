@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | HotelSys{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Resumen operativo de habitaciones, reservas, huéspedes, estancias, folios y housekeeping.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" href="/reservas/">Nueva reserva</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="metric-card">
+            <span class="metric-label">Habitaciones</span>
+            <strong class="metric-value">--</strong>
+            <span class="metric-note">Disponibilidad del día</span>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="metric-card">
+            <span class="metric-label">Reservas</span>
+            <strong class="metric-value">--</strong>
+            <span class="metric-note">Próximos check-in</span>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="metric-card">
+            <span class="metric-label">Ocupación</span>
+            <strong class="metric-value">--%</strong>
+            <span class="metric-note">Resumen operativo</span>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="metric-card">
+            <span class="metric-label">Housekeeping</span>
+            <strong class="metric-value">--</strong>
+            <span class="metric-note">Pendientes de limpieza</span>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3">Módulos principales</h2>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a class="module-link" href="/habitaciones/">Plano de habitaciones</a>
+            </div>
+            <div class="col-md-4">
+                <a class="module-link" href="/reservas/">Calendario de reservas</a>
+            </div>
+            <div class="col-md-4">
+                <a class="module-link" href="/facturacion/">Folios y facturación</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

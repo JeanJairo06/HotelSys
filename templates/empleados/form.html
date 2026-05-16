@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar empleado{% else %}Nuevo empleado{% endif %} | HotelSys{% endblock %}
+{% block page_title %}{% if object %}Editar empleado{% else %}Nuevo empleado{% endif %}{% endblock %}
+{% block page_subtitle %}Registra los datos laborales y de contacto del personal del hotel.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'empleados:list' %}">Volver</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="card border-0 shadow-sm app-form" novalidate>
+    {% csrf_token %}
+    <div class="card-body p-4">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
+                {{ form.codigo }}
+                {% for error in form.codigo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.fecha_ingreso.id_for_label }}">{{ form.fecha_ingreso.label }}</label>
+                {{ form.fecha_ingreso }}
+                {% for error in form.fecha_ingreso.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
+                {{ form.estado }}
+                {% for error in form.estado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.nombres.id_for_label }}">{{ form.nombres.label }}</label>
+                {{ form.nombres }}
+                {% for error in form.nombres.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.apellidos.id_for_label }}">{{ form.apellidos.label }}</label>
+                {{ form.apellidos }}
+                {% for error in form.apellidos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.cargo.id_for_label }}">{{ form.cargo.label }}</label>
+                {{ form.cargo }}
+                {% for error in form.cargo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                {{ form.email }}
+                {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.telefono.id_for_label }}">{{ form.telefono.label }}</label>
+                {{ form.telefono }}
+                {% for error in form.telefono.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+        <a class="btn btn-light" href="{% url 'empleados:list' %}">Cancelar</a>
+        <button class="btn btn-primary" type="submit">Guardar</button>
+    </div>
+</form>
+{% endblock %}

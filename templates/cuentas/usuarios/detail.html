@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ usuario.username }} | HotelSys{% endblock %}
+{% block page_title %}{{ usuario.username }}{% endblock %}
+{% block page_subtitle %}Detalle de la cuenta y estado de acceso dentro del sistema.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'usuarios:list' %}">Volver</a>
+<a class="btn btn-primary" href="{% url 'usuarios:update' usuario.pk %}">Editar</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-4">Información general</h2>
+                <dl class="row mb-0 app-dl">
+                    <dt class="col-sm-4">Usuario</dt>
+                    <dd class="col-sm-8">{{ usuario.username }}</dd>
+                    <dt class="col-sm-4">Nombres</dt>
+                    <dd class="col-sm-8">{{ usuario.first_name|default:'-' }}</dd>
+                    <dt class="col-sm-4">Apellidos</dt>
+                    <dd class="col-sm-8">{{ usuario.last_name|default:'-' }}</dd>
+                    <dt class="col-sm-4">Correo</dt>
+                    <dd class="col-sm-8">{{ usuario.email|default:'-' }}</dd>
+                    <dt class="col-sm-4">Último acceso</dt>
+                    <dd class="col-sm-8">{{ usuario.last_login|date:'d/m/Y H:i'|default:'-' }}</dd>
+                    <dt class="col-sm-4">Fecha de registro</dt>
+                    <dd class="col-sm-8">{{ usuario.date_joined|date:'d/m/Y H:i' }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Acceso</h2>
+                <p class="mb-2">
+                    {% if usuario.is_active %}
+                        <span class="badge text-bg-success">Activo</span>
+                    {% else %}
+                        <span class="badge text-bg-secondary">Inactivo</span>
+                    {% endif %}
+                    {% if usuario.is_superuser %}
+                        <span class="badge text-bg-warning">Superusuario</span>
+                    {% endif %}
+                </p>
+                <h3 class="h6 mt-4">Roles / grupos</h3>
+                {% for grupo in usuario.groups.all %}
+                    <span class="badge text-bg-light border">{{ grupo.name }}</span>
+                {% empty %}
+                    <p class="mb-0 text-secondary">Sin roles asignados.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

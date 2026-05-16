@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ empleado.nombre_completo }} | HotelSys{% endblock %}
+{% block page_title %}{{ empleado.nombre_completo }}{% endblock %}
+{% block page_subtitle %}Detalle de datos laborales y contacto del empleado.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'empleados:list' %}">Volver</a>
+<a class="btn btn-primary" href="{% url 'empleados:update' empleado.pk %}">Editar</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-4">Información del empleado</h2>
+                <dl class="row mb-0 app-dl">
+                    <dt class="col-sm-4">Código</dt>
+                    <dd class="col-sm-8">{{ empleado.codigo }}</dd>
+                    <dt class="col-sm-4">Nombres</dt>
+                    <dd class="col-sm-8">{{ empleado.nombres }}</dd>
+                    <dt class="col-sm-4">Apellidos</dt>
+                    <dd class="col-sm-8">{{ empleado.apellidos }}</dd>
+                    <dt class="col-sm-4">Cargo</dt>
+                    <dd class="col-sm-8">{{ empleado.get_cargo_display }}</dd>
+                    <dt class="col-sm-4">Correo</dt>
+                    <dd class="col-sm-8">{{ empleado.email }}</dd>
+                    <dt class="col-sm-4">Teléfono</dt>
+                    <dd class="col-sm-8">{{ empleado.telefono|default:'-' }}</dd>
+                    <dt class="col-sm-4">Fecha de ingreso</dt>
+                    <dd class="col-sm-8">{{ empleado.fecha_ingreso|date:'d/m/Y' }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Estado</h2>
+                {% if empleado.estado == 1 %}
+                    <span class="badge text-bg-success">Activo</span>
+                {% else %}
+                    <span class="badge text-bg-secondary">Inactivo</span>
+                {% endif %}
+                <p class="mt-4 mb-0 text-secondary">Los empleados activos pueden ser asociados a operaciones futuras del sistema.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

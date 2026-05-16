@@ -1,0 +1,67 @@
+<aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-brand">
+        <a class="brand-link" href="{% url 'home' %}">
+            <span class="brand-mark">HS</span>
+            <span class="brand-text">HotelSys</span>
+        </a>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+        <a class="sidebar-link {% if request.path == '/dashboard/' %}active{% endif %}" href="{% url 'dashboard' %}">
+            <span class="sidebar-icon">DB</span>
+            <span>Dashboard</span>
+        </a>
+        {% if user_is_admin or user_is_recepcionista %}
+            <a class="sidebar-link {% if '/habitaciones/' in request.path %}active{% endif %}" href="/habitaciones/">
+                <span class="sidebar-icon">HB</span>
+                <span>Habitaciones</span>
+            </a>
+            <a class="sidebar-link {% if '/reservas/' in request.path %}active{% endif %}" href="/reservas/">
+                <span class="sidebar-icon">RS</span>
+                <span>Reservas</span>
+            </a>
+            <a class="sidebar-link {% if '/huespedes/' in request.path %}active{% endif %}" href="/huespedes/">
+                <span class="sidebar-icon">HU</span>
+                <span>Huéspedes</span>
+            </a>
+        {% endif %}
+        {% if user_is_admin %}
+            <a class="sidebar-link {% if '/empleados/' in request.path %}active{% endif %}" href="{% url 'empleados:list' %}">
+                <span class="sidebar-icon">EM</span>
+                <span>Empleados</span>
+            </a>
+        {% endif %}
+        {% if user_is_admin or user_is_housekeeping %}
+            <a class="sidebar-link {% if '/limpieza/' in request.path %}active{% endif %}" href="/limpieza/">
+                <span class="sidebar-icon">HK</span>
+                <span>Housekeeping</span>
+            </a>
+        {% endif %}
+        {% if user_is_admin or user_is_recepcionista %}
+            <a class="sidebar-link {% if '/reportes/' in request.path %}active{% endif %}" href="/reportes/">
+                <span class="sidebar-icon">RP</span>
+                <span>Reportes</span>
+            </a>
+        {% endif %}
+        {% if user_is_admin %}
+            <a class="sidebar-link {% if '/usuarios/' in request.path %}active{% endif %}" href="{% url 'usuarios:list' %}">
+                <span class="sidebar-icon">US</span>
+                <span>Usuarios</span>
+            </a>
+        {% endif %}
+    </nav>
+
+    <div class="sidebar-user">
+        {% if user.is_authenticated %}
+            <span class="user-label">Sesión activa</span>
+            <strong>{{ user.get_username }}</strong>
+            <form action="{% url 'logout' %}" method="post" class="mt-3">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-light w-100" type="submit">Salir</button>
+            </form>
+        {% else %}
+            <span class="user-label">Acceso del sistema</span>
+            <a class="btn btn-sm btn-light mt-2" href="{% url 'login' %}">Ingresar</a>
+        {% endif %}
+    </div>
+</aside>

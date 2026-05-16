@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Error interno | HotelSys{% endblock %}
+{% block page_title %}Error interno del sistema{% endblock %}
+{% block page_subtitle %}Ocurrió un problema inesperado mientras se procesaba la solicitud.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" href="/">Volver al inicio</a>
+{% endblock %}
+
+{% block content %}
+<div class="error-card">
+    <span class="error-code">500</span>
+    <h2 class="h4 mb-3">Estamos revisando el problema</h2>
+    <p class="text-secondary mb-4">Intenta nuevamente en unos minutos. Si el error continúa, contacta al administrador del sistema.</p>
+    <a class="btn btn-outline-primary" href="/">Recargar desde inicio</a>
+</div>
+{% endblock %}

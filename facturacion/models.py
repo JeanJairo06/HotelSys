@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from decimal import Decimal
 from config.choices import EstadoFolio
 from estancias.models import Estancia
 
@@ -48,7 +49,7 @@ class Folio(models.Model):
             total=models.Sum('monto')
         )['total'] or 0
 
-        self.subtotal = subtotal_cargos
-        self.igv = self.subtotal * 0.18
+        self.subtotal = self.estancia.precio_final + subtotal_cargos
+        self.igv = self.subtotal * Decimal('0.18')
         self.total = self.subtotal + self.igv
         return self.total
