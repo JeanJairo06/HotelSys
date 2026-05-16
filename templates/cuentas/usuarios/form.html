@@ -18,24 +18,15 @@
 
         <div class="row g-3">
             <div class="col-md-6">
+                <label class="form-label" for="{{ form.empleado.id_for_label }}">{{ form.empleado.label }}</label>
+                {{ form.empleado }}
+                <div class="form-text">Nombre, apellidos y correo se tomarán del empleado seleccionado.</div>
+                {% for error in form.empleado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
                 <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
                 {{ form.username }}
                 {% for error in form.username.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
-                {{ form.email }}
-                {% for error in form.email.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}</label>
-                {{ form.first_name }}
-                {% for error in form.first_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-6">
-                <label class="form-label" for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}</label>
-                {{ form.last_name }}
-                {% for error in form.last_name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
 
             {% if form.password1 %}
@@ -75,6 +66,7 @@
                         {{ form.is_active }}
                         <label class="form-check-label" for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
                     </div>
+                    <p class="mb-0 small text-secondary">El usuario usará los datos personales del empleado vinculado.</p>
                     {% for error in form.is_active.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                 </div>
             </div>

@@ -44,7 +44,7 @@ class UsuarioListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        return User.objects.prefetch_related('groups').order_by('username')
+        return User.objects.select_related('perfil_empleado__empleado').prefetch_related('groups').order_by('username')
 
 
 @method_decorator(role_required(ROLE_ADMIN), name='dispatch')
@@ -52,6 +52,9 @@ class UsuarioDetailView(DetailView):
     model = User
     template_name = 'cuentas/usuarios/detail.html'
     context_object_name = 'usuario'
+
+    def get_queryset(self):
+        return User.objects.select_related('perfil_empleado__empleado').prefetch_related('groups')
 
 
 @method_decorator(role_required(ROLE_ADMIN), name='dispatch')

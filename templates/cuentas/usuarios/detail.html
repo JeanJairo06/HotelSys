@@ -14,21 +14,39 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
-                <h2 class="h5 mb-4">Información general</h2>
+                <h2 class="h5 mb-4">Información de la cuenta</h2>
                 <dl class="row mb-0 app-dl">
                     <dt class="col-sm-4">Usuario</dt>
                     <dd class="col-sm-8">{{ usuario.username }}</dd>
-                    <dt class="col-sm-4">Nombres</dt>
-                    <dd class="col-sm-8">{{ usuario.first_name|default:'-' }}</dd>
-                    <dt class="col-sm-4">Apellidos</dt>
-                    <dd class="col-sm-8">{{ usuario.last_name|default:'-' }}</dd>
-                    <dt class="col-sm-4">Correo</dt>
-                    <dd class="col-sm-8">{{ usuario.email|default:'-' }}</dd>
                     <dt class="col-sm-4">Último acceso</dt>
                     <dd class="col-sm-8">{{ usuario.last_login|date:'d/m/Y H:i'|default:'-' }}</dd>
                     <dt class="col-sm-4">Fecha de registro</dt>
                     <dd class="col-sm-8">{{ usuario.date_joined|date:'d/m/Y H:i' }}</dd>
                 </dl>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-4">Empleado vinculado</h2>
+                {% if usuario.perfil_empleado %}
+                    <dl class="row mb-0 app-dl">
+                        <dt class="col-sm-4">Código</dt>
+                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.codigo }}</dd>
+                        <dt class="col-sm-4">Nombres</dt>
+                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.nombres }}</dd>
+                        <dt class="col-sm-4">Apellidos</dt>
+                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.apellidos }}</dd>
+                        <dt class="col-sm-4">Cargo</dt>
+                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.get_cargo_display }}</dd>
+                        <dt class="col-sm-4">Correo</dt>
+                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.email }}</dd>
+                        <dt class="col-sm-4">Teléfono</dt>
+                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.telefono|default:'-' }}</dd>
+                    </dl>
+                {% else %}
+                    <p class="mb-0 text-secondary">Este usuario no tiene empleado vinculado.</p>
+                {% endif %}
             </div>
         </div>
     </div>

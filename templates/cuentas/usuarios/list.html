@@ -16,7 +16,7 @@
                 <thead>
                     <tr>
                         <th>Usuario</th>
-                        <th>Nombre</th>
+                        <th>Empleado</th>
                         <th>Correo</th>
                         <th>Roles</th>
                         <th>Estado</th>
@@ -29,8 +29,15 @@
                             <td>
                                 <a class="fw-semibold text-decoration-none" href="{% url 'usuarios:detail' usuario.pk %}">{{ usuario.username }}</a>
                             </td>
-                            <td>{{ usuario.get_full_name|default:'-' }}</td>
-                            <td>{{ usuario.email|default:'-' }}</td>
+                            <td>
+                                {% if usuario.perfil_empleado %}
+                                    {{ usuario.perfil_empleado.empleado.nombre_completo }}
+                                    <span class="d-block small text-secondary">{{ usuario.perfil_empleado.empleado.codigo }} - {{ usuario.perfil_empleado.empleado.get_cargo_display }}</span>
+                                {% else %}
+                                    <span class="text-secondary">Sin empleado vinculado</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ usuario.perfil_empleado.empleado.email|default:usuario.email }}</td>
                             <td>
                                 {% for grupo in usuario.groups.all %}
                                     <span class="badge text-bg-light border">{{ grupo.name }}</span>
