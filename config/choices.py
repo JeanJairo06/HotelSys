@@ -15,6 +15,21 @@ class TipoDocumento(models.TextChoices):
     CARNET_EXTRANJERIA = 'CARNET_EXTRANJERIA', 'Carnet de extranjería'
 
 
+class EstadoGeneral(models.IntegerChoices):
+    INACTIVO = 0, 'Inactivo'
+    ACTIVO = 1, 'Activo'
+
+
+class CargoEmpleado(models.TextChoices):
+    ADMINISTRADOR = 'ADMINISTRADOR', 'Administrador'
+    RECEPCIONISTA = 'RECEPCIONISTA', 'Recepcionista'
+    HOUSEKEEPING = 'HOUSEKEEPING', 'Housekeeping'
+    #SUPERVISOR = 'SUPERVISOR', 'Supervisor'
+    #MANTENIMIENTO = 'MANTENIMIENTO', 'Mantenimiento'
+    #CONTABILIDAD = 'CONTABILIDAD', 'Contabilidad'
+    #OTRO = 'OTRO', 'Otro'
+
+
 class EstadoReserva(models.TextChoices):
     PENDIENTE = 'PENDIENTE', 'Pendiente'
     CONFIRMADA = 'CONFIRMADA', 'Confirmada'

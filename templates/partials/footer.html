@@ -1,0 +1,15 @@
+<footer class="app-footer border-top">
+    <div class="container py-4">
+        <div class="row align-items-center g-3">
+            <div class="col-md-6">
+                <p class="mb-1 fw-semibold">HotelSys</p>
+                <p class="mb-0 small text-secondary">Sistema de gestión de reservas, estancias y facturación hotelera.</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+                <a class="footer-link" href="{% url 'admin:index' %}">Administración</a>
+                <span class="mx-2 text-secondary">/</span>
+                <span class="small text-secondary">{% now "Y" %}</span>
+            </div>
+        </div>
+    </div>
+</footer>

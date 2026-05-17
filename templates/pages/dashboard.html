@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | HotelSys{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Resumen operativo de habitaciones, reservas, huéspedes, estancias, folios y housekeeping.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" href="/reservas/"><i class="bi bi-calendar-plus me-2" aria-hidden="true"></i>Nueva reserva</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-md-6 col-xl-3">
+        <div class="metric-card">
+            <span class="metric-label"><i class="bi bi-door-open me-2" aria-hidden="true"></i>Habitaciones</span>
+            <strong class="metric-value">--</strong>
+            <span class="metric-note">Disponibilidad del día</span>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="metric-card">
+            <span class="metric-label"><i class="bi bi-calendar-check me-2" aria-hidden="true"></i>Reservas</span>
+            <strong class="metric-value">--</strong>
+            <span class="metric-note">Próximos check-in</span>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="metric-card">
+            <span class="metric-label"><i class="bi bi-pie-chart me-2" aria-hidden="true"></i>Ocupación</span>
+            <strong class="metric-value">--%</strong>
+            <span class="metric-note">Resumen operativo</span>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+        <div class="metric-card">
+            <span class="metric-label"><i class="bi bi-stars me-2" aria-hidden="true"></i>Housekeeping</span>
+            <strong class="metric-value">--</strong>
+            <span class="metric-note">Pendientes de limpieza</span>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-3"><i class="bi bi-grid me-2" aria-hidden="true"></i>Módulos principales</h2>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a class="module-link" href="/habitaciones/"><i class="bi bi-door-open me-2" aria-hidden="true"></i>Plano de habitaciones</a>
+            </div>
+            <div class="col-md-4">
+                <a class="module-link" href="/reservas/"><i class="bi bi-calendar-week me-2" aria-hidden="true"></i>Calendario de reservas</a>
+            </div>
+            <div class="col-md-4">
+                <a class="module-link" href="/facturacion/"><i class="bi bi-receipt me-2" aria-hidden="true"></i>Folios y facturación</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
