@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Página no encontrada | HotelSys{% endblock %}
+{% block page_title %}Página no encontrada{% endblock %}
+{% block page_subtitle %}La ruta solicitada no existe o fue movida dentro de HotelSys.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" href="/">Volver al inicio</a>
+{% endblock %}
+
+{% block content %}
+<div class="error-card">
+    <span class="error-code">404</span>
+    <h2 class="h4 mb-3">No encontramos esta vista</h2>
+    <p class="text-secondary mb-4">Revisa la dirección ingresada o usa el menú lateral para navegar a un módulo disponible.</p>
+    <a class="btn btn-outline-primary" href="/reservas/">Ir a reservas</a>
+</div>
+{% endblock %}
