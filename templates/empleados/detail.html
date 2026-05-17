@@ -5,8 +5,8 @@
 {% block page_subtitle %}Detalle de datos laborales y contacto del empleado.{% endblock %}
 
 {% block page_actions %}
-<a class="btn btn-outline-primary" href="{% url 'empleados:list' %}">Volver</a>
-<a class="btn btn-primary" href="{% url 'empleados:update' empleado.pk %}">Editar</a>
+<a class="btn btn-outline-primary" href="{% url 'empleados:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+<a class="btn btn-primary" href="{% url 'empleados:update' empleado.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Editar</a>
 {% endblock %}
 
 {% block content %}
@@ -14,7 +14,7 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
-                <h2 class="h5 mb-4">Información del empleado</h2>
+                <h2 class="h5 mb-4"><i class="bi bi-person-vcard me-2" aria-hidden="true"></i>Información del empleado</h2>
                 <dl class="row mb-0 app-dl">
                     <dt class="col-sm-4">Código</dt>
                     <dd class="col-sm-8">{{ empleado.codigo }}</dd>
@@ -39,9 +39,9 @@
             <div class="card-body p-4">
                 <h2 class="h5 mb-3">Estado</h2>
                 {% if empleado.estado == 1 %}
-                    <span class="badge text-bg-success">Activo</span>
+                    <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Activo</span>
                 {% else %}
-                    <span class="badge text-bg-secondary">Inactivo</span>
+                    <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>Inactivo</span>
                 {% endif %}
                 <p class="mt-4 mb-0 text-secondary">Los empleados activos pueden ser asociados a operaciones futuras del sistema.</p>
             </div>

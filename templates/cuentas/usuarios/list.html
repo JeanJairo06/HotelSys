@@ -5,7 +5,7 @@
 {% block page_subtitle %}Administra las cuentas internas que acceden a HotelSys.{% endblock %}
 
 {% block page_actions %}
-<a class="btn btn-primary" href="{% url 'usuarios:create' %}">Nuevo usuario</a>
+<a class="btn btn-primary" href="{% url 'usuarios:create' %}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nuevo usuario</a>
 {% endblock %}
 
 {% block content %}
@@ -40,36 +40,35 @@
                             <td>{{ usuario.perfil_empleado.empleado.email|default:usuario.email }}</td>
                             <td>
                                 {% for grupo in usuario.groups.all %}
-                                    <span class="badge text-bg-light border">{{ grupo.name }}</span>
+                                    <span class="badge text-bg-light border"><i class="bi bi-person-check me-1" aria-hidden="true"></i>{{ grupo.name }}</span>
                                 {% empty %}
                                     <span class="text-secondary">Sin roles</span>
                                 {% endfor %}
                             </td>
                             <td>
                                 {% if usuario.is_active %}
-                                    <span class="badge text-bg-success">Activo</span>
-                                {% else %}
-                                    <span class="badge text-bg-secondary">Inactivo</span>
-                                {% endif %}
+                                     <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Activo</span>
+                                 {% else %}
+                                     <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>Inactivo</span>
+                                 {% endif %}
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de usuario">
-                                    <a class="btn btn-outline-primary" href="{% url 'usuarios:detail' usuario.pk %}">Ver</a>
-                                    <a class="btn btn-outline-primary" href="{% url 'usuarios:update' usuario.pk %}">Editar</a>
-                                    <a class="btn btn-outline-danger" href="{% url 'usuarios:delete' usuario.pk %}">Eliminar</a>
+                                    <a class="btn btn-outline-primary" href="{% url 'usuarios:detail' usuario.pk %}" title="Ver" aria-label="Ver usuario"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                                    <a class="btn btn-outline-primary" href="{% url 'usuarios:update' usuario.pk %}" title="Editar" aria-label="Editar usuario"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                                    <a class="btn btn-outline-danger" href="{% url 'usuarios:delete' usuario.pk %}" title="Eliminar" aria-label="Eliminar usuario"><i class="bi bi-trash" aria-hidden="true"></i></a>
                                 </div>
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-secondary">No hay usuarios registrados.</td>
+                            <td colspan="6" class="text-center py-5 text-secondary"><i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay usuarios registrados.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% include 'partials/pagination.html' %}
     </div>
 </div>
-
-{% include 'partials/pagination.html' %}
 {% endblock %}

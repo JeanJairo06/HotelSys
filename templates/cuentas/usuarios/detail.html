@@ -5,8 +5,8 @@
 {% block page_subtitle %}Detalle de la cuenta y estado de acceso dentro del sistema.{% endblock %}
 
 {% block page_actions %}
-<a class="btn btn-outline-primary" href="{% url 'usuarios:list' %}">Volver</a>
-<a class="btn btn-primary" href="{% url 'usuarios:update' usuario.pk %}">Editar</a>
+<a class="btn btn-outline-primary" href="{% url 'usuarios:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+<a class="btn btn-primary" href="{% url 'usuarios:update' usuario.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Editar</a>
 {% endblock %}
 
 {% block content %}
@@ -14,7 +14,7 @@
     <div class="col-lg-8">
         <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
-                <h2 class="h5 mb-4">Información de la cuenta</h2>
+                <h2 class="h5 mb-4"><i class="bi bi-person-gear me-2" aria-hidden="true"></i>Información de la cuenta</h2>
                 <dl class="row mb-0 app-dl">
                     <dt class="col-sm-4">Usuario</dt>
                     <dd class="col-sm-8">{{ usuario.username }}</dd>
@@ -28,7 +28,7 @@
 
         <div class="card border-0 shadow-sm mt-4">
             <div class="card-body p-4">
-                <h2 class="h5 mb-4">Empleado vinculado</h2>
+                <h2 class="h5 mb-4"><i class="bi bi-person-badge me-2" aria-hidden="true"></i>Empleado vinculado</h2>
                 {% if usuario.perfil_empleado %}
                     <dl class="row mb-0 app-dl">
                         <dt class="col-sm-4">Código</dt>
@@ -56,17 +56,17 @@
                 <h2 class="h5 mb-3">Acceso</h2>
                 <p class="mb-2">
                     {% if usuario.is_active %}
-                        <span class="badge text-bg-success">Activo</span>
+                        <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Activo</span>
                     {% else %}
-                        <span class="badge text-bg-secondary">Inactivo</span>
+                        <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>Inactivo</span>
                     {% endif %}
                     {% if usuario.is_superuser %}
-                        <span class="badge text-bg-warning">Superusuario</span>
+                        <span class="badge text-bg-warning"><i class="bi bi-shield-lock me-1" aria-hidden="true"></i>Superusuario</span>
                     {% endif %}
                 </p>
                 <h3 class="h6 mt-4">Roles / grupos</h3>
                 {% for grupo in usuario.groups.all %}
-                    <span class="badge text-bg-light border">{{ grupo.name }}</span>
+                    <span class="badge text-bg-light border"><i class="bi bi-person-check me-1" aria-hidden="true"></i>{{ grupo.name }}</span>
                 {% empty %}
                     <p class="mb-0 text-secondary">Sin roles asignados.</p>
                 {% endfor %}

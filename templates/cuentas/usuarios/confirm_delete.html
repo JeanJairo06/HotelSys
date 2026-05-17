@@ -5,22 +5,22 @@
 {% block page_subtitle %}Confirma la eliminación de la cuenta seleccionada.{% endblock %}
 
 {% block page_actions %}
-<a class="btn btn-outline-primary" href="{% url 'usuarios:list' %}">Volver</a>
+<a class="btn btn-outline-primary" href="{% url 'usuarios:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
 {% endblock %}
 
 {% block content %}
 <div class="error-card">
-    <span class="error-code">USR</span>
+    <span class="error-code"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
     <h2 class="h4 mb-3">¿Eliminar a {{ usuario.username }}?</h2>
     {% if usuario == request.user %}
         <p class="text-secondary mb-4">No puedes eliminar tu propio usuario desde esta pantalla.</p>
-        <a class="btn btn-primary" href="{% url 'usuarios:list' %}">Volver a usuarios</a>
+        <a class="btn btn-primary" href="{% url 'usuarios:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver a usuarios</a>
     {% else %}
         <p class="text-secondary mb-4">Esta acción eliminará el acceso de este usuario al sistema. No se recomienda eliminar usuarios con historial operativo asociado.</p>
         <form method="post" class="d-flex gap-2">
             {% csrf_token %}
-            <a class="btn btn-light" href="{% url 'usuarios:list' %}">Cancelar</a>
-            <button class="btn btn-danger" type="submit">Eliminar usuario</button>
+            <a class="btn btn-light" href="{% url 'usuarios:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+            <button class="btn btn-danger" type="submit"><i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar usuario</button>
         </form>
     {% endif %}
 </div>

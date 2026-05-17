@@ -5,7 +5,7 @@
 {% block page_subtitle %}Registra los datos laborales y de contacto del personal del hotel.{% endblock %}
 
 {% block page_actions %}
-<a class="btn btn-outline-primary" href="{% url 'empleados:list' %}">Volver</a>
+<a class="btn btn-outline-primary" href="{% url 'empleados:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
 {% endblock %}
 
 {% block content %}
@@ -13,7 +13,7 @@
     {% csrf_token %}
     <div class="card-body p-4">
         {% if form.non_field_errors %}
-            <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
+            <div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2" aria-hidden="true"></i>{{ form.non_field_errors }}</div>
         {% endif %}
 
         <div class="row g-3">
@@ -60,8 +60,8 @@
         </div>
     </div>
     <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
-        <a class="btn btn-light" href="{% url 'empleados:list' %}">Cancelar</a>
-        <button class="btn btn-primary" type="submit">Guardar</button>
+        <a class="btn btn-light" href="{% url 'empleados:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2" aria-hidden="true"></i>Guardar</button>
     </div>
 </form>
 {% endblock %}

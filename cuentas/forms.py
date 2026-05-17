@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group, User
 from django.db.models import Q
 
+from config.choices import EstadoGeneral
 from cuentas.models import UsuarioEmpleado
 from cuentas.roles import ROLE_ADMIN
 from empleados.models import Empleado
@@ -48,10 +49,19 @@ class UsuarioCreateForm(BootstrapFormMixin, UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['empleado'].queryset = Empleado.objects.filter(cuenta_usuario__isnull=True).order_by('apellidos', 'nombres')
+        queryset = Empleado.objects.none()
+        empleado_id = self.data.get(self.add_prefix('empleado')) if self.is_bound else None
+        if empleado_id:
+            queryset = Empleado.objects.filter(
+                pk=empleado_id,
+                estado=EstadoGeneral.ACTIVO,
+                cuenta_usuario__isnull=True,
+            )
+        self.fields['empleado'].queryset = queryset.order_by('apellidos', 'nombres')
         self.fields['password1'].label = 'Contraseña'
         self.fields['password2'].label = 'Confirmar contraseña'
         self._apply_bootstrap()
+        self.fields['empleado'].widget.attrs.update({'class': 'form-select js-empleado-select'})
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -101,13 +111,20 @@ class UsuarioUpdateForm(BootstrapFormMixin, forms.ModelForm):
             if perfil:
                 empleado_actual = perfil.empleado
 
-        queryset = Empleado.objects.filter(cuenta_usuario__isnull=True)
+        queryset = Empleado.objects.none()
         if empleado_actual:
-            queryset = Empleado.objects.filter(Q(cuenta_usuario__isnull=True) | Q(pk=empleado_actual.pk))
+            queryset = Empleado.objects.filter(pk=empleado_actual.pk)
             self.fields['empleado'].initial = empleado_actual
+        empleado_id = self.data.get(self.add_prefix('empleado')) if self.is_bound else None
+        if empleado_id:
+            available_filter = Q(estado=EstadoGeneral.ACTIVO, cuenta_usuario__isnull=True)
+            if empleado_actual:
+                available_filter |= Q(pk=empleado_actual.pk)
+            queryset = Empleado.objects.filter(available_filter, pk=empleado_id)
 
         self.fields['empleado'].queryset = queryset.order_by('apellidos', 'nombres')
         self._apply_bootstrap()
+        self.fields['empleado'].widget.attrs.update({'class': 'form-select js-empleado-select'})
 
     def save(self, commit=True):
         user = super().save(commit=False)

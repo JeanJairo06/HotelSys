@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+from datetime import timedelta
 from pathlib import Path
 from decouple import config
 
@@ -39,7 +40,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # API REST
+    'corsheaders',
+    'django_filters',
+    'drf_spectacular',
+    'rest_framework',
+
     # Apps del sistema HotelSys
+    'api',
     'cuentas',
     'empleados',
     'hoteles',
@@ -55,6 +63,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -138,3 +147,66 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
+
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in config('CORS_ALLOWED_ORIGINS', default='').split(',')
+    if origin.strip()
+]
+CORS_ALLOW_CREDENTIALS = True
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'api.pagination.StandardResultsSetPagination',
+    'PAGE_SIZE': 15,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'EXCEPTION_HANDLER': 'api.exceptions.standard_exception_handler',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/hour',
+        'user': '500/hour',
+        'autocomplete': '60/min',
+        'login': '5/min',
+        'write': '100/hour',
+    },
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'TOKEN_OBTAIN_SERIALIZER': 'api.auth.HotelSysTokenObtainPairSerializer',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'API Sistema de Gestión Hotelera',
+    'DESCRIPTION': 'API REST para gestionar hoteles, habitaciones, huéspedes, reservas, estancias y facturación.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SORT_OPERATIONS': False,
+    'TAGS': [
+        {'name': 'Auth', 'description': 'Autenticación JWT'},
+        {'name': 'Empleados', 'description': 'Gestión de empleados'},
+        {'name': 'Hoteles', 'description': 'Gestión de hoteles'},
+        {'name': 'Habitaciones', 'description': 'Habitaciones, tipos y tarifas'},
+        {'name': 'Huéspedes', 'description': 'Gestión de huéspedes'},
+        {'name': 'Reservas', 'description': 'Reservas y check-in'},
+        {'name': 'Estancias', 'description': 'Check-in y check-out'},
+        {'name': 'Facturación', 'description': 'Folios y pagos'},
+        {'name': 'Reportes', 'description': 'Reportes operativos'},
+    ],
+}

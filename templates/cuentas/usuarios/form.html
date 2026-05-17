@@ -5,7 +5,11 @@
 {% block page_subtitle %}Configura los datos de acceso, estado y roles del usuario del sistema.{% endblock %}
 
 {% block page_actions %}
-<a class="btn btn-outline-primary" href="{% url 'usuarios:list' %}">Volver</a>
+<a class="btn btn-outline-primary" href="{% url 'usuarios:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -13,14 +17,16 @@
     {% csrf_token %}
     <div class="card-body p-4">
         {% if form.non_field_errors %}
-            <div class="alert alert-danger" role="alert">{{ form.non_field_errors }}</div>
+            <div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2" aria-hidden="true"></i>{{ form.non_field_errors }}</div>
         {% endif %}
 
         <div class="row g-3">
             <div class="col-md-6">
                 <label class="form-label" for="{{ form.empleado.id_for_label }}">{{ form.empleado.label }}</label>
-                {{ form.empleado }}
-                <div class="form-text">Nombre, apellidos y correo se tomarán del empleado seleccionado.</div>
+                <div data-empleado-autocomplete-url="{% url 'api:empleados_disponibles_usuario' %}">
+                    {{ form.empleado }}
+                </div>
+                <div class="form-text"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Nombre, apellidos y correo se tomarán del empleado seleccionado.</div>
                 {% for error in form.empleado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-6">
@@ -73,8 +79,83 @@
         </div>
     </div>
     <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
-        <a class="btn btn-light" href="{% url 'usuarios:list' %}">Cancelar</a>
-        <button class="btn btn-primary" type="submit">Guardar</button>
+        <a class="btn btn-light" href="{% url 'usuarios:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2" aria-hidden="true"></i>Guardar</button>
     </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+    (function () {
+        const select = document.querySelector('.js-empleado-select');
+        const wrapper = document.querySelector('[data-empleado-autocomplete-url]');
+
+        if (!select || !wrapper || typeof TomSelect === 'undefined') {
+            return;
+        }
+
+        const endpoint = wrapper.dataset.empleadoAutocompleteUrl;
+        const buildUrl = function (query) {
+            const params = new URLSearchParams({ page_size: '15' });
+            if (query) {
+                params.set('search', query);
+            }
+            return endpoint + '?' + params.toString();
+        };
+
+        new TomSelect(select, {
+            valueField: 'id',
+            labelField: 'text',
+            searchField: ['codigo', 'text', 'email'],
+            maxItems: 1,
+            preload: 'focus',
+            loadThrottle: 300,
+            plugins: ['virtual_scroll'],
+            firstUrl: buildUrl,
+            load: function (query, callback) {
+                const tomSelect = this;
+                fetch(tomSelect.getUrl(query), {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' },
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('No se pudo cargar empleados.');
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        if (data.next) {
+                            tomSelect.setNextUrl(query, data.next);
+                        }
+                        callback(data.results || []);
+                    })
+                    .catch(function () {
+                        callback();
+                    });
+            },
+            render: {
+                option: function (item, rendererEscape) {
+                    const meta = [item.codigo, item.cargo_display, item.email].filter(Boolean).join(' - ');
+                    return '<div>'
+                        + '<div class="fw-semibold">' + rendererEscape(item.text) + '</div>'
+                        + (meta ? '<div class="small text-secondary">' + rendererEscape(meta) + '</div>' : '')
+                        + '</div>';
+                },
+                item: function (item, rendererEscape) {
+                    const meta = [item.codigo, item.email].filter(Boolean).join(' - ');
+                    return '<div>'
+                        + rendererEscape(item.text)
+                        + (meta ? '<span class="ms-1 text-secondary">(' + rendererEscape(meta) + ')</span>' : '')
+                        + '</div>';
+                },
+                no_results: function () {
+                    return '<div class="no-results">No se encontraron empleados disponibles.</div>';
+                },
+            },
+        });
+    })();
+</script>
 {% endblock %}

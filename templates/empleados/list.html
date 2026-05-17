@@ -5,7 +5,7 @@
 {% block page_subtitle %}Gestiona el personal operativo y administrativo del hotel.{% endblock %}
 
 {% block page_actions %}
-<a class="btn btn-primary" href="{% url 'empleados:create' %}">Nuevo empleado</a>
+<a class="btn btn-primary" href="{% url 'empleados:create' %}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nuevo empleado</a>
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,7 @@
                 <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="Código, nombres, apellidos, cargo o correo">
             </div>
             <div class="col-md-3 d-grid">
-                <button class="btn btn-outline-primary" type="submit">Buscar</button>
+                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-2" aria-hidden="true"></i>Buscar</button>
             </div>
         </form>
     </div>
@@ -51,29 +51,28 @@
                             <td>{{ empleado.telefono|default:'-' }}</td>
                             <td>
                                 {% if empleado.estado == 1 %}
-                                    <span class="badge text-bg-success">Activo</span>
-                                {% else %}
-                                    <span class="badge text-bg-secondary">Inactivo</span>
-                                {% endif %}
+                                     <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Activo</span>
+                                 {% else %}
+                                     <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>Inactivo</span>
+                                 {% endif %}
                             </td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de empleado">
-                                    <a class="btn btn-outline-primary" href="{% url 'empleados:detail' empleado.pk %}">Ver</a>
-                                    <a class="btn btn-outline-primary" href="{% url 'empleados:update' empleado.pk %}">Editar</a>
-                                    <a class="btn btn-outline-danger" href="{% url 'empleados:delete' empleado.pk %}">Eliminar</a>
+                                    <a class="btn btn-outline-primary" href="{% url 'empleados:detail' empleado.pk %}" title="Ver" aria-label="Ver empleado"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                                    <a class="btn btn-outline-primary" href="{% url 'empleados:update' empleado.pk %}" title="Editar" aria-label="Editar empleado"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                                    <a class="btn btn-outline-danger" href="{% url 'empleados:delete' empleado.pk %}" title="Eliminar" aria-label="Eliminar empleado"><i class="bi bi-trash" aria-hidden="true"></i></a>
                                 </div>
                             </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-secondary">No hay empleados registrados.</td>
+                            <td colspan="7" class="text-center py-5 text-secondary"><i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay empleados registrados.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% include 'partials/pagination.html' %}
     </div>
 </div>
-
-{% include 'partials/pagination.html' %}
 {% endblock %}
