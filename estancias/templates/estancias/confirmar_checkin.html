@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar check-in | HotelSys{% endblock %}
+{% block page_title %}Confirmar check-in{% endblock %}
+{% block page_subtitle %}Valida la reserva antes de crear la estancia.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'estancias:listar_reservas_checkin' %}">
+    <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <h2 class="h5 mb-4"><i class="bi bi-calendar-check me-2" aria-hidden="true"></i>Reserva #{{ reserva.id }}</h2>
+        <dl class="row app-dl">
+            <dt class="col-sm-4">Huesped</dt>
+            <dd class="col-sm-8">{{ reserva.huesped }}</dd>
+            <dt class="col-sm-4">Habitacion</dt>
+            <dd class="col-sm-8">{{ reserva.habitacion.numero }}</dd>
+            <dt class="col-sm-4">Fechas</dt>
+            <dd class="col-sm-8">{{ reserva.fecha_entrada|date:'d/m/Y' }} - {{ reserva.fecha_salida|date:'d/m/Y' }}</dd>
+            <dt class="col-sm-4">Estado</dt>
+            <dd class="col-sm-8">{{ reserva.get_estado_display }}</dd>
+        </dl>
+    </div>
+    <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+        <a class="btn btn-light" href="{% url 'estancias:listar_reservas_checkin' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg me-2" aria-hidden="true"></i>Confirmar check-in</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

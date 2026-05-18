@@ -1,0 +1,22 @@
+{% csrf_token %}
+
+{% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+        <i class="bi bi-exclamation-circle me-2" aria-hidden="true"></i>{{ form.non_field_errors }}
+    </div>
+{% endif %}
+
+<div class="row g-3">
+    {% for field in form %}
+        <div class="{% if field.field.widget.input_type == 'textarea' %}col-12{% else %}col-md-6{% endif %}">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+            {% endif %}
+            {% for error in field.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
