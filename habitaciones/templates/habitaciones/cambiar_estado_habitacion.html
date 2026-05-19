@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Cambiar estado | HotelSys{% endblock %}
+{% block page_title %}Cambiar estado de habitacion{% endblock %}
+{% block page_subtitle %}Actualiza el estado operativo de la habitacion {{ habitacion.numero }}.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'habitaciones:listar_habitaciones' %}">
+    <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3"><i class="bi bi-door-open me-2" aria-hidden="true"></i>Habitacion {{ habitacion.numero }}</h2>
+                <dl class="row mb-0 app-dl">
+                    <dt class="col-sm-5">Tipo</dt>
+                    <dd class="col-sm-7">{{ habitacion.tipo.nombre }}</dd>
+                    <dt class="col-sm-5">Piso</dt>
+                    <dd class="col-sm-7">{{ habitacion.piso }}</dd>
+                    <dt class="col-sm-5">Estado actual</dt>
+                    <dd class="col-sm-7">{{ habitacion.get_estado_display }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <form method="post" class="card border-0 shadow-sm app-form" novalidate>
+            <div class="card-body p-4">
+                {% include 'includes/formulario.html' %}
+            </div>
+            <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+                <a class="btn btn-light" href="{% url 'habitaciones:listar_habitaciones' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2" aria-hidden="true"></i>Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

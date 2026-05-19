@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} | HotelSys{% endblock %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block page_subtitle %}Define capacidad, precio base y amenidades del tipo de habitacion.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'habitaciones:listar_tipos_habitacion' %}">
+    <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver
+</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="card border-0 shadow-sm app-form" novalidate>
+    <div class="card-body p-4">
+        {% include 'includes/formulario.html' %}
+    </div>
+    <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+        <a class="btn btn-light" href="{% url 'habitaciones:listar_tipos_habitacion' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2" aria-hidden="true"></i>Guardar</button>
+    </div>
+</form>
+{% endblock %}

@@ -102,13 +102,16 @@ class Command(BaseCommand):
 
         hoy = timezone.now().date()
 
+        inicio_temporada_alta = date(hoy.year, 12, 1)
+        fin_temporada_regular = inicio_temporada_alta - timedelta(days=1)
+
         tarifas_data = [
-            (simple, 'Tarifa Regular Simple', Decimal('120.00'), hoy, hoy + timedelta(days=365)),
-            (doble, 'Tarifa Regular Doble', Decimal('180.00'), hoy, hoy + timedelta(days=365)),
-            (suite, 'Tarifa Regular Suite', Decimal('320.00'), hoy, hoy + timedelta(days=365)),
-            (simple, 'Temporada Alta Simple', Decimal('160.00'), date(hoy.year, 12, 1), date(hoy.year, 12, 31)),
-            (doble, 'Temporada Alta Doble', Decimal('230.00'), date(hoy.year, 12, 1), date(hoy.year, 12, 31)),
-            (suite, 'Temporada Alta Suite', Decimal('420.00'), date(hoy.year, 12, 1), date(hoy.year, 12, 31)),
+            (simple, 'Tarifa Regular Simple', Decimal('120.00'), hoy, fin_temporada_regular),
+            (doble, 'Tarifa Regular Doble', Decimal('180.00'), hoy, fin_temporada_regular),
+            (suite, 'Tarifa Regular Suite', Decimal('320.00'), hoy, fin_temporada_regular),
+            (simple, 'Temporada Alta Simple', Decimal('160.00'), inicio_temporada_alta, date(hoy.year, 12, 31)),
+            (doble, 'Temporada Alta Doble', Decimal('230.00'), inicio_temporada_alta, date(hoy.year, 12, 31)),
+            (suite, 'Temporada Alta Suite', Decimal('420.00'), inicio_temporada_alta, date(hoy.year, 12, 31)),
         ]
 
         for tipo, nombre, precio, inicio, fin in tarifas_data:
