@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError
 from django.db import models
+
 from config.choices import TipoDocumento
 
 
@@ -22,4 +24,21 @@ class Huesped(models.Model):
         ordering = ['apellidos', 'nombres']
 
     def __str__(self):
-        return f'{self.apellidos}, {self.nombres}'
+        return f'{self.num_doc} - {self.nombre_completo}'
+
+    @property
+    def nombre_completo(self):
+        return f'{self.nombres} {self.apellidos}'
+
+    def clean(self):
+        if self.num_doc:
+            self.num_doc = self.num_doc.strip().upper()
+
+        if self.telefono:
+            telefono_limpio = self.telefono.replace('+', '').replace('-', '').replace(' ', '')
+            if not telefono_limpio.isdigit():
+                raise ValidationError({'telefono': 'El telefono solo debe contener numeros, espacios, + o -.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
