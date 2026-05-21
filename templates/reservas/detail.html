@@ -53,10 +53,7 @@
                 {% endif %}
 
                 {% if reserva.estado != 'CANCELADA' and reserva.estado != 'FINALIZADA' and reserva.estado != 'CHECKIN' %}
-                    <form method="post" action="{% url 'reservas:cancel' reserva.pk %}" class="mt-4" onsubmit="return confirm('Cancelar esta reserva?');">
-                        {% csrf_token %}
-                        <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar reserva</button>
-                    </form>
+                    <a class="btn btn-outline-danger w-100 mt-4" href="{% url 'reservas:cancel' reserva.pk %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar reserva</a>
                 {% endif %}
             </div>
         </div>

@@ -2,7 +2,7 @@ from django.contrib import messages
 from datetime import date, datetime, timedelta
 
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -113,6 +113,19 @@ class ReservaUpdateView(ReservaFormContextMixin, UpdateView):
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class ReservaCancelView(View):
+    def get(self, request, pk):
+        reserva = get_object_or_404(Reserva, pk=pk)
+
+        if reserva.estado in [EstadoReserva.CHECKIN, EstadoReserva.FINALIZADA]:
+            messages.error(request, 'No se puede cancelar una reserva con check-in o finalizada.')
+            return redirect('reservas:list')
+
+        if reserva.estado == EstadoReserva.CANCELADA:
+            messages.info(request, 'La reserva ya estaba cancelada.')
+            return redirect('reservas:list')
+
+        return render(request, 'reservas/confirm_cancel.html', {'reserva': reserva})
+
     def post(self, request, pk):
         reserva = get_object_or_404(Reserva, pk=pk)
 

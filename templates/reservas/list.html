@@ -94,10 +94,7 @@
                                     <a class="btn btn-outline-primary" href="{% url 'reservas:detail' reserva.pk %}" title="Ver" aria-label="Ver reserva"><i class="bi bi-eye" aria-hidden="true"></i></a>
                                     <a class="btn btn-outline-primary" href="{% url 'reservas:update' reserva.pk %}" title="Editar" aria-label="Editar reserva"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                                     {% if reserva.estado != 'CANCELADA' and reserva.estado != 'FINALIZADA' and reserva.estado != 'CHECKIN' %}
-                                        <form method="post" action="{% url 'reservas:cancel' reserva.pk %}" class="d-inline-flex m-0" onsubmit="return confirm('Cancelar esta reserva?');">
-                                            {% csrf_token %}
-                                            <button class="btn btn-sm btn-outline-danger rounded-start-0" type="submit" title="Cancelar" aria-label="Cancelar reserva"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
-                                        </form>
+                                        <a class="btn btn-outline-danger" href="{% url 'reservas:cancel' reserva.pk %}" title="Cancelar" aria-label="Cancelar reserva"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
                                     {% endif %}
                                 </div>
                             </td>
