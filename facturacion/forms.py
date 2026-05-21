@@ -1,5 +1,5 @@
 from django import forms
-from .models import Factura
+from .models import Factura, Tarifa
 
 class FacturaEmisionForm(forms.ModelForm):
     class Meta:
@@ -26,3 +26,24 @@ class FacturaEmisionForm(forms.ModelForm):
         if len(ruc_dni) not in [8, 11]:
             raise forms.ValidationError("El documento debe tener exactamente 8 dígitos (DNI) o 11 dígitos (RUC).")
         return ruc_dni
+    
+class TarifaForm(forms.ModelForm):
+    class Meta:
+        model = Tarifa
+        fields = ['tipo_habitacion', 'precio_noche', 'fecha_inicio', 'fecha_fin', 'temporada_nombre']
+        widgets = {
+            'tipo_habitacion': forms.Select(attrs={'class': 'form-select'}),
+            'precio_noche': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'fecha_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'temporada_nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la temporada'}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_inicio = cleaned_data.get('fecha_inicio')
+        fecha_fin = cleaned_data.get('fecha_fin')
+
+        if fecha_inicio and fecha_fin and fecha_inicio > fecha_fin:
+            raise forms.ValidationError("La fecha de inicio no puede ser posterior a la fecha de fin.")
+        return cleaned_data

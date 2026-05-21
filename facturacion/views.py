@@ -2,15 +2,15 @@
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
-from django.views.generic import CreateView, DetailView, ListView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView,DeleteView
 
 from config.choices import EstadoFolio
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 
-from .forms import FacturaEmisionForm 
-from .models import Factura, Folio
-
+from .forms import FacturaEmisionForm, TarifaForm
+from .models import Factura, Folio, Tarifa
+from django.db import models
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class FolioListView(ListView):
@@ -67,4 +67,57 @@ class FacturaCreateView(CreateView):
         folio.save()
 
         messages.success(self.request, f'Factura #{factura.id} emitida correctamente por S/ {factura.monto_total}')
+        return super().form_valid(form)
+    
+@method_decorator(any_role_required(ROLE_ADMIN), name='dispatch')
+class TarifaListView(ListView):
+    model = Tarifa
+    template_name = 'facturacion/tarifa_list.html'
+    context_object_name = 'tarifas'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = Tarifa.objects.select_related('tipo_habitacion').order_by('-fecha_inicio')
+        query = self.request.GET.get('q')
+        if query:
+            queryset = queryset.filter(
+                models.Q(temporada_nombre__icontains=query) |
+                models.Q(tipo_habitacion__nombre__icontains=query)
+            )
+        return queryset
+
+
+@method_decorator(any_role_required(ROLE_ADMIN), name='dispatch')
+class TarifaCreateView(CreateView):
+    model = Tarifa
+    form_class = TarifaForm
+    template_name = 'facturacion/tarifa_form.html'
+    success_url = reverse_lazy('facturacion:tarifa_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Tarifa por temporada creada correctamente.')
+        return super().form_valid(form)
+
+
+@method_decorator(any_role_required(ROLE_ADMIN), name='dispatch')
+class TarifaUpdateView(UpdateView):
+    model = Tarifa
+    form_class = TarifaForm
+    template_name = 'facturacion/tarifa_form.html'
+    success_url = reverse_lazy('facturacion:tarifa_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Tarifa por temporada actualizada correctamente.')
+        return super().form_valid(form)
+
+
+@method_decorator(any_role_required(ROLE_ADMIN), name='dispatch')
+class TarifaDeleteView(DeleteView):
+    model = Tarifa
+    template_name = 'facturacion/tarifa_confirm_delete.html'
+    context_object_name = 'tarifa'
+    success_url = reverse_lazy('facturacion:tarifa_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Tarifa eliminada correctamente.')
         return super().form_valid(form)
