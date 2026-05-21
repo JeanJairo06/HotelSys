@@ -34,6 +34,13 @@ class FolioDetailView(DetailView):
     context_object_name = 'folio'
 
     def get_object(self, queryset=None):
+        if queryset is None:
+            queryset = self.get_queryset()
+        
+        queryset = queryset.select_related(
+            'estancia__reserva__huesped',
+            'estancia__habitacion'
+        )
         folio = super().get_object(queryset)
         if folio:
             folio.calcular_totales()
@@ -42,6 +49,7 @@ class FolioDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = FacturaEmisionForm()
+        context['cargo_form'] = CargoEstanciaForm()
         context['facturas'] = self.object.facturas.all()
         return context
 
