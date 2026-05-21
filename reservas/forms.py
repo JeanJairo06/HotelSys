@@ -26,7 +26,6 @@ class ReservaForm(forms.ModelForm):
             'fecha_salida',
             'num_adultos',
             'origen',
-            'estado',
             'precio_total',
         ]
         labels = {
@@ -36,7 +35,6 @@ class ReservaForm(forms.ModelForm):
             'fecha_salida': 'Fecha de salida',
             'num_adultos': 'Adultos',
             'origen': 'Origen',
-            'estado': 'Estado',
             'precio_total': 'Total preliminar',
         }
         widgets = {
@@ -137,6 +135,7 @@ class ReservaForm(forms.ModelForm):
 
     def save(self, commit=True):
         reserva = super().save(commit=False)
+        reserva.estado = EstadoReserva.CONFIRMADA
         if reserva.habitacion_id:
             reserva.hotel = reserva.habitacion.hotel
         if commit:

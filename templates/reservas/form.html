@@ -61,11 +61,6 @@
                 {% for error in form.origen.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
-                {{ form.estado }}
-                {% for error in form.estado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-4">
                 <label class="form-label" for="{{ form.precio_total.id_for_label }}">{{ form.precio_total.label }}</label>
                 {{ form.precio_total }}
                 {% for error in form.precio_total.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}

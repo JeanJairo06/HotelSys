@@ -84,8 +84,8 @@ class Huesped(models.Model):
             if not self.fecha_nacimiento:
                 errors['fecha_nacimiento'] = 'La fecha de nacimiento es obligatoria para DNI.'
 
-        if self.fecha_nacimiento and self.fecha_nacimiento > date.today():
-            errors['fecha_nacimiento'] = 'La fecha de nacimiento no puede ser futura.'
+        if self.fecha_nacimiento and self.fecha_nacimiento >= date.today():
+            errors['fecha_nacimiento'] = 'La fecha de nacimiento debe ser anterior a hoy.'
 
         if errors:
             raise ValidationError(errors)
