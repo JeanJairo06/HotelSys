@@ -109,15 +109,22 @@
                 <div class="card-header bg-white border-0 p-4 pb-0">
                     <h3 class="h6 mb-0"><i class="bi bi-cart-plus me-2 text-warning"></i>Registrar Consumo Extra</h3>
                 </div>
-                <form action="{% url 'facturacion:cargo_create' folio.id %}" method="post" class="card-body p-4 app-form">
+                <form action="{% url 'facturacion:cargo_create' folio.id %}" method="post" class="card-body p-4 app-form" novalidate>
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label class="form-label">Descripción / Concepto</label>
-                        <input type="text" name="concepto" class="form-control" placeholder="Ej. Frigobar / Almuerzo Ejecutivo" required>
+                        <label class="form-label" for="{{ cargo_form.tipo.id_for_label }}">{{ cargo_form.tipo.label }}</label>
+                        {{ cargo_form.tipo }}
+                        {% for error in cargo_form.tipo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Monto Comercial (S/)</label>
-                        <input type="number" name="monto" step="0.01" min="0" class="form-control" placeholder="0.00" required>
+                        <label class="form-label" for="{{ cargo_form.concepto.id_for_label }}">{{ cargo_form.concepto.label }}</label>
+                        {{ cargo_form.concepto }}
+                        {% for error in cargo_form.concepto.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ cargo_form.monto.id_for_label }}">{{ cargo_form.monto.label }}</label>
+                        {{ cargo_form.monto }}
+                        {% for error in cargo_form.monto.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
                     </div>
                     <button class="btn btn-warning btn-sm w-100" type="submit">
                         <i class="bi bi-plus-circle me-1"></i> Cargar a la Cuenta
@@ -131,15 +138,21 @@
                 </div>
                 <form action="{% url 'facturacion:factura_create' folio.id %}" method="post" class="card-body p-4 app-form" novalidate>
                     {% csrf_token %}
-                    <div class="mb-3">
-                        <label class="form-label" for="{{ form.ruc_dni.id_for_label }}">{{ form.ruc_dni.label }}</label>
-                        {{ form.ruc_dni }}
-                        {% for error in form.ruc_dni.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    <div class="mb-3 p-3 bg-light rounded border-start border-success border-3">
+                        <span class="text-secondary small d-block mb-1">Comprobante y Datos del Huésped:</span>
+                        {% if folio.estancia.reserva.huesped.tipo_doc == 'RUC' %}
+                            <span class="badge text-bg-success mb-2">Factura Comercial</span>
+                            <strong class="d-block text-dark">{{ folio.estancia.reserva.huesped.razon_social }}</strong>
+                            <span class="text-muted small">RUC: {{ folio.estancia.reserva.huesped.num_doc}}</span>
+                        {% else %}
+                            <span class="badge text-bg-primary mb-2">Boleta de Venta</span>
+                            <strong class="d-block text-dark">{{ folio.estancia.reserva.huesped.nombres }} {{ folio.estancia.reserva.huesped.apellidos }}</strong>
+                            <span class="text-muted small">Doc ({{ folio.estancia.reserva.huesped.tipo_doc }}): {{ folio.estancia.reserva.huesped.num_doc }}</span>
+                        {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="{{ form.razon_social.id_for_label }}">{{ form.razon_social.label }}</label>
-                        {{ form.razon_social }}
-                        {% for error in form.razon_social.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        <span class="text-secondary small">Total Neto Liquidador:</span>
+                        <h4 class="text-success fw-bold mb-0">S/ {{ folio.total }}</h4>
                     </div>
                     <button class="btn btn-success btn-sm w-100" type="submit">
                         <i class="bi bi-shield-check me-1"></i> Procesar Pago y Cerrar Cuenta

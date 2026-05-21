@@ -2,31 +2,13 @@ from django import forms
 from .models import Factura
 from habitaciones.models import Tarifa
 from estancias.models import CargoEstancia
+from config.choices import TipoCargo
+
 class FacturaEmisionForm(forms.ModelForm):
     class Meta:
         model = Factura
-        fields = ['ruc_dni', 'razon_social']
-        labels = {
-            'ruc_dni': 'RUC o DNI del Cliente',
-            'razon_social': 'Razón Social / Nombre Completo',
-        }
-        widgets = {
-            'ruc_dni': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej. 10165519901 o 74826622',
-                'maxlength': '11'
-            }),
-            'razon_social': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej. Sodexo Perú S.A.C.'
-            }),
-        }
-
-    def clean_ruc_dni(self):
-        ruc_dni = self.cleaned_data.get('ruc_dni')
-        if len(ruc_dni) not in [8, 11]:
-            raise forms.ValidationError("El documento debe tener exactamente 8 dígitos (DNI) o 11 dígitos (RUC).")
-        return ruc_dni
+        fields = []
+        
     
 class TarifaForm(forms.ModelForm):
     class Meta:
@@ -40,8 +22,8 @@ class TarifaForm(forms.ModelForm):
             'tipo_habitacion': forms.Select(attrs={'class': 'form-select'}),
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Fin de semana / Temporada Alta'}),
             'precio_noche': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'fecha_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_inicio': forms.DateInput(format='%Y-%m-%d',attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_fin': forms.DateInput(format='%Y-%m-%d',attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     def clean(self):
@@ -54,9 +36,14 @@ class TarifaForm(forms.ModelForm):
         return cleaned_data
     
 class CargoEstanciaForm(forms.ModelForm):
+    tipo = forms.ChoiceField(
+        choices=TipoCargo.choices,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Tipo de Gasto / Cargo"
+    )
     class Meta:
         model = CargoEstancia
-        fields = ['concepto','monto']
+        fields = ['tipo','concepto','monto']
         labels ={
             'concepto': 'Descripción del Consumo',
             'monto': 'Monto Comercial (S/)',
@@ -68,7 +55,10 @@ class CargoEstanciaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.folio = kwargs.pop('folio', None)
         super().__init__(*args, **kwargs)
-
+        
+        nuevas_opciones = [choice for choice in TipoCargo.choices if choice[0] != 'HABITACION']
+        self.fields['tipo'].choices = nuevas_opciones
+        
     def clean(self):
         cleaned_data = super().clean()
         if self.folio and self.folio.estado == 'PAGADO':
