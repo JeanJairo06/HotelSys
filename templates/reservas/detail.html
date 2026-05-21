@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Reserva #{{ reserva.id }} | HotelSys{% endblock %}
+{% block page_title %}Reserva #{{ reserva.id }}{% endblock %}
+{% block page_subtitle %}Detalle de fechas, huesped, habitacion y estado de la reserva.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'reservas:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+<a class="btn btn-primary" href="{% url 'reservas:update' reserva.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Editar</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-4"><i class="bi bi-calendar-check me-2" aria-hidden="true"></i>Informacion de la reserva</h2>
+                <dl class="row mb-0 app-dl">
+                    <dt class="col-sm-4">Huesped</dt>
+                    <dd class="col-sm-8">{{ reserva.huesped.nombre_completo }} <span class="text-secondary">({{ reserva.huesped.num_doc }})</span></dd>
+                    <dt class="col-sm-4">Hotel</dt>
+                    <dd class="col-sm-8">{{ reserva.hotel.nombre }}</dd>
+                    <dt class="col-sm-4">Habitacion</dt>
+                    <dd class="col-sm-8">Hab. {{ reserva.habitacion.numero }} - {{ reserva.habitacion.tipo.nombre }}</dd>
+                    <dt class="col-sm-4">Entrada</dt>
+                    <dd class="col-sm-8">{{ reserva.fecha_entrada|date:'d/m/Y' }}</dd>
+                    <dt class="col-sm-4">Salida</dt>
+                    <dd class="col-sm-8">{{ reserva.fecha_salida|date:'d/m/Y' }}</dd>
+                    <dt class="col-sm-4">Noches</dt>
+                    <dd class="col-sm-8">{{ reserva.noches }}</dd>
+                    <dt class="col-sm-4">Adultos</dt>
+                    <dd class="col-sm-8">{{ reserva.num_adultos }}</dd>
+                    <dt class="col-sm-4">Origen</dt>
+                    <dd class="col-sm-8">{{ reserva.get_origen_display }}</dd>
+                    <dt class="col-sm-4">Total preliminar</dt>
+                    <dd class="col-sm-8">S/ {{ reserva.precio_total }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Estado</h2>
+                {% if reserva.estado == 'CONFIRMADA' %}
+                    <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>{{ reserva.get_estado_display }}</span>
+                {% elif reserva.estado == 'CANCELADA' %}
+                    <span class="badge text-bg-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>{{ reserva.get_estado_display }}</span>
+                {% elif reserva.estado == 'FINALIZADA' %}
+                    <span class="badge text-bg-secondary"><i class="bi bi-flag me-1" aria-hidden="true"></i>{{ reserva.get_estado_display }}</span>
+                {% elif reserva.estado == 'CHECKIN' %}
+                    <span class="badge text-bg-primary"><i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>{{ reserva.get_estado_display }}</span>
+                {% else %}
+                    <span class="badge text-bg-warning"><i class="bi bi-clock me-1" aria-hidden="true"></i>{{ reserva.get_estado_display }}</span>
+                {% endif %}
+
+                {% if reserva.estado != 'CANCELADA' and reserva.estado != 'FINALIZADA' and reserva.estado != 'CHECKIN' %}
+                    <form method="post" action="{% url 'reservas:cancel' reserva.pk %}" class="mt-4" onsubmit="return confirm('Cancelar esta reserva?');">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-danger w-100" type="submit"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar reserva</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

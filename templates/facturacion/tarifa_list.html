@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Tarifas por Temporada | HotelSys{% endblock %}
+{% block page_title %}Tarifas por Temporada{% endblock %}
+{% block page_subtitle %}Gestiona los precios de habitaciones según las distintas temporadas del año.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" href="{% url 'facturacion:tarifa_create' %}">
+    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nueva tarifa
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0 app-table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nombre / Temporada</th>
+                        <th>Tipo de Habitación</th>
+                        <th>Precio por Noche</th>
+                        <th>Vigencia Desde</th>
+                        <th>Vigencia Hasta</th>
+                        <th class="text-end" style="width: 120px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tarifa in tarifas %}
+                        <tr>
+                            <td><span class="fw-semibold">{{ tarifa.nombre }}</span></td>
+                            <td>{{ tarifa.tipo_habitacion.nombre }}</td>
+                            <td class="fw-bold text-primary">S/ {{ tarifa.precio_noche }}</td>
+                            <td>{{ tarifa.fecha_inicio|date:"d/m/Y" }}</td>
+                            <td>{{ tarifa.fecha_fin|date:"d/m/Y" }}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de tarifa">
+                                    <a class="btn btn-outline-primary" href="{% url 'facturacion:tarifa_update' tarifa.pk %}" title="Editar">
+                                        <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                    </a>
+                                    <a class="btn btn-outline-danger" href="{% url 'facturacion:tarifa_delete' tarifa.pk %}" title="Eliminar">
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-secondary">
+                                <i class="bi bi-tags me-2" aria-hidden="true"></i>No hay tarifas registradas para esta temporada.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
