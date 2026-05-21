@@ -40,3 +40,12 @@ class HuespedForm(forms.ModelForm):
         for field in self.fields.values():
             css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
             field.widget.attrs.update({'class': css_class})
+
+        self.fields['num_doc'].widget.attrs.update({
+            'maxlength': '11',
+            'inputmode': 'numeric',
+        })
+        self.fields['telefono'].widget.attrs.update({
+            'maxlength': '20',
+            'inputmode': 'tel',
+        })

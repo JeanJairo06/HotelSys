@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
@@ -63,6 +65,18 @@ class Reserva(models.Model):
             if self.fecha_salida <= self.fecha_entrada:
                 errors['fecha_salida'] = 'La fecha de salida debe ser mayor a la fecha de entrada.'
 
+        if not self.pk and self.fecha_entrada and self.fecha_entrada < date.today():
+            errors['fecha_entrada'] = 'La fecha de entrada no puede ser anterior a hoy.'
+
+        if self.num_adultos is not None and self.num_adultos < 1:
+            errors['num_adultos'] = 'Debe registrar al menos un adulto.'
+
+        if self.habitacion_id and not self.hotel_id:
+            self.hotel = self.habitacion.hotel
+
+        if self.habitacion_id and self.num_adultos and self.num_adultos > self.habitacion.tipo.capacidad:
+            errors['num_adultos'] = 'La cantidad de adultos supera la capacidad del tipo de habitacion.'
+
         if self.hotel_id and self.habitacion_id:
             if self.habitacion.hotel_id != self.hotel_id:
                 errors['habitacion'] = 'La habitación no pertenece al hotel seleccionado.'
@@ -86,5 +100,7 @@ class Reserva(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
+        if self.habitacion_id and not self.hotel_id:
+            self.hotel = self.habitacion.hotel
         self.full_clean()
         super().save(*args, **kwargs)

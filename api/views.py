@@ -16,8 +16,11 @@ from api.serializers import (
     EmpleadoAutocompleteSerializer,
     EstanciaSerializer,
     HabitacionEstadoSerializer,
+    HabitacionReservaAutocompleteSerializer,
     HabitacionSerializer,
+    HuespedAutocompleteSerializer,
 )
+
 from api.throttles import AutocompleteRateThrottle, UserApiRateThrottle, WriteRateThrottle
 from config.choices import EstadoGeneral, EstadoHabitacion, EstadoReserva
 from cuentas.roles import ROLE_ADMIN, ROLE_HOUSEKEEPING, ROLE_RECEPCIONISTA
@@ -25,6 +28,8 @@ from empleados.models import Empleado
 from estancias.models import Estancia
 from estancias.services import registrar_checkin, registrar_checkout
 from habitaciones.models import Habitacion
+from huespedes.models import Huesped
+from habitaciones.services import cambiar_estado_manual
 from limpieza.services import marcar_disponible, marcar_mantenimiento
 from reservas.models import Reserva
 
@@ -80,6 +85,94 @@ class EmpleadosDisponiblesUsuarioAPIView(generics.ListAPIView):
         return queryset
 
 
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Reservas'],
+        summary='Lista huespedes disponibles para reservas',
+        description='Endpoint paginado para autocompletado lazy loading de huespedes.',
+    )
+)
+class HuespedesReservaAutocompleteAPIView(generics.ListAPIView):
+    serializer_class = HuespedAutocompleteSerializer
+    authentication_classes = API_AUTHENTICATION_CLASSES
+    permission_classes = [IsAuthenticated, HasAnyRole]
+    allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
+    throttle_classes = [AutocompleteRateThrottle]
+    throttle_scope = 'autocomplete'
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['num_doc', 'nombres', 'apellidos', 'email', 'telefono']
+    ordering_fields = ['apellidos', 'nombres', 'num_doc']
+    ordering = ['apellidos', 'nombres']
+
+    def get_queryset(self):
+        queryset = Huesped.objects.all()
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(
+                Q(num_doc__icontains=search)
+                | Q(nombres__icontains=search)
+                | Q(apellidos__icontains=search)
+                | Q(email__icontains=search)
+                | Q(telefono__icontains=search)
+            )
+        return queryset
+
+
+@extend_schema_view(
+    get=extend_schema(
+        tags=['Reservas'],
+        summary='Lista habitaciones disponibles para reservas',
+        description='Endpoint paginado para autocompletado lazy loading de habitaciones segun tipo y fechas.',
+    )
+)
+class HabitacionesDisponiblesReservaAutocompleteAPIView(generics.ListAPIView):
+    serializer_class = HabitacionReservaAutocompleteSerializer
+    authentication_classes = API_AUTHENTICATION_CLASSES
+    permission_classes = [IsAuthenticated, HasAnyRole]
+    allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
+    throttle_classes = [AutocompleteRateThrottle]
+    throttle_scope = 'autocomplete'
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['numero', 'tipo__nombre']
+    ordering_fields = ['piso', 'numero']
+    ordering = ['piso', 'numero']
+
+    def get_queryset(self):
+        queryset = Habitacion.objects.select_related('hotel', 'tipo')
+        tipo = self.request.query_params.get('tipo')
+        fecha_entrada = parse_date(self.request.query_params.get('fecha_entrada') or '')
+        fecha_salida = parse_date(self.request.query_params.get('fecha_salida') or '')
+        reserva_id = self.request.query_params.get('reserva_id')
+        search = self.request.query_params.get('search')
+
+        if tipo and tipo.isdigit():
+            queryset = queryset.filter(tipo_id=tipo)
+
+        if fecha_entrada and fecha_salida and fecha_salida > fecha_entrada:
+            reservas_ocupadas = Reserva.objects.filter(
+                fecha_entrada__lt=fecha_salida,
+                fecha_salida__gt=fecha_entrada,
+            ).exclude(
+                estado__in=[EstadoReserva.CANCELADA, EstadoReserva.FINALIZADA],
+            )
+            if reserva_id and reserva_id.isdigit():
+                reservas_ocupadas = reservas_ocupadas.exclude(pk=reserva_id)
+            queryset = queryset.exclude(pk__in=reservas_ocupadas.values('habitacion_id'))
+
+        if search:
+            queryset = queryset.filter(
+                Q(numero__icontains=search)
+                | Q(tipo__nombre__icontains=search)
+            )
+
+        return queryset
+
+
+# API del modulo Habitaciones y Estancias.
+@extend_schema_view(
+    get=extend_schema(tags=['Habitaciones'], summary='Lista tipos de habitacion'),
+    post=extend_schema(tags=['Habitaciones'], summary='Crea tipo de habitacion'),
+)
 @extend_schema_view(
     get=extend_schema(
         tags=['Habitaciones'],

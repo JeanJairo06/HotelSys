@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -38,7 +40,7 @@ class Huesped(models.Model):
         errors = {}
 
         if self.num_doc:
-            self.num_doc = self.num_doc.strip().upper()
+            self.num_doc = self.num_doc.strip().upper().replace(' ', '')
 
         if self.nombres:
             self.nombres = self.nombres.strip()
@@ -49,22 +51,41 @@ class Huesped(models.Model):
         if self.razon_social:
             self.razon_social = self.razon_social.strip()
 
+        if self.email:
+            self.email = self.email.strip().lower()
+
+        if self.nacionalidad:
+            self.nacionalidad = self.nacionalidad.strip()
+
         if self.telefono:
             telefono_limpio = self.telefono.replace('+', '').replace('-', '').replace(' ', '')
             if not telefono_limpio.isdigit():
                 errors['telefono'] = 'El telefono solo debe contener numeros, espacios, + o -.'
+            elif len(telefono_limpio) < 7 or len(telefono_limpio) > 15:
+                errors['telefono'] = 'El telefono debe tener entre 7 y 15 digitos.'
 
         if self.tipo_doc == TipoDocumento.RUC:
+            if not self.num_doc or not self.num_doc.isdigit():
+                errors['num_doc'] = 'El RUC debe contener solo numeros.'
+            elif len(self.num_doc) != 11:
+                errors['num_doc'] = 'El RUC debe tener exactamente 11 digitos.'
             if not self.razon_social:
                 errors['razon_social'] = 'La razon social es obligatoria para RUC.'
 
         if self.tipo_doc == TipoDocumento.DNI:
+            if not self.num_doc or not self.num_doc.isdigit():
+                errors['num_doc'] = 'El DNI debe contener solo numeros.'
+            elif len(self.num_doc) != 8:
+                errors['num_doc'] = 'El DNI debe tener exactamente 8 digitos.'
             if not self.nombres:
                 errors['nombres'] = 'Los nombres son obligatorios para DNI.'
             if not self.apellidos:
                 errors['apellidos'] = 'Los apellidos son obligatorios para DNI.'
             if not self.fecha_nacimiento:
                 errors['fecha_nacimiento'] = 'La fecha de nacimiento es obligatoria para DNI.'
+
+        if self.fecha_nacimiento and self.fecha_nacimiento >= date.today():
+            errors['fecha_nacimiento'] = 'La fecha de nacimiento debe ser anterior a hoy.'
 
         if errors:
             raise ValidationError(errors)

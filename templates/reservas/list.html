@@ -15,7 +15,7 @@
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label" for="q">Buscar reserva</label>
-                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="ID, huesped, documento, hotel o habitacion">
+                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="ID, huesped, documento o habitacion">
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="estado">Estado</label>
@@ -69,7 +69,7 @@
                             </td>
                             <td>
                                 <span class="fw-semibold">Hab. {{ reserva.habitacion.numero }}</span>
-                                <span class="d-block small text-secondary">{{ reserva.habitacion.tipo.nombre }} - {{ reserva.hotel.nombre }}</span>
+                                <span class="d-block small text-secondary">{{ reserva.habitacion.tipo.nombre }}</span>
                             </td>
                             <td>
                                 {{ reserva.fecha_entrada|date:'d/m/Y' }} - {{ reserva.fecha_salida|date:'d/m/Y' }}
@@ -94,10 +94,7 @@
                                     <a class="btn btn-outline-primary" href="{% url 'reservas:detail' reserva.pk %}" title="Ver" aria-label="Ver reserva"><i class="bi bi-eye" aria-hidden="true"></i></a>
                                     <a class="btn btn-outline-primary" href="{% url 'reservas:update' reserva.pk %}" title="Editar" aria-label="Editar reserva"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                                     {% if reserva.estado != 'CANCELADA' and reserva.estado != 'FINALIZADA' and reserva.estado != 'CHECKIN' %}
-                                        <form method="post" action="{% url 'reservas:cancel' reserva.pk %}" class="d-inline" onsubmit="return confirm('Cancelar esta reserva?');">
-                                            {% csrf_token %}
-                                            <button class="btn btn-outline-danger" type="submit" title="Cancelar" aria-label="Cancelar reserva"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
-                                        </form>
+                                        <a class="btn btn-outline-danger" href="{% url 'reservas:cancel' reserva.pk %}" title="Cancelar" aria-label="Cancelar reserva"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
                                     {% endif %}
                                 </div>
                             </td>

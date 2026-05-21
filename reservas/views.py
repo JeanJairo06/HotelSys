@@ -2,7 +2,7 @@ from django.contrib import messages
 from datetime import date, datetime, timedelta
 
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -12,7 +12,6 @@ from config.choices import EstadoReserva
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 from habitaciones.models import Habitacion, TipoHabitacion
-from hoteles.models import Hotel
 from reservas.forms import ReservaForm
 from reservas.models import Reserva
 
@@ -24,23 +23,6 @@ def _parse_date(value, default):
         return datetime.strptime(value, '%Y-%m-%d').date()
     except ValueError:
         return default
-
-
-def _habitaciones_payload():
-    return [
-        {
-            'id': habitacion.id,
-            'hotelId': habitacion.hotel_id,
-            'tipoId': habitacion.tipo_id,
-            'precio': float(habitacion.tipo.precio_base),
-            'label': f'{habitacion.hotel.nombre} - Hab. {habitacion.numero} ({habitacion.tipo.nombre})',
-        }
-        for habitacion in Habitacion.objects.select_related('hotel', 'tipo').order_by(
-            'hotel__nombre',
-            'piso',
-            'numero',
-        )
-    ]
 
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
@@ -68,7 +50,6 @@ class ReservaListView(ListView):
                 | Q(huesped__nombres__icontains=query)
                 | Q(huesped__apellidos__icontains=query)
                 | Q(habitacion__numero__icontains=query)
-                | Q(hotel__nombre__icontains=query)
             )
             if query.isdigit():
                 filters |= Q(id=int(query))
@@ -94,7 +75,7 @@ class ReservaListView(ListView):
 class ReservaFormContextMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['habitaciones_json'] = _habitaciones_payload()
+        context['reserva_id'] = self.object.pk if getattr(self, 'object', None) else ''
         return context
 
 
@@ -132,6 +113,19 @@ class ReservaUpdateView(ReservaFormContextMixin, UpdateView):
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class ReservaCancelView(View):
+    def get(self, request, pk):
+        reserva = get_object_or_404(Reserva, pk=pk)
+
+        if reserva.estado in [EstadoReserva.CHECKIN, EstadoReserva.FINALIZADA]:
+            messages.error(request, 'No se puede cancelar una reserva con check-in o finalizada.')
+            return redirect('reservas:list')
+
+        if reserva.estado == EstadoReserva.CANCELADA:
+            messages.info(request, 'La reserva ya estaba cancelada.')
+            return redirect('reservas:list')
+
+        return render(request, 'reservas/confirm_cancel.html', {'reserva': reserva})
+
     def post(self, request, pk):
         reserva = get_object_or_404(Reserva, pk=pk)
 
@@ -163,15 +157,10 @@ class ReservaCalendarView(TemplateView):
 
         dias = [inicio + timedelta(days=offset) for offset in range((fin - inicio).days + 1)]
         habitaciones = Habitacion.objects.select_related('hotel', 'tipo').order_by(
-            'hotel__nombre',
             'piso',
             'numero',
         )
-        hotel = self.request.GET.get('hotel')
         tipo = self.request.GET.get('tipo')
-
-        if hotel:
-            habitaciones = habitaciones.filter(hotel_id=hotel)
 
         if tipo:
             habitaciones = habitaciones.filter(tipo_id=tipo)
@@ -206,7 +195,6 @@ class ReservaCalendarView(TemplateView):
         context.update({
             'dias': dias,
             'filas': filas,
-            'hoteles': Hotel.objects.order_by('nombre'),
             'tipos_habitacion': TipoHabitacion.objects.order_by('nombre'),
             'desde': inicio,
             'hasta': fin,

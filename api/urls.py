@@ -21,6 +21,16 @@ urlpatterns = [
         EmpleadosDisponiblesUsuarioAPIView.as_view(),
         name='empleados_disponibles_usuario',
     ),
+    path(
+        'reservas/huespedes-autocomplete/',
+        HuespedesReservaAutocompleteAPIView.as_view(),
+        name='reservas_huespedes_autocomplete',
+    ),
+    path(
+        'reservas/habitaciones-disponibles/',
+        HabitacionesDisponiblesReservaAutocompleteAPIView.as_view(),
+        name='reservas_habitaciones_disponibles',
+    ),
 
     # Endpoints del modulo Habitaciones y Estancias.
     path('habitaciones/disponibles/', HabitacionesDisponiblesAPIView.as_view(), name='habitaciones_disponibles'),
