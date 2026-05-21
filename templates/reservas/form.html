@@ -112,6 +112,7 @@
                 option.value = item.id;
                 option.textContent = item.label;
                 option.dataset.precio = item.precio;
+                option.dataset.tarifas = JSON.stringify(item.tarifas || []);
                 if (String(item.id) === seleccion) {
                     option.selected = true;
                 }
@@ -126,11 +127,28 @@
 
         function calcularTotal() {
             const option = habitacion.selectedOptions[0];
-            const precio = option ? Number(option.dataset.precio || 0) : 0;
+            const precioBase = option ? Number(option.dataset.precio || 0) : 0;
             const noches = diasEstadia();
-            if (precio && noches) {
-                total.value = (precio * noches).toFixed(2);
+
+            if (!precioBase || !noches) {
+                total.value = '';
+                return;
             }
+
+            const tarifas = option ? JSON.parse(option.dataset.tarifas || '[]') : [];
+            let acumulado = 0;
+            let fecha = new Date(entrada.value + 'T00:00:00');
+
+            for (let i = 0; i < noches; i += 1) {
+                const fechaNoche = fecha.toISOString().slice(0, 10);
+                const tarifa = tarifas.find(function (item) {
+                    return item.fechaInicio <= fechaNoche && fechaNoche <= item.fechaFin;
+                });
+                acumulado += tarifa ? Number(tarifa.precio) : precioBase;
+                fecha.setDate(fecha.getDate() + 1);
+            }
+
+            total.value = acumulado.toFixed(2);
         }
 
         hotel.addEventListener('change', filtrarHabitaciones);

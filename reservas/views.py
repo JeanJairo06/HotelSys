@@ -33,9 +33,20 @@ def _habitaciones_payload():
             'hotelId': habitacion.hotel_id,
             'tipoId': habitacion.tipo_id,
             'precio': float(habitacion.tipo.precio_base),
+            'tarifas': [
+                {
+                    'fechaInicio': tarifa.fecha_inicio.isoformat(),
+                    'fechaFin': tarifa.fecha_fin.isoformat(),
+                    'precio': float(tarifa.precio_noche),
+                }
+                for tarifa in habitacion.tipo.tarifas.all()
+            ],
             'label': f'{habitacion.hotel.nombre} - Hab. {habitacion.numero} ({habitacion.tipo.nombre})',
         }
-        for habitacion in Habitacion.objects.select_related('hotel', 'tipo').order_by(
+        for habitacion in Habitacion.objects.select_related(
+            'hotel',
+            'tipo',
+        ).prefetch_related('tipo__tarifas').order_by(
             'hotel__nombre',
             'piso',
             'numero',
