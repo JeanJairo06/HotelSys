@@ -1,4 +1,6 @@
+from django.core.exceptions import ValidationError
 from django.db import models
+
 from config.choices import TipoDocumento
 
 
@@ -9,8 +11,10 @@ class Huesped(models.Model):
         default=TipoDocumento.DNI
     )
     num_doc = models.CharField(max_length=20, unique=True)
-    nombres = models.CharField(max_length=100)
-    apellidos = models.CharField(max_length=100)
+    nombres = models.CharField(max_length=100, blank=True)
+    apellidos = models.CharField(max_length=100, blank=True)
+    razon_social = models.CharField(max_length=200, blank=True, null=True)
+    fecha_nacimiento = models.DateField(blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     nacionalidad = models.CharField(max_length=80, blank=True, null=True)
@@ -22,4 +26,49 @@ class Huesped(models.Model):
         ordering = ['apellidos', 'nombres']
 
     def __str__(self):
-        return f'{self.apellidos}, {self.nombres}'
+        return f'{self.num_doc} - {self.nombre_completo}'
+
+    @property
+    def nombre_completo(self):
+        if self.tipo_doc == TipoDocumento.RUC and self.razon_social:
+            return self.razon_social
+        return f'{self.nombres} {self.apellidos}'
+
+    def clean(self):
+        errors = {}
+
+        if self.num_doc:
+            self.num_doc = self.num_doc.strip().upper()
+
+        if self.nombres:
+            self.nombres = self.nombres.strip()
+
+        if self.apellidos:
+            self.apellidos = self.apellidos.strip()
+
+        if self.razon_social:
+            self.razon_social = self.razon_social.strip()
+
+        if self.telefono:
+            telefono_limpio = self.telefono.replace('+', '').replace('-', '').replace(' ', '')
+            if not telefono_limpio.isdigit():
+                errors['telefono'] = 'El telefono solo debe contener numeros, espacios, + o -.'
+
+        if self.tipo_doc == TipoDocumento.RUC:
+            if not self.razon_social:
+                errors['razon_social'] = 'La razon social es obligatoria para RUC.'
+
+        if self.tipo_doc == TipoDocumento.DNI:
+            if not self.nombres:
+                errors['nombres'] = 'Los nombres son obligatorios para DNI.'
+            if not self.apellidos:
+                errors['apellidos'] = 'Los apellidos son obligatorios para DNI.'
+            if not self.fecha_nacimiento:
+                errors['fecha_nacimiento'] = 'La fecha de nacimiento es obligatoria para DNI.'
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

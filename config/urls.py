@@ -29,13 +29,19 @@ urlpatterns = [
     path('logout/', CuentaLogoutView.as_view(), name='logout'),
     path('usuarios/', include('cuentas.urls')),
     path('empleados/', include('empleados.urls')),
+    path('hoteles/', include('hoteles.urls')),
+    path('habitaciones/', include('habitaciones.urls')),
+    path('estancias/', include('estancias.urls')),
+    path('limpieza/', include('limpieza.urls')),
+    path('huespedes/', include('huespedes.urls')),
+    path('reservas/', include('reservas.urls')),
     path('api/v1/', include('api.urls')),
     path('api/v1/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('admin/', admin.site.urls),
     path('api/reportes/ocupacion/', ReporteOcupacionAPIView.as_view(), name='api_reporte_ocupacion'),
-
+    path('facturacion/', include('facturacion.urls')),
 ]
 
 handler403 = 'config.views.error_403'

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ huesped.nombre_completo }} | HotelSys{% endblock %}
+{% block page_title %}{{ huesped.nombre_completo }}{% endblock %}
+{% block page_subtitle %}Detalle de identificacion y contacto del huesped.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'huespedes:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+<a class="btn btn-primary" href="{% url 'huespedes:update' huesped.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Editar</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-4"><i class="bi bi-person-vcard me-2" aria-hidden="true"></i>Informacion del huesped</h2>
+                <dl class="row mb-0 app-dl">
+                    <dt class="col-sm-4">Tipo de documento</dt>
+                    <dd class="col-sm-8">{{ huesped.get_tipo_doc_display }}</dd>
+                    <dt class="col-sm-4">Numero de documento</dt>
+                    <dd class="col-sm-8">{{ huesped.num_doc }}</dd>
+                    <dt class="col-sm-4">Nombres</dt>
+                    <dd class="col-sm-8">{{ huesped.nombres|default:'-' }}</dd>
+                    <dt class="col-sm-4">Apellidos</dt>
+                    <dd class="col-sm-8">{{ huesped.apellidos|default:'-' }}</dd>
+                    <dt class="col-sm-4">Razon social</dt>
+                    <dd class="col-sm-8">{{ huesped.razon_social|default:'-' }}</dd>
+                    <dt class="col-sm-4">Fecha de nacimiento</dt>
+                    <dd class="col-sm-8">{{ huesped.fecha_nacimiento|date:'d/m/Y'|default:'-' }}</dd>
+                    <dt class="col-sm-4">Correo</dt>
+                    <dd class="col-sm-8">{{ huesped.email|default:'-' }}</dd>
+                    <dt class="col-sm-4">Telefono</dt>
+                    <dd class="col-sm-8">{{ huesped.telefono|default:'-' }}</dd>
+                    <dt class="col-sm-4">Nacionalidad</dt>
+                    <dd class="col-sm-8">{{ huesped.nacionalidad|default:'-' }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Documento</h2>
+                <span class="badge text-bg-light border">{{ huesped.get_tipo_doc_display }}</span>
+                <p class="mt-3 mb-0 fw-semibold">{{ huesped.num_doc }}</p>
+                <p class="mt-4 mb-0 text-secondary">Este registro puede asociarse luego a reservas y estancias del hotel.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

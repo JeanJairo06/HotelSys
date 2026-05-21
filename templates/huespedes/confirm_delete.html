@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar huesped | HotelSys{% endblock %}
+{% block page_title %}Eliminar huesped{% endblock %}
+{% block page_subtitle %}Confirma la eliminacion del registro seleccionado.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'huespedes:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block content %}
+<div class="error-card">
+    <span class="error-code"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+    <h2 class="h4 mb-3">Eliminar a {{ huesped.nombre_completo }}?</h2>
+    <p class="text-secondary mb-4">Esta accion eliminara el registro del huesped con documento {{ huesped.num_doc }}. Si tiene reservas asociadas, el sistema impedira eliminarlo.</p>
+    <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <a class="btn btn-light" href="{% url 'huespedes:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <button class="btn btn-danger" type="submit"><i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar huesped</button>
+    </form>
+</div>
+{% endblock %}

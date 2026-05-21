@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Huespedes | HotelSys{% endblock %}
+{% block page_title %}Huespedes{% endblock %}
+{% block page_subtitle %}Gestiona el registro y busqueda de huespedes del hotel.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-primary" href="{% url 'huespedes:create' %}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nuevo huesped</a>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-9">
+                <label class="form-label" for="q">Buscar huesped</label>
+                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="Documento, nombres, apellidos, razon social, correo o telefono">
+            </div>
+            <div class="col-md-3 d-grid">
+                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-2" aria-hidden="true"></i>Buscar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 app-table">
+                <thead>
+                    <tr>
+                        <th>Documento</th>
+                        <th>Huesped</th>
+                        <th>Correo</th>
+                        <th>Telefono</th>
+                        <th>Nacionalidad</th>
+                        <th class="text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for huesped in huespedes %}
+                        <tr>
+                            <td>
+                                <span class="badge text-bg-light border">{{ huesped.get_tipo_doc_display }}</span>
+                                <span class="d-block small text-secondary mt-1">{{ huesped.num_doc }}</span>
+                            </td>
+                            <td>
+                                <a class="fw-semibold text-decoration-none" href="{% url 'huespedes:detail' huesped.pk %}">{{ huesped.nombre_completo }}</a>
+                                {% if huesped.fecha_nacimiento %}<span class="d-block small text-secondary mt-1">{{ huesped.fecha_nacimiento|date:'d/m/Y' }}</span>{% endif %}
+                            </td>
+                            <td>{{ huesped.email|default:'-' }}</td>
+                            <td>{{ huesped.telefono|default:'-' }}</td>
+                            <td>{{ huesped.nacionalidad|default:'-' }}</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de huesped">
+                                    <a class="btn btn-outline-primary" href="{% url 'huespedes:detail' huesped.pk %}" title="Ver" aria-label="Ver huesped"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                                    <a class="btn btn-outline-primary" href="{% url 'huespedes:update' huesped.pk %}" title="Editar" aria-label="Editar huesped"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                                    <a class="btn btn-outline-danger" href="{% url 'huespedes:delete' huesped.pk %}" title="Eliminar" aria-label="Eliminar huesped"><i class="bi bi-trash" aria-hidden="true"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-secondary"><i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay huespedes registrados.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'partials/pagination.html' %}
+    </div>
+</div>
+{% endblock %}
