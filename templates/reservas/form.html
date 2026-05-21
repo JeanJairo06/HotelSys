@@ -75,3 +75,70 @@
     </div>
 </form>
 {% endblock %}
+
+{% block extra_js %}
+{{ habitaciones_json|json_script:"habitaciones-data" }}
+<script>
+    (function () {
+        const habitaciones = JSON.parse(document.getElementById('habitaciones-data').textContent);
+        const hotel = document.getElementById('{{ form.hotel.id_for_label }}');
+        const tipo = document.getElementById('{{ form.tipo_habitacion.id_for_label }}');
+        const habitacion = document.getElementById('{{ form.habitacion.id_for_label }}');
+        const entrada = document.getElementById('{{ form.fecha_entrada.id_for_label }}');
+        const salida = document.getElementById('{{ form.fecha_salida.id_for_label }}');
+        const total = document.getElementById('{{ form.precio_total.id_for_label }}');
+
+        function diasEstadia() {
+            if (!entrada.value || !salida.value) {
+                return 0;
+            }
+            const inicio = new Date(entrada.value + 'T00:00:00');
+            const fin = new Date(salida.value + 'T00:00:00');
+            const dias = Math.round((fin - inicio) / 86400000);
+            return dias > 0 ? dias : 0;
+        }
+
+        function filtrarHabitaciones() {
+            const seleccion = habitacion.value;
+            const hotelId = hotel.value ? Number(hotel.value) : null;
+            const tipoId = tipo.value ? Number(tipo.value) : null;
+            const disponibles = habitaciones.filter(function (item) {
+                return (!hotelId || item.hotelId === hotelId) && (!tipoId || item.tipoId === tipoId);
+            });
+
+            habitacion.innerHTML = '<option value="">---------</option>';
+            disponibles.forEach(function (item) {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.label;
+                option.dataset.precio = item.precio;
+                if (String(item.id) === seleccion) {
+                    option.selected = true;
+                }
+                habitacion.appendChild(option);
+            });
+
+            if (seleccion && habitacion.value !== seleccion) {
+                habitacion.value = '';
+            }
+            calcularTotal();
+        }
+
+        function calcularTotal() {
+            const option = habitacion.selectedOptions[0];
+            const precio = option ? Number(option.dataset.precio || 0) : 0;
+            const noches = diasEstadia();
+            if (precio && noches) {
+                total.value = (precio * noches).toFixed(2);
+            }
+        }
+
+        hotel.addEventListener('change', filtrarHabitaciones);
+        tipo.addEventListener('change', filtrarHabitaciones);
+        habitacion.addEventListener('change', calcularTotal);
+        entrada.addEventListener('change', calcularTotal);
+        salida.addEventListener('change', calcularTotal);
+        filtrarHabitaciones();
+    })();
+</script>
+{% endblock %}

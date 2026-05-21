@@ -5,6 +5,7 @@
 {% block page_subtitle %}Consulta el historial de reservas, filtra por fecha y administra cancelaciones.{% endblock %}
 
 {% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'reservas:calendar' %}"><i class="bi bi-calendar3 me-2" aria-hidden="true"></i>Calendario</a>
 <a class="btn btn-primary" href="{% url 'reservas:create' %}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nueva reserva</a>
 {% endblock %}
 
@@ -90,6 +91,7 @@
                             <td>S/ {{ reserva.precio_total }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de reserva">
+                                    <a class="btn btn-outline-primary" href="{% url 'reservas:detail' reserva.pk %}" title="Ver" aria-label="Ver reserva"><i class="bi bi-eye" aria-hidden="true"></i></a>
                                     <a class="btn btn-outline-primary" href="{% url 'reservas:update' reserva.pk %}" title="Editar" aria-label="Editar reserva"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                                     {% if reserva.estado != 'CANCELADA' and reserva.estado != 'FINALIZADA' and reserva.estado != 'CHECKIN' %}
                                         <form method="post" action="{% url 'reservas:cancel' reserva.pk %}" class="d-inline" onsubmit="return confirm('Cancelar esta reserva?');">
