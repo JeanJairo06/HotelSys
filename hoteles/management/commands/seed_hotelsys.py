@@ -126,22 +126,24 @@ class Command(BaseCommand):
             )
 
         huespedes_data = [
-            ('DNI', '71234567', 'Carlos', 'Ramírez Torres', 'carlos@mail.com', '987654321', 'Peruana'),
-            ('DNI', '72345678', 'Ana', 'Flores Díaz', 'ana@mail.com', '912345678', 'Peruana'),
-            ('DNI', '73456789', 'Luis', 'Mendoza Cruz', 'luis@mail.com', '923456789', 'Peruana'),
-            ('PASAPORTE', 'P1234567', 'John', 'Smith', 'john@mail.com', '934567890', 'Estadounidense'),
-            ('CARNET_EXTRANJERIA', 'CE987654', 'María', 'Gómez Pérez', 'maria@mail.com', '945678901', 'Colombiana'),
+            ('DNI', '71234567', 'Carlos', 'Ramírez Torres', '', date(1990, 4, 12), 'carlos@mail.com', '987654321', 'Peruana'),
+            ('DNI', '72345678', 'Ana', 'Flores Díaz', '', date(1992, 8, 23), 'ana@mail.com', '912345678', 'Peruana'),
+            ('DNI', '73456789', 'Luis', 'Mendoza Cruz', '', date(1988, 1, 5), 'luis@mail.com', '923456789', 'Peruana'),
+            ('DNI', '74567890', 'María', 'Gómez Pérez', '', date(1995, 11, 17), 'maria@mail.com', '945678901', 'Peruana'),
+            ('RUC', '20601234567', '', '', 'Inversiones HotelSys SAC', None, 'reservas@hotelsys.com', '934567890', 'Peruana'),
         ]
 
         huespedes = []
 
-        for tipo_doc, num_doc, nombres, apellidos, email, telefono, nacionalidad in huespedes_data:
-            huesped, _ = Huesped.objects.get_or_create(
+        for tipo_doc, num_doc, nombres, apellidos, razon_social, fecha_nacimiento, email, telefono, nacionalidad in huespedes_data:
+            huesped, _ = Huesped.objects.update_or_create(
                 num_doc=num_doc,
                 defaults={
                     'tipo_doc': tipo_doc,
                     'nombres': nombres,
                     'apellidos': apellidos,
+                    'razon_social': razon_social,
+                    'fecha_nacimiento': fecha_nacimiento,
                     'email': email,
                     'telefono': telefono,
                     'nacionalidad': nacionalidad,
