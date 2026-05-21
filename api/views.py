@@ -123,7 +123,7 @@ class HuespedesReservaAutocompleteAPIView(generics.ListAPIView):
     get=extend_schema(
         tags=['Reservas'],
         summary='Lista habitaciones disponibles para reservas',
-        description='Endpoint paginado para autocompletado lazy loading de habitaciones segun hotel, tipo y fechas.',
+        description='Endpoint paginado para autocompletado lazy loading de habitaciones segun tipo y fechas.',
     )
 )
 class HabitacionesDisponiblesReservaAutocompleteAPIView(generics.ListAPIView):
@@ -134,21 +134,17 @@ class HabitacionesDisponiblesReservaAutocompleteAPIView(generics.ListAPIView):
     throttle_classes = [AutocompleteRateThrottle]
     throttle_scope = 'autocomplete'
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['numero', 'hotel__nombre', 'tipo__nombre']
-    ordering_fields = ['hotel__nombre', 'piso', 'numero']
-    ordering = ['hotel__nombre', 'piso', 'numero']
+    search_fields = ['numero', 'tipo__nombre']
+    ordering_fields = ['piso', 'numero']
+    ordering = ['piso', 'numero']
 
     def get_queryset(self):
         queryset = Habitacion.objects.select_related('hotel', 'tipo')
-        hotel = self.request.query_params.get('hotel')
         tipo = self.request.query_params.get('tipo')
         fecha_entrada = parse_date(self.request.query_params.get('fecha_entrada') or '')
         fecha_salida = parse_date(self.request.query_params.get('fecha_salida') or '')
         reserva_id = self.request.query_params.get('reserva_id')
         search = self.request.query_params.get('search')
-
-        if hotel and hotel.isdigit():
-            queryset = queryset.filter(hotel_id=hotel)
 
         if tipo and tipo.isdigit():
             queryset = queryset.filter(tipo_id=tipo)
@@ -167,7 +163,6 @@ class HabitacionesDisponiblesReservaAutocompleteAPIView(generics.ListAPIView):
         if search:
             queryset = queryset.filter(
                 Q(numero__icontains=search)
-                | Q(hotel__nombre__icontains=search)
                 | Q(tipo__nombre__icontains=search)
             )
 

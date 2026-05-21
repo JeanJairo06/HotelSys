@@ -22,11 +22,6 @@
 
         <div class="row g-3">
             <div class="col-md-6">
-                <label class="form-label" for="{{ form.hotel.id_for_label }}">{{ form.hotel.label }}</label>
-                {{ form.hotel }}
-                {% for error in form.hotel.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-6">
                 <label class="form-label" for="{{ form.huesped.id_for_label }}">{{ form.huesped.label }}</label>
                 <div data-huesped-autocomplete-url="{% url 'api:reservas_huespedes_autocomplete' %}">
                     {{ form.huesped }}
@@ -88,7 +83,6 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
     (function () {
-        const hotel = document.getElementById('{{ form.hotel.id_for_label }}');
         const tipo = document.getElementById('{{ form.tipo_habitacion.id_for_label }}');
         const huesped = document.querySelector('.js-huesped-select');
         const habitacion = document.querySelector('.js-habitacion-select');
@@ -114,9 +108,6 @@
             const params = new URLSearchParams({ page_size: '15' });
             if (query) {
                 params.set('search', query);
-            }
-            if (hotel.value) {
-                params.set('hotel', hotel.value);
             }
             if (tipo.value) {
                 params.set('tipo', tipo.value);
@@ -188,7 +179,7 @@
         const habitacionSelect = new TomSelect(habitacion, {
             valueField: 'id',
             labelField: 'text',
-            searchField: ['numero', 'hotel_nombre', 'tipo_nombre'],
+            searchField: ['numero', 'tipo_nombre'],
             maxItems: 1,
             preload: 'focus',
             loadThrottle: 300,
@@ -200,7 +191,6 @@
             render: {
                 option: function (item, rendererEscape) {
                     const meta = [
-                        item.hotel_nombre,
                         item.tipo_nombre,
                         item.capacidad ? 'Cap. ' + item.capacidad : null,
                         item.precio ? 'S/ ' + item.precio : null,
@@ -249,7 +239,6 @@
             }
         }
 
-        hotel.addEventListener('change', refrescarHabitaciones);
         tipo.addEventListener('change', refrescarHabitaciones);
         entrada.addEventListener('change', function () {
             refrescarHabitaciones();

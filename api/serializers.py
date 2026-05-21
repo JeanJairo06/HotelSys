@@ -54,7 +54,6 @@ class HabitacionSerializer(serializers.ModelSerializer):
 
 class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
-    hotel_nombre = serializers.CharField(source='hotel.nombre', read_only=True)
     tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
     precio = serializers.DecimalField(source='tipo.precio_base', max_digits=10, decimal_places=2, read_only=True)
     capacidad = serializers.IntegerField(source='tipo.capacidad', read_only=True)
@@ -64,8 +63,6 @@ class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'text',
-            'hotel',
-            'hotel_nombre',
             'tipo',
             'tipo_nombre',
             'numero',
@@ -75,7 +72,7 @@ class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
         ]
 
     def get_text(self, obj):
-        return f'{obj.hotel.nombre} - Hab. {obj.numero} ({obj.tipo.nombre})'
+        return f'Hab. {obj.numero} ({obj.tipo.nombre})'
 
 
 class HabitacionEstadoSerializer(serializers.Serializer):

@@ -12,7 +12,6 @@ from config.choices import EstadoReserva
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 from habitaciones.models import Habitacion, TipoHabitacion
-from hoteles.models import Hotel
 from reservas.forms import ReservaForm
 from reservas.models import Reserva
 
@@ -51,7 +50,6 @@ class ReservaListView(ListView):
                 | Q(huesped__nombres__icontains=query)
                 | Q(huesped__apellidos__icontains=query)
                 | Q(habitacion__numero__icontains=query)
-                | Q(hotel__nombre__icontains=query)
             )
             if query.isdigit():
                 filters |= Q(id=int(query))
@@ -146,15 +144,10 @@ class ReservaCalendarView(TemplateView):
 
         dias = [inicio + timedelta(days=offset) for offset in range((fin - inicio).days + 1)]
         habitaciones = Habitacion.objects.select_related('hotel', 'tipo').order_by(
-            'hotel__nombre',
             'piso',
             'numero',
         )
-        hotel = self.request.GET.get('hotel')
         tipo = self.request.GET.get('tipo')
-
-        if hotel:
-            habitaciones = habitaciones.filter(hotel_id=hotel)
 
         if tipo:
             habitaciones = habitaciones.filter(tipo_id=tipo)
@@ -189,7 +182,6 @@ class ReservaCalendarView(TemplateView):
         context.update({
             'dias': dias,
             'filas': filas,
-            'hoteles': Hotel.objects.order_by('nombre'),
             'tipos_habitacion': TipoHabitacion.objects.order_by('nombre'),
             'desde': inicio,
             'hasta': fin,

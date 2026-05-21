@@ -15,7 +15,7 @@
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label" for="q">Buscar reserva</label>
-                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="ID, huesped, documento, hotel o habitacion">
+                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="ID, huesped, documento o habitacion">
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="estado">Estado</label>
@@ -69,7 +69,7 @@
                             </td>
                             <td>
                                 <span class="fw-semibold">Hab. {{ reserva.habitacion.numero }}</span>
-                                <span class="d-block small text-secondary">{{ reserva.habitacion.tipo.nombre }} - {{ reserva.hotel.nombre }}</span>
+                                <span class="d-block small text-secondary">{{ reserva.habitacion.tipo.nombre }}</span>
                             </td>
                             <td>
                                 {{ reserva.fecha_entrada|date:'d/m/Y' }} - {{ reserva.fecha_salida|date:'d/m/Y' }}

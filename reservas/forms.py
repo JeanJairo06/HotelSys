@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 
 from config.choices import EstadoReserva
 from habitaciones.models import Habitacion, TipoHabitacion
-from hoteles.models import Hotel
 from huespedes.models import Huesped
 from reservas.models import Reserva
 
@@ -20,7 +19,6 @@ class ReservaForm(forms.ModelForm):
     class Meta:
         model = Reserva
         fields = [
-            'hotel',
             'huesped',
             'tipo_habitacion',
             'habitacion',
@@ -32,7 +30,6 @@ class ReservaForm(forms.ModelForm):
             'precio_total',
         ]
         labels = {
-            'hotel': 'Hotel',
             'huesped': 'Huesped',
             'habitacion': 'Habitacion',
             'fecha_entrada': 'Fecha de entrada',
@@ -49,7 +46,6 @@ class ReservaForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['hotel'].queryset = Hotel.objects.order_by('nombre')
         huespedes = Huesped.objects.none()
         huesped_id = self.data.get(self.add_prefix('huesped')) if self.is_bound else None
         if huesped_id:
@@ -61,14 +57,12 @@ class ReservaForm(forms.ModelForm):
         habitaciones = Habitacion.objects.none()
         habitacion_id = self.data.get(self.add_prefix('habitacion')) if self.is_bound else None
 
-        hotel_id = self.data.get('hotel') if self.is_bound else self.initial.get('hotel')
         tipo_id = self.data.get('tipo_habitacion') if self.is_bound else self.initial.get('tipo_habitacion')
         fecha_entrada = self.data.get('fecha_entrada') if self.is_bound else self.initial.get('fecha_entrada')
         fecha_salida = self.data.get('fecha_salida') if self.is_bound else self.initial.get('fecha_salida')
 
         if self.instance and self.instance.pk:
             habitacion_id = habitacion_id or self.instance.habitacion_id
-            hotel_id = hotel_id or self.instance.hotel_id
             tipo_id = tipo_id or self.instance.habitacion.tipo_id
             fecha_entrada = fecha_entrada or self.instance.fecha_entrada
             fecha_salida = fecha_salida or self.instance.fecha_salida
@@ -118,14 +112,10 @@ class ReservaForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        hotel = cleaned_data.get('hotel')
         tipo_habitacion = cleaned_data.get('tipo_habitacion')
         habitacion = cleaned_data.get('habitacion')
         fecha_entrada = cleaned_data.get('fecha_entrada')
         fecha_salida = cleaned_data.get('fecha_salida')
-
-        if hotel and habitacion and habitacion.hotel_id != hotel.id:
-            self.add_error('habitacion', 'La habitacion seleccionada no pertenece al hotel.')
 
         if tipo_habitacion and habitacion and habitacion.tipo_id != tipo_habitacion.id:
             self.add_error('habitacion', 'La habitacion no corresponde al tipo seleccionado.')
@@ -137,3 +127,12 @@ class ReservaForm(forms.ModelForm):
             raise ValidationError('La fecha de salida debe ser mayor a la fecha de entrada.')
 
         return cleaned_data
+
+    def save(self, commit=True):
+        reserva = super().save(commit=False)
+        if reserva.habitacion_id:
+            reserva.hotel = reserva.habitacion.hotel
+        if commit:
+            reserva.save()
+            self.save_m2m()
+        return reserva
