@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar tarifa | HotelSys{% endblock %}
+{% block page_title %}Eliminar tarifa{% endblock %}
+{% block page_subtitle %}Confirma la eliminación irreversible de la regla de precio seleccionada.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'facturacion:tarifa_list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block content %}
+<div class="error-card">
+    <span class="error-code"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+    <h2 class="h4 mb-3">¿Eliminar la tarifa "{{ tarifa.nombre }}"?</h2>
+    <p class="text-secondary mb-4">
+        Esta acción eliminará de forma permanente el precio asignado de S/ {{ tarifa.precio_noche }} para habitaciones de tipo <strong>{{ tarifa.tipo_habitacion.nombre }}</strong>. Esta operación no se puede deshacer.
+    </p>
+    <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <a class="btn btn-light" href="{% url 'facturacion:tarifa_list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <button class="btn btn-danger" type="submit">
+            <i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar tarifa permanentemente
+        </button>
+    </form>
+</div>
+{% endblock %}

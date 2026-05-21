@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Folio #{{ folio.id }} | HotelSys{% endblock %}
+{% block page_title %}Estado de Cuenta #{{ folio.id }}{% endblock %}
+{% block page_subtitle %}Detalle completo de cargos de hospedaje y servicios adicionales del huésped.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'facturacion:folio_list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver a la lista</a>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-4"><i class="bi bi-info-circle me-2 text-primary" aria-hidden="true"></i>Resumen del Hospedaje</h2>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <span class="text-secondary d-block small">Titular</span>
+                        <strong class="fs-6">{{ folio.estancia.reserva.huesped.nombres }} {{ folio.estancia.reserva.huesped.apellidos }}</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-secondary d-block small">Habitación</span>
+                        <strong>N° {{ folio.estancia.habitacion.numero }} ({{ folio.estancia.habitacion.tipo.nombre }})</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-secondary d-block small">Monto Estancia</span>
+                        <strong>S/ {{ folio.estancia.precio_final }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3"><i class="bi bi-list-stars me-2 text-primary" aria-hidden="true"></i>Conceptos Cargados a la Cuenta</h2>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Descripción / Concepto</th>
+                                <th class="text-end" style="width: 150px;">Monto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">Cargo por Alojamiento Base</div>
+                                    <small class="text-secondary">Servicio de hospedaje por estancia</small>
+                                </td>
+                                <td class="text-end fw-semibold">S/ {{ folio.estancia.precio_final }}</td>
+                            </tr>
+                            {% for cargo in folio.estancia.cargos.all %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">{{ cargo.concepto }}</div>
+                                        <small class="text-secondary">Consumo adicional registrado por Recepción</small>
+                                    </td>
+                                    <td class="text-end text-danger fw-semibold">+ S/ {{ cargo.monto }}</td>
+                                </tr>
+                            {% endfor %}
+                            <tr class="table-light border-top">
+                                <td class="text-end text-secondary small">Subtotal (Sin IGV):</td>
+                                <td class="text-end text-secondary small fw-semibold">S/ {{ folio.subtotal|floatformat:4 }}</td>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="text-end text-secondary small">IGV (18.00%):</td>
+                                <td class="text-end text-secondary small fw-semibold">S/ {{ folio.igv|floatformat:4 }}</td>
+                            </tr>
+                            <tr class="table-primary-subtle fw-bold">
+                                <td class="text-end">TOTAL NETO A PAGAR:</td>
+                                <td class="text-end text-primary fs-5">S/ {{ folio.total|floatformat:4 }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Estado de Liquidación</h2>
+                {% if folio.estado == 'ABIERTO' %}
+                    <div class="alert alert-warning mb-0" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i>
+                        <strong>CUENTA ABIERTA:</strong> Se permite agregar consumos y emitir comprobantes de pago.
+                    </div>
+                {% else %}
+                    <div class="alert alert-success mb-3" role="alert">
+                        <i class="bi bi-check-circle-fill me-2" aria-hidden="true"></i>
+                        <strong>CUENTA LIQUIDADA:</strong> Este folio se encuentra cerrado y archivado de forma contable.
+                    </div>
+                    {% for factura in facturas %}
+                        <div class="p-3 bg-light rounded border border-success-subtle">
+                            <div class="small fw-bold text-success"><i class="bi bi-file-earmark-check-fill me-1"></i> Factura Emitida</div>
+                            <div class="small mt-1"><strong>Razón Social:</strong> {{ factura.razon_social }}</div>
+                            <div class="small"><strong>RUC/DNI:</strong> {{ factura.ruc_dni }}</div>
+                            <div class="small text-secondary mt-1 nudge-down">{{ factura.fecha_emision|date:'d/m/Y H:i' }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        {% if folio.estado == 'ABIERTO' %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 p-4 pb-0">
+                    <h3 class="h6 mb-0"><i class="bi bi-cart-plus me-2 text-warning"></i>Registrar Consumo Extra</h3>
+                </div>
+                <form action="{% url 'facturacion:cargo_create' folio.id %}" method="post" class="card-body p-4 app-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Descripción / Concepto</label>
+                        <input type="text" name="concepto" class="form-control" placeholder="Ej. Frigobar / Almuerzo Ejecutivo" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Monto Comercial (S/)</label>
+                        <input type="number" name="monto" step="0.01" min="0" class="form-control" placeholder="0.00" required>
+                    </div>
+                    <button class="btn btn-warning btn-sm w-100" type="submit">
+                        <i class="bi bi-plus-circle me-1"></i> Cargar a la Cuenta
+                    </button>
+                </form>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 p-4 pb-0">
+                    <h3 class="h6 mb-0"><i class="bi bi-file-earmark-rupee me-2 text-success"></i>Emitir Factura de Cierre</h3>
+                </div>
+                <form action="{% url 'facturacion:factura_create' folio.id %}" method="post" class="card-body p-4 app-form" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.ruc_dni.id_for_label }}">{{ form.ruc_dni.label }}</label>
+                        {{ form.ruc_dni }}
+                        {% for error in form.ruc_dni.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.razon_social.id_for_label }}">{{ form.razon_social.label }}</label>
+                        {{ form.razon_social }}
+                        {% for error in form.razon_social.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                    <button class="btn btn-success btn-sm w-100" type="submit">
+                        <i class="bi bi-shield-check me-1"></i> Procesar Pago y Cerrar Cuenta
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
