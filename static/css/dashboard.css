@@ -1,0 +1,315 @@
+.dashboard-date-filter {
+    display: flex;
+    justify-content: flex-end;
+    gap: .75rem;
+}
+
+.dashboard-date-filter .form-control {
+    min-width: 11rem;
+    border-color: rgba(23, 32, 51, 0.12);
+    border-radius: .85rem;
+}
+
+.dashboard-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(19, 93, 102, 0.08);
+    border-radius: 1.25rem;
+    background:
+        linear-gradient(135deg, rgba(19, 93, 102, 0.94), rgba(13, 63, 69, 0.96)),
+        radial-gradient(circle at top right, rgba(214, 168, 79, 0.28), transparent 18rem);
+    color: #ffffff;
+    box-shadow: 0 20px 50px rgba(13, 63, 69, 0.18);
+}
+
+.dashboard-hero h2 {
+    margin: 0;
+    font-size: clamp(1.65rem, 3vw, 2.45rem);
+    font-weight: 800;
+}
+
+.dashboard-hero p {
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.dashboard-hero-meter {
+    width: 8.5rem;
+    height: 8.5rem;
+    flex: 0 0 auto;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.dashboard-hero-meter strong {
+    display: block;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.dashboard-hero-meter span {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.dashboard-kicker {
+    display: block;
+    color: var(--app-accent);
+    font-size: .74rem;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.dashboard-card,
+.dashboard-panel {
+    border: 1px solid rgba(23, 32, 51, 0.07);
+    border-radius: 1rem;
+    background: #ffffff;
+    box-shadow: 0 18px 45px rgba(23, 32, 51, 0.06);
+}
+
+.dashboard-card {
+    min-height: 9.5rem;
+    padding: 1.2rem;
+}
+
+.dashboard-card-primary {
+    background:
+        radial-gradient(circle at top right, rgba(214, 168, 79, 0.16), transparent 12rem),
+        #ffffff;
+}
+
+.dashboard-card-label {
+    display: block;
+    color: var(--app-muted);
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.dashboard-card strong {
+    display: block;
+    margin: .65rem 0 .25rem;
+    color: var(--app-ink);
+    font-size: 2.35rem;
+    line-height: 1;
+}
+
+.dashboard-card small,
+.dashboard-panel small {
+    color: var(--app-muted);
+}
+
+.dashboard-panel {
+    padding: 1.25rem;
+}
+
+.dashboard-panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.dashboard-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: .35rem .65rem;
+    border-radius: 999px;
+    background: #edf6f7;
+    color: var(--app-primary-dark);
+    font-size: .8rem;
+    font-weight: 800;
+}
+
+.dashboard-status-list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .8rem;
+}
+
+.dashboard-status-item,
+.dashboard-room-type,
+.dashboard-reservation,
+.dashboard-side-list div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .9rem;
+    padding: .9rem;
+    border-radius: .9rem;
+    background: #f8fafc;
+}
+
+.dashboard-status-item {
+    justify-content: flex-start;
+}
+
+.dashboard-status-item strong,
+.dashboard-room-type strong,
+.dashboard-reservation strong {
+    display: block;
+}
+
+.status-dot {
+    width: .85rem;
+    height: .85rem;
+    flex: 0 0 auto;
+    border-radius: 50%;
+}
+
+.status-available {
+    background: #198754;
+}
+
+.status-busy {
+    background: var(--app-primary);
+}
+
+.status-cleaning {
+    background: var(--app-accent);
+}
+
+.status-maintenance {
+    background: #dc3545;
+}
+
+.dashboard-progress {
+    display: block;
+    width: 100%;
+    height: .7rem;
+    margin: 1rem 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 999px;
+    background: #edf2f7;
+}
+
+.dashboard-progress::-webkit-progress-bar {
+    border-radius: 999px;
+    background: #edf2f7;
+}
+
+.dashboard-progress::-webkit-progress-value {
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--app-primary), var(--app-accent));
+}
+
+.dashboard-progress::-moz-progress-bar {
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--app-primary), var(--app-accent));
+}
+
+.dashboard-room-types,
+.dashboard-reservations,
+.dashboard-side-list {
+    display: grid;
+    gap: .75rem;
+}
+
+.dashboard-room-type span,
+.dashboard-reservation span,
+.dashboard-side-list strong {
+    flex: 0 0 auto;
+    color: var(--app-primary-dark);
+    font-weight: 800;
+}
+
+.dashboard-mini-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+}
+
+.dashboard-mini-metrics div {
+    padding: .95rem;
+    border-radius: .9rem;
+    background: #f8fafc;
+}
+
+.dashboard-mini-metrics span,
+.dashboard-side-list span {
+    display: block;
+    color: var(--app-muted);
+    font-size: .85rem;
+    font-weight: 700;
+}
+
+.dashboard-mini-metrics strong {
+    display: block;
+    margin-top: .35rem;
+    color: var(--app-ink);
+    font-size: 1.65rem;
+}
+
+.dashboard-income {
+    padding: 1rem;
+    border-radius: 1rem;
+    background: #f3f8f9;
+}
+
+.dashboard-income strong {
+    display: block;
+    color: var(--app-primary-dark);
+    font-size: 1.9rem;
+    line-height: 1.15;
+}
+
+.dashboard-income-soft {
+    margin-top: .8rem;
+    background: #fff9eb;
+}
+
+@media (max-width: 1199.98px) {
+    .dashboard-grid,
+    .dashboard-status-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-date-filter,
+    .dashboard-hero,
+    .dashboard-panel-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .dashboard-date-filter {
+        width: 100%;
+    }
+
+    .dashboard-date-filter .btn,
+    .dashboard-date-filter .form-control {
+        width: 100%;
+    }
+
+    .dashboard-hero-meter {
+        width: 100%;
+        height: auto;
+        min-height: 6rem;
+        border-radius: 1rem;
+    }
+
+    .dashboard-grid,
+    .dashboard-status-list,
+    .dashboard-mini-metrics {
+        grid-template-columns: 1fr;
+    }
+}

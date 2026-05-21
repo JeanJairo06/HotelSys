@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from empleados.models import Empleado
 from estancias.models import Estancia
-from habitaciones.models import Habitacion, TipoHabitacion
+from habitaciones.models import Habitacion
 from huespedes.models import Huesped
 from reservas.models import Reserva
 
@@ -15,7 +15,6 @@ class EmpleadoAutocompleteSerializer(serializers.ModelSerializer):
         model = Empleado
         fields = ['id', 'text', 'codigo', 'nombres', 'apellidos', 'email', 'cargo', 'cargo_display']
 
-
 class HuespedAutocompleteSerializer(serializers.ModelSerializer):
     text = serializers.CharField(source='nombre_completo', read_only=True)
     tipo_doc_display = serializers.CharField(source='get_tipo_doc_display', read_only=True)
@@ -24,13 +23,11 @@ class HuespedAutocompleteSerializer(serializers.ModelSerializer):
         model = Huesped
         fields = ['id', 'text', 'tipo_doc', 'tipo_doc_display', 'num_doc', 'email', 'telefono']
 
-
 # Serializers del modulo Habitaciones y Estancias.
 class TipoHabitacionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TipoHabitacion
         fields = ['id', 'nombre', 'capacidad', 'precio_base', 'amenidades']
-
 
 class HabitacionSerializer(serializers.ModelSerializer):
     hotel_nombre = serializers.CharField(source='hotel.nombre', read_only=True)
@@ -77,30 +74,6 @@ class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
 
 class HabitacionEstadoSerializer(serializers.Serializer):
     estado = serializers.ChoiceField(choices=Habitacion._meta.get_field('estado').choices)
-
-
-class ReservaCheckinSerializer(serializers.ModelSerializer):
-    hotel_nombre = serializers.CharField(source='hotel.nombre', read_only=True)
-    huesped_nombre = serializers.CharField(source='huesped.nombre_completo', read_only=True)
-    habitacion_numero = serializers.CharField(source='habitacion.numero', read_only=True)
-    estado_display = serializers.CharField(source='get_estado_display', read_only=True)
-
-    class Meta:
-        model = Reserva
-        fields = [
-            'id',
-            'hotel',
-            'hotel_nombre',
-            'huesped',
-            'huesped_nombre',
-            'habitacion',
-            'habitacion_numero',
-            'fecha_entrada',
-            'fecha_salida',
-            'estado',
-            'estado_display',
-            'precio_total',
-        ]
 
 
 class EstanciaSerializer(serializers.ModelSerializer):
