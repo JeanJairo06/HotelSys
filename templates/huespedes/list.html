@@ -14,7 +14,7 @@
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-9">
                 <label class="form-label" for="q">Buscar huesped</label>
-                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="Documento, nombres, apellidos, correo o telefono">
+                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="Documento, nombres, apellidos, razon social, correo o telefono">
             </div>
             <div class="col-md-3 d-grid">
                 <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-2" aria-hidden="true"></i>Buscar</button>
@@ -46,6 +46,7 @@
                             </td>
                             <td>
                                 <a class="fw-semibold text-decoration-none" href="{% url 'huespedes:detail' huesped.pk %}">{{ huesped.nombre_completo }}</a>
+                                {% if huesped.fecha_nacimiento %}<span class="d-block small text-secondary mt-1">{{ huesped.fecha_nacimiento|date:'d/m/Y' }}</span>{% endif %}
                             </td>
                             <td>{{ huesped.email|default:'-' }}</td>
                             <td>{{ huesped.telefono|default:'-' }}</td>

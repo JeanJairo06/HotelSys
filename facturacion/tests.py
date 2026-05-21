@@ -37,6 +37,7 @@ class FolioModelTests(TestCase):
             num_doc='12345678',
             nombres='Ana',
             apellidos='Torres',
+            fecha_nacimiento=date(1991, 5, 20),
         )
         reserva = Reserva.objects.create(
             hotel=hotel,

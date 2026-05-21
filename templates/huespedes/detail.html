@@ -21,9 +21,13 @@
                     <dt class="col-sm-4">Numero de documento</dt>
                     <dd class="col-sm-8">{{ huesped.num_doc }}</dd>
                     <dt class="col-sm-4">Nombres</dt>
-                    <dd class="col-sm-8">{{ huesped.nombres }}</dd>
+                    <dd class="col-sm-8">{{ huesped.nombres|default:'-' }}</dd>
                     <dt class="col-sm-4">Apellidos</dt>
-                    <dd class="col-sm-8">{{ huesped.apellidos }}</dd>
+                    <dd class="col-sm-8">{{ huesped.apellidos|default:'-' }}</dd>
+                    <dt class="col-sm-4">Razon social</dt>
+                    <dd class="col-sm-8">{{ huesped.razon_social|default:'-' }}</dd>
+                    <dt class="col-sm-4">Fecha de nacimiento</dt>
+                    <dd class="col-sm-8">{{ huesped.fecha_nacimiento|date:'d/m/Y'|default:'-' }}</dd>
                     <dt class="col-sm-4">Correo</dt>
                     <dd class="col-sm-8">{{ huesped.email|default:'-' }}</dd>
                     <dt class="col-sm-4">Telefono</dt>

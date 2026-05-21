@@ -28,6 +28,7 @@ class HuespedListView(ListView):
                 models.Q(num_doc__icontains=query)
                 | models.Q(nombres__icontains=query)
                 | models.Q(apellidos__icontains=query)
+                | models.Q(razon_social__icontains=query)
                 | models.Q(email__icontains=query)
                 | models.Q(telefono__icontains=query)
                 | models.Q(nacionalidad__icontains=query)
