@@ -24,6 +24,15 @@
                 <span class="sidebar-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
                 <span>Huéspedes</span>
             </a>
+            <a class="sidebar-link {% if '/facturacion/folios/' in request.path %}active{% endif %}" href="{% url 'facturacion:folio_list' %}">
+                <span class="sidebar-icon"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></span>
+                <span>Folios (Cuentas)</span>
+            </a>
+            
+            <a class="sidebar-link {% if '/facturacion/tarifas/' in request.path %}active{% endif %}" href="{% url 'facturacion:tarifa_list' %}">
+                <span class="sidebar-icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
+                <span>Tarifas Temporada</span>
+            </a>
         {% endif %}
         {% if user_is_admin %}
             <a class="sidebar-link {% if '/empleados/' in request.path %}active{% endif %}" href="{% url 'empleados:list' %}">
