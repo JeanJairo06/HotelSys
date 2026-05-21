@@ -116,9 +116,16 @@ class ReservaForm(forms.ModelForm):
         habitacion = cleaned_data.get('habitacion')
         fecha_entrada = cleaned_data.get('fecha_entrada')
         fecha_salida = cleaned_data.get('fecha_salida')
+        num_adultos = cleaned_data.get('num_adultos')
 
         if tipo_habitacion and habitacion and habitacion.tipo_id != tipo_habitacion.id:
             self.add_error('habitacion', 'La habitacion no corresponde al tipo seleccionado.')
+
+        if num_adultos is not None and num_adultos < 1:
+            self.add_error('num_adultos', 'Debe registrar al menos un adulto.')
+
+        if habitacion and num_adultos and num_adultos > habitacion.tipo.capacidad:
+            self.add_error('num_adultos', 'La cantidad de adultos supera la capacidad de la habitacion.')
 
         if fecha_entrada and fecha_salida and fecha_salida > fecha_entrada and habitacion:
             noches = (fecha_salida - fecha_entrada).days
