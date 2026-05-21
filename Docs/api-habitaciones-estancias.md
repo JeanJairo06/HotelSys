@@ -2,16 +2,25 @@
 
 Responsable: Daniel Erick Escribano Macalopu
 
-Este documento resume los endpoints REST agregados para el modulo de:
+Este documento define las APIs principales del modulo de Habitaciones y Estancias, alineadas con la guia minima del proyecto de Gestion Hotelera.
 
-- tipos de habitacion,
-- habitaciones,
-- estancias,
-- check-in,
-- checkout,
-- limpieza / housekeeping.
+El enfoque del modulo no es exponer CRUD completo de habitaciones o tipos de habitacion, sino cubrir el flujo operativo del hotel:
 
-La documentacion general de la API se mantiene en `Docs/api.md`. Este archivo separa el detalle de habitaciones y estancias para evitar conflictos mientras otros integrantes agregan sus propios endpoints.
+```text
+disponibilidad
+↓
+check-in
+↓
+estancia activa
+↓
+checkout
+↓
+housekeeping
+↓
+habitacion disponible
+```
+
+Los endpoints de administracion como creacion de tipos de habitacion, edicion de habitaciones o listados generales no se exponen en esta API para evitar duplicidad y mantener el modulo enfocado en el flujo requerido.
 
 ---
 
@@ -23,222 +32,304 @@ http://localhost:8000/api/v1/
 
 Todos los endpoints requieren autenticacion mediante JWT o sesion Django, segun el consumidor.
 
----
-
-## Tipos de Habitacion
-
-| Metodo | Endpoint | Uso |
-|---|---|---|
-| `GET` | `/api/v1/habitaciones/tipos/` | Listar tipos de habitacion |
-| `POST` | `/api/v1/habitaciones/tipos/` | Crear tipo de habitacion |
-| `GET` | `/api/v1/habitaciones/tipos/<id>/` | Detalle de tipo de habitacion |
-| `PUT/PATCH` | `/api/v1/habitaciones/tipos/<id>/` | Actualizar tipo de habitacion |
-
-Permisos:
+Roles principales:
 
 ```text
-GET: ADMIN, RECEPCIONISTA
-POST/PUT/PATCH: ADMIN
+ADMIN
+RECEPCIONISTA
+HOUSEKEEPING
 ```
 
 ---
 
-## Habitaciones
+## APIs Principales Del Modulo
 
 | Metodo | Endpoint | Uso |
 |---|---|---|
-| `GET` | `/api/v1/habitaciones/` | Listar habitaciones |
-| `POST` | `/api/v1/habitaciones/` | Crear habitacion |
-| `GET` | `/api/v1/habitaciones/<id>/` | Detalle de habitacion |
-| `PUT/PATCH` | `/api/v1/habitaciones/<id>/` | Actualizar habitacion |
-| `POST` | `/api/v1/habitaciones/<id>/estado/` | Cambiar estado manual de habitacion |
-
-Filtros disponibles en listado:
-
-```text
-hotel
-tipo
-estado
-piso
-```
-
-Busqueda:
-
-```text
-numero
-hotel__nombre
-tipo__nombre
-```
-
-Permisos:
-
-```text
-GET: ADMIN, RECEPCIONISTA
-POST/PUT/PATCH: ADMIN
-cambio de estado: ADMIN, RECEPCIONISTA
-```
-
-El cambio manual de estado usa el servicio:
-
-```text
-cambiar_estado_manual()
-```
-
-Este servicio evita liberar manualmente habitaciones ocupadas o con estancia activa.
+| `GET` | `/api/v1/habitaciones/disponibles/` | Consultar habitaciones disponibles por fechas y tipo |
+| `POST` | `/api/v1/reservas/<reserva_id>/checkin/` | Realizar check-in de una reserva confirmada |
+| `GET` | `/api/v1/estancias/<estancia_id>/` | Consultar detalle operativo de una estancia |
+| `POST` | `/api/v1/estancias/<estancia_id>/checkout/` | Realizar checkout de una estancia activa |
+| `PATCH` | `/api/v1/habitaciones/<habitacion_id>/housekeeping/` | Actualizar estado de limpieza de una habitacion |
 
 ---
 
-## Estancias
-
-| Metodo | Endpoint | Uso |
-|---|---|---|
-| `GET` | `/api/v1/estancias/` | Listar estancias |
-| `GET` | `/api/v1/estancias/<id>/` | Detalle de estancia |
-
-Filtros disponibles:
+## 1. Habitaciones Disponibles
 
 ```text
-estado
-habitacion
-reserva
+GET /api/v1/habitaciones/disponibles/?fecha_entrada=&fecha_salida=&tipo=
 ```
 
-Permisos:
+### Uso
+
+Permite consultar que habitaciones estan libres para un rango de fechas.
+
+Se utiliza principalmente en:
+
+- Nueva reserva.
+- Calendario de reservas.
+- Plano del hotel.
+
+### Flujo Esperado
 
 ```text
-ADMIN, RECEPCIONISTA
+Recepcionista selecciona fechas y tipo de habitacion
+↓
+Frontend consulta habitaciones disponibles
+↓
+Sistema excluye habitaciones ocupadas, en mantenimiento o con reservas solapadas
+↓
+Frontend muestra solo habitaciones asignables
 ```
+
+### Parametros
+
+| Parametro | Descripcion |
+|---|---|
+| `fecha_entrada` | Fecha inicial de la reserva |
+| `fecha_salida` | Fecha final de la reserva |
+| `tipo` | Tipo de habitacion opcional |
+
+### Validaciones Principales
+
+- `fecha_salida` debe ser mayor a `fecha_entrada`.
+- No debe existir reserva activa solapada.
+- La habitacion no debe estar en `OCUPADA`, `LIMPIEZA` o `MANTENIMIENTO`.
+
+### Resultado Esperado
+
+Lista de habitaciones disponibles para ser asignadas a una reserva.
 
 ---
 
-## Check-in
-
-| Metodo | Endpoint | Uso |
-|---|---|---|
-| `GET` | `/api/v1/estancias/checkin/` | Listar reservas confirmadas disponibles para check-in |
-| `POST` | `/api/v1/estancias/checkin/<reserva_id>/` | Realizar check-in |
-
-El endpoint de listado consulta reservas confirmadas solo para ejecutar el flujo operativo de check-in. No implementa CRUD de reservas.
-
-El check-in usa el servicio:
+## 2. Check-In De Reserva
 
 ```text
-registrar_checkin()
+POST /api/v1/reservas/<reserva_id>/checkin/
 ```
 
-Validaciones principales:
+### Uso
+
+Convierte una reserva confirmada en una estancia activa.
+
+Se utiliza principalmente en:
+
+- Pantalla de check-in.
+- Panel de reservas del dia.
+- Detalle de reserva.
+
+### Flujo Esperado
+
+```text
+Reserva CONFIRMADA
+↓
+Recepcionista confirma check-in
+↓
+Sistema crea Estancia ACTIVA
+↓
+Sistema crea Folio ABIERTO
+↓
+Reserva pasa a CHECKIN
+↓
+Habitacion pasa a OCUPADA
+```
+
+### Validaciones Principales
 
 - La reserva debe estar `CONFIRMADA`.
 - La reserva no debe tener estancia previa.
 - La fecha actual debe estar dentro del rango de la reserva.
 - La habitacion debe estar `DISPONIBLE`.
+- No se permite check-in en habitaciones en `LIMPIEZA` o `MANTENIMIENTO`.
 
-Al realizar check-in:
+### Resultado Esperado
 
-- Se crea una estancia.
-- La reserva pasa a `CHECKIN`.
-- La habitacion pasa a `OCUPADA`.
+Se crea una estancia activa y se abre el folio asociado para la cuenta del huesped.
 
 ---
 
-## Checkout
-
-| Metodo | Endpoint | Uso |
-|---|---|---|
-| `POST` | `/api/v1/estancias/<estancia_id>/checkout/` | Realizar checkout |
-
-El checkout usa el servicio:
+## 3. Detalle De Estancia
 
 ```text
-registrar_checkout()
+GET /api/v1/estancias/<estancia_id>/
 ```
 
-Validaciones principales:
+### Uso
 
-- La estancia debe estar `ACTIVA`.
-- Si existe folio, debe estar `PAGADO` o `CERRADO`.
+Permite consultar la informacion operativa de una estancia especifica.
 
-Al realizar checkout:
+Se utiliza principalmente en:
 
-- La estancia pasa a `FINALIZADA`.
-- La reserva pasa a `FINALIZADA`.
-- La habitacion pasa a `LIMPIEZA`.
+- Detalle de estancia.
+- Folio del huesped.
+- Pantalla de checkout.
+- Panel de estancias activas.
 
----
-
-## Limpieza / Housekeeping
-
-| Metodo | Endpoint | Uso |
-|---|---|---|
-| `GET` | `/api/v1/limpieza/` | Listar habitaciones en limpieza o mantenimiento |
-| `POST` | `/api/v1/limpieza/<habitacion_id>/disponible/` | Marcar habitacion como disponible |
-| `POST` | `/api/v1/limpieza/<habitacion_id>/mantenimiento/` | Enviar habitacion a mantenimiento |
-
-Filtros disponibles:
+### Informacion Esperada
 
 ```text
-piso
+id de estancia
+reserva asociada
+huesped
+habitacion
+hotel
+fecha_checkin
+fecha_checkout
+precio_final
 estado
 ```
 
-Permisos:
+### Resultado Esperado
 
-```text
-ADMIN, HOUSEKEEPING
-```
-
-Servicios utilizados:
-
-```text
-marcar_disponible()
-marcar_mantenimiento()
-```
-
-Reglas principales:
-
-- Solo habitaciones en limpieza o mantenimiento aparecen en el panel.
-- Una habitacion ocupada no puede enviarse a mantenimiento.
-- Housekeeping no modifica reservas, folios ni tarifas.
+El frontend puede mostrar el estado actual de la estancia y usar esa informacion para continuar con folio, cargos o checkout.
 
 ---
 
-## Archivos Modificados
+## 4. Checkout De Estancia
 
 ```text
-api/serializers.py
-api/views.py
-api/urls.py
+POST /api/v1/estancias/<estancia_id>/checkout/
 ```
 
-Archivo de documentacion:
+### Uso
+
+Finaliza una estancia activa cuando el huesped termina su estadia.
+
+Se utiliza principalmente en:
+
+- Folio del huesped.
+- Panel de salidas del dia.
+- Detalle de estancia.
+
+### Flujo Esperado
 
 ```text
-Docs/api-habitaciones-estancias.md
+Estancia ACTIVA
+↓
+Sistema valida folio pagado o cerrado
+↓
+Recepcionista realiza checkout
+↓
+Estancia pasa a FINALIZADA
+↓
+Reserva pasa a FINALIZADA
+↓
+Habitacion pasa a LIMPIEZA
+```
+
+### Validaciones Principales
+
+- La estancia debe estar `ACTIVA`.
+- El folio debe estar `PAGADO` o `CERRADO`.
+- No se permite checkout con deuda pendiente.
+
+### Resultado Esperado
+
+La estancia queda finalizada y la habitacion pasa a limpieza para continuar con housekeeping.
+
+---
+
+## 5. Housekeeping De Habitacion
+
+```text
+PATCH /api/v1/habitaciones/<habitacion_id>/housekeeping/
+```
+
+### Uso
+
+Permite actualizar el estado operativo de una habitacion desde housekeeping.
+
+Se utiliza principalmente en:
+
+- Pantalla de housekeeping.
+- Plano del hotel.
+- Panel de limpieza por piso.
+
+### Payload Esperado
+
+Marcar habitacion como disponible:
+
+```json
+{
+  "estado": "DISPONIBLE"
+}
+```
+
+Enviar habitacion a mantenimiento:
+
+```json
+{
+  "estado": "MANTENIMIENTO"
+}
+```
+
+### Flujo Esperado
+
+```text
+Checkout realizado
+↓
+Habitacion queda en LIMPIEZA
+↓
+Housekeeping realiza limpieza
+↓
+Sistema actualiza estado
+↓
+Habitacion queda DISPONIBLE
+```
+
+### Validaciones Principales
+
+- Solo se puede liberar una habitacion en `LIMPIEZA` o `MANTENIMIENTO`.
+- No se puede enviar a mantenimiento una habitacion `OCUPADA`.
+- Housekeeping no modifica reservas, folios ni tarifas.
+
+### Resultado Esperado
+
+La habitacion vuelve al inventario disponible o queda marcada como mantenimiento segun corresponda.
+
+---
+
+## Relacion Con Las Pantallas Del Sistema
+
+| API | Pantalla donde se usa |
+|---|---|
+| `GET /api/v1/habitaciones/disponibles/` | Nueva reserva, calendario, plano del hotel |
+| `POST /api/v1/reservas/<reserva_id>/checkin/` | Check-in, panel de reservas, detalle de reserva |
+| `GET /api/v1/estancias/<estancia_id>/` | Detalle de estancia, folio, checkout |
+| `POST /api/v1/estancias/<estancia_id>/checkout/` | Folio, salidas del dia, detalle de estancia |
+| `PATCH /api/v1/habitaciones/<habitacion_id>/housekeeping/` | Housekeeping, plano del hotel |
+
+---
+
+## Flujo Completo Cubierto
+
+```text
+1. Nueva reserva consulta habitaciones disponibles.
+2. La reserva se confirma desde el modulo de reservas.
+3. Recepcion realiza check-in.
+4. El sistema crea estancia activa y folio abierto.
+5. Se consulta la estancia para seguimiento operativo.
+6. Facturacion gestiona cargos y pago del folio.
+7. Recepcion realiza checkout.
+8. La habitacion pasa a limpieza.
+9. Housekeeping marca la habitacion como disponible.
 ```
 
 ---
 
 ## Validaciones Realizadas
 
-Comandos ejecutados:
+Comandos recomendados antes de entregar cambios:
 
 ```bash
-venv\Scripts\python.exe manage.py check
-venv\Scripts\python.exe manage.py spectacular --file NUL --validate
+docker compose exec web python manage.py check
+docker compose exec web python manage.py test estancias facturacion
+docker compose exec web python manage.py spectacular --file NUL --validate
 ```
 
-Resultado:
+Resultado esperado:
 
 - `manage.py check` sin errores.
+- Tests del flujo de estancia y folio aprobados.
 - Schema OpenAPI sin errores.
-- Persisten warnings `W042` de `DEFAULT_AUTO_FIELD`, existentes en el proyecto.
-
-Prueba con Docker y usuario autenticado:
-
-```text
-/api/v1/habitaciones/tipos/ -> 200 application/json
-/api/v1/habitaciones/       -> 200 application/json
-/api/v1/estancias/          -> 200 application/json
-/api/v1/estancias/checkin/  -> 200 application/json
-/api/v1/limpieza/           -> 200 application/json
-```
+- Pueden persistir warnings `W042` de `DEFAULT_AUTO_FIELD`, existentes en el proyecto.
