@@ -49,7 +49,8 @@ class Folio(models.Model):
             total=models.Sum('monto')
         )['total'] or 0
 
-        self.subtotal = self.estancia.precio_final + subtotal_cargos
-        self.igv = self.subtotal * Decimal('0.18')
-        self.total = self.subtotal + self.igv
+        self.subtotal = (self.estancia.precio_final + subtotal_cargos).quantize(Decimal('0.01'))
+        self.igv = (self.subtotal * Decimal('0.18')).quantize(Decimal('0.01'))
+        self.total = (self.subtotal + self.igv).quantize(Decimal('0.01'))
+        self.save(update_fields=['subtotal', 'igv', 'total'])
         return self.total
