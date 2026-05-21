@@ -34,6 +34,7 @@ class TarifaForm(forms.ModelForm):
         fields = ['tipo_habitacion', 'nombre','precio_noche', 'fecha_inicio', 'fecha_fin']
         labels = {
             'nombre': 'Nombre de la Temporada / Tarifa',
+            'precio_noche': 'Precio (S/)',
         }
         widgets = {
             'tipo_habitacion': forms.Select(attrs={'class': 'form-select'}),
