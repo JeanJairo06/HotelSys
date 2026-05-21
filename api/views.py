@@ -1,8 +1,9 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.utils.dateparse import parse_date
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import filters, generics, status
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
@@ -16,8 +17,6 @@ from api.serializers import (
     EstanciaSerializer,
     HabitacionEstadoSerializer,
     HabitacionSerializer,
-    ReservaCheckinSerializer,
-    TipoHabitacionSerializer,
 )
 from api.throttles import AutocompleteRateThrottle, UserApiRateThrottle, WriteRateThrottle
 from config.choices import EstadoGeneral, EstadoHabitacion, EstadoReserva
@@ -25,8 +24,7 @@ from cuentas.roles import ROLE_ADMIN, ROLE_HOUSEKEEPING, ROLE_RECEPCIONISTA
 from empleados.models import Empleado
 from estancias.models import Estancia
 from estancias.services import registrar_checkin, registrar_checkout
-from habitaciones.models import Habitacion, TipoHabitacion
-from habitaciones.services import cambiar_estado_manual
+from habitaciones.models import Habitacion
 from limpieza.services import marcar_disponible, marcar_mantenimiento
 from reservas.models import Reserva
 
@@ -82,131 +80,48 @@ class EmpleadosDisponiblesUsuarioAPIView(generics.ListAPIView):
         return queryset
 
 
-# API del modulo Habitaciones y Estancias.
-@extend_schema_view(
-    get=extend_schema(tags=['Habitaciones'], summary='Lista tipos de habitacion'),
-    post=extend_schema(tags=['Habitaciones'], summary='Crea tipo de habitacion'),
-)
-class TipoHabitacionListCreateAPIView(ApiThrottleMixin, generics.ListCreateAPIView):
-    serializer_class = TipoHabitacionSerializer
-    authentication_classes = API_AUTHENTICATION_CLASSES
-    permission_classes = [IsAuthenticated, HasAnyRole]
-    allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['nombre']
-    ordering_fields = ['nombre', 'capacidad', 'precio_base']
-    ordering = ['nombre']
-
-    def get_queryset(self):
-        return TipoHabitacion.objects.all()
-
-    def get_permissions(self):
-        if self.request.method == 'POST':
-            return [IsAuthenticated(), IsAdminRole()]
-        return super().get_permissions()
-
-
-@extend_schema_view(
-    get=extend_schema(tags=['Habitaciones'], summary='Detalle tipo de habitacion'),
-    put=extend_schema(tags=['Habitaciones'], summary='Actualiza tipo de habitacion'),
-    patch=extend_schema(tags=['Habitaciones'], summary='Actualiza parcialmente tipo de habitacion'),
-)
-class TipoHabitacionDetailAPIView(ApiThrottleMixin, generics.RetrieveUpdateAPIView):
-    serializer_class = TipoHabitacionSerializer
-    authentication_classes = API_AUTHENTICATION_CLASSES
-    permission_classes = [IsAuthenticated, IsAdminRole]
-
-    def get_queryset(self):
-        return TipoHabitacion.objects.all()
-
-
 @extend_schema_view(
     get=extend_schema(
         tags=['Habitaciones'],
-        summary='Lista habitaciones',
-        description='Permite filtrar por hotel, tipo, estado y piso.',
-    ),
-    post=extend_schema(tags=['Habitaciones'], summary='Crea habitacion'),
+        summary='Lista habitaciones disponibles',
+        parameters=[
+            OpenApiParameter('fecha_entrada', str, OpenApiParameter.QUERY),
+            OpenApiParameter('fecha_salida', str, OpenApiParameter.QUERY),
+            OpenApiParameter('tipo', int, OpenApiParameter.QUERY),
+        ],
+    )
 )
-class HabitacionListCreateAPIView(ApiThrottleMixin, generics.ListCreateAPIView):
+class HabitacionesDisponiblesAPIView(ApiThrottleMixin, generics.ListAPIView):
     serializer_class = HabitacionSerializer
     authentication_classes = API_AUTHENTICATION_CLASSES
     permission_classes = [IsAuthenticated, HasAnyRole]
     allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['hotel', 'tipo', 'estado', 'piso']
-    search_fields = ['numero', 'hotel__nombre', 'tipo__nombre']
-    ordering_fields = ['hotel__nombre', 'piso', 'numero', 'estado']
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    ordering_fields = ['hotel__nombre', 'piso', 'numero']
     ordering = ['hotel__nombre', 'piso', 'numero']
 
     def get_queryset(self):
-        return Habitacion.objects.select_related('hotel', 'tipo')
+        fecha_entrada = parse_date(self.request.query_params.get('fecha_entrada', ''))
+        fecha_salida = parse_date(self.request.query_params.get('fecha_salida', ''))
+        tipo = self.request.query_params.get('tipo')
 
-    def get_permissions(self):
-        if self.request.method == 'POST':
-            return [IsAuthenticated(), IsAdminRole()]
-        return super().get_permissions()
+        queryset = Habitacion.objects.select_related('hotel', 'tipo').filter(
+            estado=EstadoHabitacion.DISPONIBLE,
+        )
 
+        if tipo:
+            queryset = queryset.filter(tipo_id=tipo)
 
-@extend_schema_view(
-    get=extend_schema(tags=['Habitaciones'], summary='Detalle habitacion'),
-    put=extend_schema(tags=['Habitaciones'], summary='Actualiza habitacion'),
-    patch=extend_schema(tags=['Habitaciones'], summary='Actualiza parcialmente habitacion'),
-)
-class HabitacionDetailAPIView(ApiThrottleMixin, generics.RetrieveUpdateAPIView):
-    serializer_class = HabitacionSerializer
-    authentication_classes = API_AUTHENTICATION_CLASSES
-    permission_classes = [IsAuthenticated, IsAdminRole]
+        if fecha_entrada and fecha_salida and fecha_salida > fecha_entrada:
+            habitaciones_reservadas = Reserva.objects.filter(
+                fecha_entrada__lt=fecha_salida,
+                fecha_salida__gt=fecha_entrada,
+            ).exclude(
+                estado__in=[EstadoReserva.CANCELADA, EstadoReserva.FINALIZADA],
+            ).values('habitacion_id')
+            queryset = queryset.exclude(pk__in=habitaciones_reservadas)
 
-    def get_queryset(self):
-        return Habitacion.objects.select_related('hotel', 'tipo')
-
-
-@extend_schema(
-    tags=['Habitaciones'],
-    summary='Cambia estado de habitacion',
-    request=HabitacionEstadoSerializer,
-    responses={200: HabitacionSerializer, 400: OpenApiResponse(description='Cambio de estado no permitido')},
-)
-class HabitacionCambiarEstadoAPIView(APIView):
-    authentication_classes = API_AUTHENTICATION_CLASSES
-    permission_classes = [IsAuthenticated, HasAnyRole]
-    allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
-    throttle_classes = [WriteRateThrottle]
-    throttle_scope = 'write'
-    serializer_class = HabitacionSerializer
-
-    def post(self, request, pk):
-        habitacion = get_object_or_404(Habitacion.objects.select_related('hotel', 'tipo'), pk=pk)
-        serializer = HabitacionEstadoSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            habitacion = cambiar_estado_manual(habitacion, serializer.validated_data['estado'])
-        except DjangoValidationError as error:
-            return _validation_error_response(error)
-        return Response(HabitacionSerializer(habitacion).data)
-
-
-@extend_schema_view(
-    get=extend_schema(
-        tags=['Estancias'],
-        summary='Lista estancias',
-        description='Lista estancias con filtro por estado.',
-    )
-)
-class EstanciaListAPIView(generics.ListAPIView):
-    serializer_class = EstanciaSerializer
-    authentication_classes = API_AUTHENTICATION_CLASSES
-    permission_classes = [IsAuthenticated, HasAnyRole]
-    allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['estado', 'habitacion', 'reserva']
-    search_fields = ['reserva__huesped__nombres', 'reserva__huesped__apellidos', 'habitacion__numero']
-    ordering_fields = ['fecha_checkin', 'fecha_checkout', 'estado']
-    ordering = ['-fecha_checkin']
-
-    def get_queryset(self):
-        return Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion', 'habitacion__hotel')
+        return queryset
 
 
 @extend_schema_view(
@@ -220,25 +135,6 @@ class EstanciaDetailAPIView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion', 'habitacion__hotel')
-
-
-@extend_schema_view(
-    get=extend_schema(tags=['Estancias'], summary='Lista reservas disponibles para check-in')
-)
-class ReservasCheckinListAPIView(generics.ListAPIView):
-    serializer_class = ReservaCheckinSerializer
-    authentication_classes = API_AUTHENTICATION_CLASSES
-    permission_classes = [IsAuthenticated, HasAnyRole]
-    allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['huesped__nombres', 'huesped__apellidos', 'habitacion__numero', 'hotel__nombre']
-    ordering_fields = ['fecha_entrada', 'fecha_salida']
-    ordering = ['fecha_entrada']
-
-    def get_queryset(self):
-        return Reserva.objects.select_related('hotel', 'huesped', 'habitacion').filter(
-            estado=EstadoReserva.CONFIRMADA,
-        )
 
 
 @extend_schema(
@@ -291,34 +187,13 @@ class RealizarCheckoutAPIView(APIView):
         return Response(EstanciaSerializer(estancia).data)
 
 
-@extend_schema_view(
-    get=extend_schema(
-        tags=['Habitaciones'],
-        summary='Lista habitaciones pendientes de limpieza o mantenimiento',
-    )
-)
-class LimpiezaPanelAPIView(generics.ListAPIView):
-    serializer_class = HabitacionSerializer
-    authentication_classes = API_AUTHENTICATION_CLASSES
-    permission_classes = [IsAuthenticated, HasAnyRole]
-    allowed_roles = [ROLE_ADMIN, ROLE_HOUSEKEEPING]
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['piso', 'estado']
-    ordering_fields = ['piso', 'numero', 'estado']
-    ordering = ['piso', 'numero']
-
-    def get_queryset(self):
-        return Habitacion.objects.select_related('hotel', 'tipo').filter(
-            estado__in=[EstadoHabitacion.LIMPIEZA, EstadoHabitacion.MANTENIMIENTO],
-        )
-
-
 @extend_schema(
     tags=['Habitaciones'],
-    summary='Marca habitacion como disponible desde limpieza',
+    summary='Actualiza estado de housekeeping de habitacion',
+    request=HabitacionEstadoSerializer,
     responses={200: HabitacionSerializer, 400: OpenApiResponse(description='Cambio no permitido')},
 )
-class LimpiezaMarcarDisponibleAPIView(APIView):
+class HabitacionHousekeepingAPIView(APIView):
     authentication_classes = API_AUTHENTICATION_CLASSES
     permission_classes = [IsAuthenticated, HasAnyRole]
     allowed_roles = [ROLE_ADMIN, ROLE_HOUSEKEEPING]
@@ -326,32 +201,18 @@ class LimpiezaMarcarDisponibleAPIView(APIView):
     throttle_scope = 'write'
     serializer_class = HabitacionSerializer
 
-    def post(self, request, habitacion_id):
+    def patch(self, request, habitacion_id):
         habitacion = get_object_or_404(Habitacion.objects.select_related('hotel', 'tipo'), pk=habitacion_id)
+        serializer = HabitacionEstadoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        estado = serializer.validated_data['estado']
         try:
-            habitacion = marcar_disponible(habitacion)
-        except DjangoValidationError as error:
-            return _validation_error_response(error)
-        return Response(HabitacionSerializer(habitacion).data)
-
-
-@extend_schema(
-    tags=['Habitaciones'],
-    summary='Envia habitacion a mantenimiento desde limpieza',
-    responses={200: HabitacionSerializer, 400: OpenApiResponse(description='Cambio no permitido')},
-)
-class LimpiezaMarcarMantenimientoAPIView(APIView):
-    authentication_classes = API_AUTHENTICATION_CLASSES
-    permission_classes = [IsAuthenticated, HasAnyRole]
-    allowed_roles = [ROLE_ADMIN, ROLE_HOUSEKEEPING]
-    throttle_classes = [WriteRateThrottle]
-    throttle_scope = 'write'
-    serializer_class = HabitacionSerializer
-
-    def post(self, request, habitacion_id):
-        habitacion = get_object_or_404(Habitacion.objects.select_related('hotel', 'tipo'), pk=habitacion_id)
-        try:
-            habitacion = marcar_mantenimiento(habitacion)
+            if estado == EstadoHabitacion.DISPONIBLE:
+                habitacion = marcar_disponible(habitacion)
+            elif estado == EstadoHabitacion.MANTENIMIENTO:
+                habitacion = marcar_mantenimiento(habitacion)
+            else:
+                raise DjangoValidationError('Housekeeping solo permite marcar disponible o mantenimiento.')
         except DjangoValidationError as error:
             return _validation_error_response(error)
         return Response(HabitacionSerializer(habitacion).data)
