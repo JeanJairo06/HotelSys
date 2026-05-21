@@ -26,23 +26,6 @@ def _parse_date(value, default):
         return default
 
 
-def _habitaciones_payload():
-    return [
-        {
-            'id': habitacion.id,
-            'hotelId': habitacion.hotel_id,
-            'tipoId': habitacion.tipo_id,
-            'precio': float(habitacion.tipo.precio_base),
-            'label': f'{habitacion.hotel.nombre} - Hab. {habitacion.numero} ({habitacion.tipo.nombre})',
-        }
-        for habitacion in Habitacion.objects.select_related('hotel', 'tipo').order_by(
-            'hotel__nombre',
-            'piso',
-            'numero',
-        )
-    ]
-
-
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class ReservaListView(ListView):
     model = Reserva
@@ -94,7 +77,7 @@ class ReservaListView(ListView):
 class ReservaFormContextMixin:
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['habitaciones_json'] = _habitaciones_payload()
+        context['reserva_id'] = self.object.pk if getattr(self, 'object', None) else ''
         return context
 
 

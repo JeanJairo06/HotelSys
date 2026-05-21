@@ -8,6 +8,10 @@
 <a class="btn btn-outline-primary" href="{% url 'reservas:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
 {% endblock %}
 
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <form method="post" class="card border-0 shadow-sm app-form" novalidate>
     {% csrf_token %}
@@ -24,7 +28,9 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label" for="{{ form.huesped.id_for_label }}">{{ form.huesped.label }}</label>
-                {{ form.huesped }}
+                <div data-huesped-autocomplete-url="{% url 'api:reservas_huespedes_autocomplete' %}">
+                    {{ form.huesped }}
+                </div>
                 {% for error in form.huesped.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-6">
@@ -34,7 +40,9 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label" for="{{ form.habitacion.id_for_label }}">{{ form.habitacion.label }}</label>
-                {{ form.habitacion }}
+                <div data-habitacion-autocomplete-url="{% url 'api:reservas_habitaciones_disponibles' %}" data-reserva-id="{{ reserva_id }}">
+                    {{ form.habitacion }}
+                </div>
                 {% for error in form.habitacion.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-4">
@@ -77,16 +85,140 @@
 {% endblock %}
 
 {% block extra_js %}
-{{ habitaciones_json|json_script:"habitaciones-data" }}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
     (function () {
-        const habitaciones = JSON.parse(document.getElementById('habitaciones-data').textContent);
         const hotel = document.getElementById('{{ form.hotel.id_for_label }}');
         const tipo = document.getElementById('{{ form.tipo_habitacion.id_for_label }}');
-        const habitacion = document.getElementById('{{ form.habitacion.id_for_label }}');
+        const huesped = document.querySelector('.js-huesped-select');
+        const habitacion = document.querySelector('.js-habitacion-select');
+        const huespedWrapper = document.querySelector('[data-huesped-autocomplete-url]');
+        const habitacionWrapper = document.querySelector('[data-habitacion-autocomplete-url]');
         const entrada = document.getElementById('{{ form.fecha_entrada.id_for_label }}');
         const salida = document.getElementById('{{ form.fecha_salida.id_for_label }}');
         const total = document.getElementById('{{ form.precio_total.id_for_label }}');
+
+        if (!huesped || !habitacion || !huespedWrapper || !habitacionWrapper || typeof TomSelect === 'undefined') {
+            return;
+        }
+
+        const buildHuespedUrl = function (query) {
+            const params = new URLSearchParams({ page_size: '15' });
+            if (query) {
+                params.set('search', query);
+            }
+            return huespedWrapper.dataset.huespedAutocompleteUrl + '?' + params.toString();
+        };
+
+        const buildHabitacionUrl = function (query) {
+            const params = new URLSearchParams({ page_size: '15' });
+            if (query) {
+                params.set('search', query);
+            }
+            if (hotel.value) {
+                params.set('hotel', hotel.value);
+            }
+            if (tipo.value) {
+                params.set('tipo', tipo.value);
+            }
+            if (entrada.value) {
+                params.set('fecha_entrada', entrada.value);
+            }
+            if (salida.value) {
+                params.set('fecha_salida', salida.value);
+            }
+            if (habitacionWrapper.dataset.reservaId) {
+                params.set('reserva_id', habitacionWrapper.dataset.reservaId);
+            }
+            return habitacionWrapper.dataset.habitacionAutocompleteUrl + '?' + params.toString();
+        };
+
+        const fetchOptions = function (tomSelect, query, callback, errorMessage) {
+            fetch(tomSelect.getUrl(query), {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error(errorMessage);
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data.next) {
+                        tomSelect.setNextUrl(query, data.next);
+                    }
+                    callback(data.results || []);
+                })
+                .catch(function () {
+                    callback();
+                });
+        };
+
+        new TomSelect(huesped, {
+            valueField: 'id',
+            labelField: 'text',
+            searchField: ['num_doc', 'text', 'email', 'telefono'],
+            maxItems: 1,
+            preload: 'focus',
+            loadThrottle: 300,
+            plugins: ['virtual_scroll'],
+            firstUrl: buildHuespedUrl,
+            load: function (query, callback) {
+                fetchOptions(this, query, callback, 'No se pudo cargar huespedes.');
+            },
+            render: {
+                option: function (item, rendererEscape) {
+                    const meta = [item.tipo_doc_display, item.num_doc, item.email].filter(Boolean).join(' - ');
+                    return '<div>'
+                        + '<div class="fw-semibold">' + rendererEscape(item.text) + '</div>'
+                        + (meta ? '<div class="small text-secondary">' + rendererEscape(meta) + '</div>' : '')
+                        + '</div>';
+                },
+                item: function (item, rendererEscape) {
+                    const meta = item.num_doc ? ' (' + item.num_doc + ')' : '';
+                    return '<div>' + rendererEscape(item.text) + rendererEscape(meta) + '</div>';
+                },
+                no_results: function () {
+                    return '<div class="no-results">No se encontraron huespedes.</div>';
+                },
+            },
+        });
+
+        const habitacionSelect = new TomSelect(habitacion, {
+            valueField: 'id',
+            labelField: 'text',
+            searchField: ['numero', 'hotel_nombre', 'tipo_nombre'],
+            maxItems: 1,
+            preload: 'focus',
+            loadThrottle: 300,
+            plugins: ['virtual_scroll'],
+            firstUrl: buildHabitacionUrl,
+            load: function (query, callback) {
+                fetchOptions(this, query, callback, 'No se pudo cargar habitaciones.');
+            },
+            render: {
+                option: function (item, rendererEscape) {
+                    const meta = [
+                        item.hotel_nombre,
+                        item.tipo_nombre,
+                        item.capacidad ? 'Cap. ' + item.capacidad : null,
+                        item.precio ? 'S/ ' + item.precio : null,
+                    ].filter(Boolean).join(' - ');
+                    return '<div>'
+                        + '<div class="fw-semibold">' + rendererEscape(item.text) + '</div>'
+                        + (meta ? '<div class="small text-secondary">' + rendererEscape(meta) + '</div>' : '')
+                        + '</div>';
+                },
+                item: function (item, rendererEscape) {
+                    return '<div>' + rendererEscape(item.text) + '</div>';
+                },
+                no_results: function () {
+                    return '<div class="no-results">No hay habitaciones disponibles con esos filtros.</div>';
+                },
+            },
+            onChange: calcularTotal,
+        });
 
         function diasEstadia() {
             if (!entrada.value || !salida.value) {
@@ -98,47 +230,36 @@
             return dias > 0 ? dias : 0;
         }
 
-        function filtrarHabitaciones() {
-            const seleccion = habitacion.value;
-            const hotelId = hotel.value ? Number(hotel.value) : null;
-            const tipoId = tipo.value ? Number(tipo.value) : null;
-            const disponibles = habitaciones.filter(function (item) {
-                return (!hotelId || item.hotelId === hotelId) && (!tipoId || item.tipoId === tipoId);
-            });
-
-            habitacion.innerHTML = '<option value="">---------</option>';
-            disponibles.forEach(function (item) {
-                const option = document.createElement('option');
-                option.value = item.id;
-                option.textContent = item.label;
-                option.dataset.precio = item.precio;
-                if (String(item.id) === seleccion) {
-                    option.selected = true;
-                }
-                habitacion.appendChild(option);
-            });
-
-            if (seleccion && habitacion.value !== seleccion) {
-                habitacion.value = '';
-            }
-            calcularTotal();
+        function refrescarHabitaciones() {
+            habitacionSelect.clear();
+            habitacionSelect.clearOptions();
+            habitacionSelect.setNextUrl('', null);
+            habitacionSelect.load('');
         }
 
         function calcularTotal() {
-            const option = habitacion.selectedOptions[0];
-            const precio = option ? Number(option.dataset.precio || 0) : 0;
+            const value = habitacionSelect.getValue();
+            const item = value ? habitacionSelect.options[value] : null;
+            const precio = item ? Number(item.precio || 0) : 0;
             const noches = diasEstadia();
             if (precio && noches) {
                 total.value = (precio * noches).toFixed(2);
+            } else if (!value) {
+                total.value = '0';
             }
         }
 
-        hotel.addEventListener('change', filtrarHabitaciones);
-        tipo.addEventListener('change', filtrarHabitaciones);
-        habitacion.addEventListener('change', calcularTotal);
-        entrada.addEventListener('change', calcularTotal);
-        salida.addEventListener('change', calcularTotal);
-        filtrarHabitaciones();
+        hotel.addEventListener('change', refrescarHabitaciones);
+        tipo.addEventListener('change', refrescarHabitaciones);
+        entrada.addEventListener('change', function () {
+            refrescarHabitaciones();
+            calcularTotal();
+        });
+        salida.addEventListener('change', function () {
+            refrescarHabitaciones();
+            calcularTotal();
+        });
+        calcularTotal();
     })();
 </script>
 {% endblock %}

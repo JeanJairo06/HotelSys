@@ -8,7 +8,9 @@ from api.views import (
     EstanciaListAPIView,
     HabitacionCambiarEstadoAPIView,
     HabitacionDetailAPIView,
+    HabitacionesDisponiblesReservaAutocompleteAPIView,
     HabitacionListCreateAPIView,
+    HuespedesReservaAutocompleteAPIView,
     LimpiezaMarcarDisponibleAPIView,
     LimpiezaMarcarMantenimientoAPIView,
     LimpiezaPanelAPIView,
@@ -28,6 +30,16 @@ urlpatterns = [
         'empleados/disponibles-para-usuario/',
         EmpleadosDisponiblesUsuarioAPIView.as_view(),
         name='empleados_disponibles_usuario',
+    ),
+    path(
+        'reservas/huespedes-autocomplete/',
+        HuespedesReservaAutocompleteAPIView.as_view(),
+        name='reservas_huespedes_autocomplete',
+    ),
+    path(
+        'reservas/habitaciones-disponibles/',
+        HabitacionesDisponiblesReservaAutocompleteAPIView.as_view(),
+        name='reservas_habitaciones_disponibles',
     ),
 
     # Endpoints del modulo Habitaciones y Estancias.

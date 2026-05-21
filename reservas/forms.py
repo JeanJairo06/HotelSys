@@ -50,13 +50,16 @@ class ReservaForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['hotel'].queryset = Hotel.objects.order_by('nombre')
-        self.fields['huesped'].queryset = Huesped.objects.order_by('apellidos', 'nombres')
+        huespedes = Huesped.objects.none()
+        huesped_id = self.data.get(self.add_prefix('huesped')) if self.is_bound else None
+        if huesped_id:
+            huespedes = Huesped.objects.filter(pk=huesped_id)
+        elif self.instance and self.instance.pk and self.instance.huesped_id:
+            huespedes = Huesped.objects.filter(pk=self.instance.huesped_id)
+        self.fields['huesped'].queryset = huespedes.order_by('apellidos', 'nombres')
         self.fields['tipo_habitacion'].queryset = TipoHabitacion.objects.order_by('nombre')
-        habitaciones = Habitacion.objects.select_related('hotel', 'tipo').order_by(
-            'hotel__nombre',
-            'piso',
-            'numero',
-        )
+        habitaciones = Habitacion.objects.none()
+        habitacion_id = self.data.get(self.add_prefix('habitacion')) if self.is_bound else None
 
         hotel_id = self.data.get('hotel') if self.is_bound else self.initial.get('hotel')
         tipo_id = self.data.get('tipo_habitacion') if self.is_bound else self.initial.get('tipo_habitacion')
@@ -64,16 +67,14 @@ class ReservaForm(forms.ModelForm):
         fecha_salida = self.data.get('fecha_salida') if self.is_bound else self.initial.get('fecha_salida')
 
         if self.instance and self.instance.pk:
+            habitacion_id = habitacion_id or self.instance.habitacion_id
             hotel_id = hotel_id or self.instance.hotel_id
             tipo_id = tipo_id or self.instance.habitacion.tipo_id
             fecha_entrada = fecha_entrada or self.instance.fecha_entrada
             fecha_salida = fecha_salida or self.instance.fecha_salida
 
-        if hotel_id:
-            habitaciones = habitaciones.filter(hotel_id=hotel_id)
-
-        if tipo_id:
-            habitaciones = habitaciones.filter(tipo_id=tipo_id)
+        if habitacion_id:
+            habitaciones = Habitacion.objects.select_related('hotel', 'tipo').filter(pk=habitacion_id)
 
         fecha_entrada_filtro = self._parse_filter_date(fecha_entrada)
         fecha_salida_filtro = self._parse_filter_date(fecha_salida)
@@ -101,6 +102,8 @@ class ReservaForm(forms.ModelForm):
         for field in self.fields.values():
             css_class = 'form-select' if isinstance(field.widget, forms.Select) else 'form-control'
             field.widget.attrs.update({'class': css_class})
+        self.fields['huesped'].widget.attrs.update({'class': 'form-select js-huesped-select'})
+        self.fields['habitacion'].widget.attrs.update({'class': 'form-select js-habitacion-select'})
 
     @staticmethod
     def _parse_filter_date(value):

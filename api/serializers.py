@@ -3,6 +3,7 @@ from rest_framework import serializers
 from empleados.models import Empleado
 from estancias.models import Estancia
 from habitaciones.models import Habitacion, TipoHabitacion
+from huespedes.models import Huesped
 from reservas.models import Reserva
 
 
@@ -13,6 +14,15 @@ class EmpleadoAutocompleteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empleado
         fields = ['id', 'text', 'codigo', 'nombres', 'apellidos', 'email', 'cargo', 'cargo_display']
+
+
+class HuespedAutocompleteSerializer(serializers.ModelSerializer):
+    text = serializers.CharField(source='nombre_completo', read_only=True)
+    tipo_doc_display = serializers.CharField(source='get_tipo_doc_display', read_only=True)
+
+    class Meta:
+        model = Huesped
+        fields = ['id', 'text', 'tipo_doc', 'tipo_doc_display', 'num_doc', 'email', 'telefono']
 
 
 # Serializers del modulo Habitaciones y Estancias.
@@ -40,6 +50,32 @@ class HabitacionSerializer(serializers.ModelSerializer):
             'estado',
             'estado_display',
         ]
+
+
+class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
+    text = serializers.SerializerMethodField()
+    hotel_nombre = serializers.CharField(source='hotel.nombre', read_only=True)
+    tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
+    precio = serializers.DecimalField(source='tipo.precio_base', max_digits=10, decimal_places=2, read_only=True)
+    capacidad = serializers.IntegerField(source='tipo.capacidad', read_only=True)
+
+    class Meta:
+        model = Habitacion
+        fields = [
+            'id',
+            'text',
+            'hotel',
+            'hotel_nombre',
+            'tipo',
+            'tipo_nombre',
+            'numero',
+            'piso',
+            'precio',
+            'capacidad',
+        ]
+
+    def get_text(self, obj):
+        return f'{obj.hotel.nombre} - Hab. {obj.numero} ({obj.tipo.nombre})'
 
 
 class HabitacionEstadoSerializer(serializers.Serializer):
