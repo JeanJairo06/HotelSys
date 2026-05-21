@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from empleados.models import Empleado
 from estancias.models import Estancia
-from habitaciones.models import Habitacion
+from habitaciones.models import Habitacion, TipoHabitacion
 from huespedes.models import Huesped
 from reservas.models import Reserva
 
