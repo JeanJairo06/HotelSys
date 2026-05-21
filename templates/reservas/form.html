@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar reserva{% else %}Nueva reserva{% endif %} | HotelSys{% endblock %}
+{% block page_title %}{% if object %}Editar reserva{% else %}Nueva reserva{% endif %}{% endblock %}
+{% block page_subtitle %}Registra fechas, huesped, habitacion y calcula el total preliminar de la estadia.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'reservas:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="card border-0 shadow-sm app-form" novalidate>
+    {% csrf_token %}
+    <div class="card-body p-4">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2" aria-hidden="true"></i>{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.hotel.id_for_label }}">{{ form.hotel.label }}</label>
+                {{ form.hotel }}
+                {% for error in form.hotel.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.huesped.id_for_label }}">{{ form.huesped.label }}</label>
+                {{ form.huesped }}
+                {% for error in form.huesped.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.tipo_habitacion.id_for_label }}">{{ form.tipo_habitacion.label }}</label>
+                {{ form.tipo_habitacion }}
+                {% for error in form.tipo_habitacion.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.habitacion.id_for_label }}">{{ form.habitacion.label }}</label>
+                {{ form.habitacion }}
+                {% for error in form.habitacion.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.fecha_entrada.id_for_label }}">{{ form.fecha_entrada.label }}</label>
+                {{ form.fecha_entrada }}
+                {% for error in form.fecha_entrada.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.fecha_salida.id_for_label }}">{{ form.fecha_salida.label }}</label>
+                {{ form.fecha_salida }}
+                {% for error in form.fecha_salida.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.num_adultos.id_for_label }}">{{ form.num_adultos.label }}</label>
+                {{ form.num_adultos }}
+                {% for error in form.num_adultos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.origen.id_for_label }}">{{ form.origen.label }}</label>
+                {{ form.origen }}
+                {% for error in form.origen.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
+                {{ form.estado }}
+                {% for error in form.estado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.precio_total.id_for_label }}">{{ form.precio_total.label }}</label>
+                {{ form.precio_total }}
+                {% for error in form.precio_total.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+        <a class="btn btn-light" href="{% url 'reservas:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2" aria-hidden="true"></i>Guardar</button>
+    </div>
+</form>
+{% endblock %}
