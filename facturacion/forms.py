@@ -1,6 +1,6 @@
 from django import forms
-from .models import Factura, Tarifa
-
+from .models import Factura
+from habitaciones.models import Tarifa
 class FacturaEmisionForm(forms.ModelForm):
     class Meta:
         model = Factura
@@ -30,13 +30,16 @@ class FacturaEmisionForm(forms.ModelForm):
 class TarifaForm(forms.ModelForm):
     class Meta:
         model = Tarifa
-        fields = ['tipo_habitacion', 'precio_noche', 'fecha_inicio', 'fecha_fin', 'temporada_nombre']
+        fields = ['tipo_habitacion', 'nombre','precio_noche', 'fecha_inicio', 'fecha_fin']
+        labels = {
+            'nombre': 'Nombre de la Temporada / Tarifa',
+        }
         widgets = {
             'tipo_habitacion': forms.Select(attrs={'class': 'form-select'}),
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Fin de semana / Temporada Alta'}),
             'precio_noche': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
             'fecha_inicio': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'fecha_fin': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'temporada_nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de la temporada'}),
         }
 
     def clean(self):

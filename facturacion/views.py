@@ -9,9 +9,9 @@ from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 
 from .forms import FacturaEmisionForm, TarifaForm
-from .models import Factura, Folio, Tarifa
+from .models import Factura, Folio
 from django.db import models
-
+from habitaciones.models import Tarifa
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class FolioListView(ListView):
     model = Folio
@@ -81,7 +81,7 @@ class TarifaListView(ListView):
         query = self.request.GET.get('q')
         if query:
             queryset = queryset.filter(
-                models.Q(temporada_nombre__icontains=query) |
+                models.Q(nombre__icontains=query) |
                 models.Q(tipo_habitacion__nombre__icontains=query)
             )
         return queryset

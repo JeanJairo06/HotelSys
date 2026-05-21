@@ -57,32 +57,6 @@ class Folio(models.Model):
 
         return self.total.quantize(Decimal('0.0000'))
 
-class Tarifa(models.Model):
-    tipo_habitacion = models.ForeignKey(
-        'habitaciones.TipoHabitacion',
-        on_delete=models.CASCADE,
-        related_name='tarifas_facturacion'
-    )
-    precio_noche = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        validators=[MinValueValidator(0)]
-    )
-    fecha_inicio = models.DateField()
-    fecha_fin = models.DateField()
-    temporada_nombre = models.CharField(
-        max_length=100,
-        help_text="Ej: Temporada Alta - Fiestas Patrias, Fin de Semana, Invierno"
-    )
-
-    class Meta:
-        db_table = 'tarifas'
-        verbose_name = 'Tarifa'
-        verbose_name_plural = 'Tarifas'
-        ordering = ['-fecha_inicio']
-
-    def __str__(self):
-        return f'{self.temporada_nombre} - {self.tipo_habitacion.nombre}: S/ {self.precio_noche}'
 
 class Factura(models.Model):
     folio = models.ForeignKey(
