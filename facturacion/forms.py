@@ -1,6 +1,7 @@
 from django import forms
 from .models import Factura
 from habitaciones.models import Tarifa
+from estancias.models import CargoEstancia
 class FacturaEmisionForm(forms.ModelForm):
     class Meta:
         model = Factura
@@ -49,4 +50,26 @@ class TarifaForm(forms.ModelForm):
 
         if fecha_inicio and fecha_fin and fecha_inicio > fecha_fin:
             raise forms.ValidationError("La fecha de inicio no puede ser posterior a la fecha de fin.")
+        return cleaned_data
+    
+class CargoEstanciaForm(forms.ModelForm):
+    class Meta:
+        model = CargoEstancia
+        fields = ['concepto','monto']
+        labels ={
+            'concepto': 'Descripción del Consumo',
+            'monto': 'Monto Comercial (S/)',
+        }
+        widgets = {
+            'concepto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Desayuno Buffet / Lavandería '}),
+            'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+        }
+    def __init__(self, *args, **kwargs):
+        self.folio = kwargs.pop('folio', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.folio and self.folio.estado == 'PAGADO':
+            raise forms.ValidationError("Acción inválida: No se pueden agregar consumos a una cuenta ya liquidada.")
         return cleaned_data

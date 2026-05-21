@@ -8,10 +8,11 @@ from config.choices import EstadoFolio
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 
-from .forms import FacturaEmisionForm, TarifaForm
+from .forms import FacturaEmisionForm, TarifaForm, CargoEstanciaForm
 from .models import Factura, Folio
 from django.db import models
 from habitaciones.models import Tarifa
+from estancias.models import CargoEstancia
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class FolioListView(ListView):
     model = Folio
@@ -120,4 +121,27 @@ class TarifaDeleteView(DeleteView):
 
     def form_valid(self, form):
         messages.success(self.request, 'Tarifa eliminada correctamente.')
+        return super().form_valid(form)
+
+
+@method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
+class CargoEstanciaCreateView(CreateView):
+    model = CargoEstancia
+    form_class = CargoEstanciaForm
+    template_name = 'facturacion/folio_detail.html'
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:folio_detail', kwargs={'pk': self.kwargs['folio_id']})
+
+    def form_valid(self, form):
+        # Recuperamos el folio directamente de forma nativa
+        folio = Folio.objects.get(pk=self.kwargs['folio_id'])
+
+        cargo = form.save(commit=False)
+        cargo.estancia = folio.estancia
+        cargo.save()
+
+        folio.calcular_totales()
+
+        messages.success(self.request, f"Cargo de '{cargo.concepto}' por S/ {cargo.monto} añadido correctamente.")
         return super().form_valid(form)
