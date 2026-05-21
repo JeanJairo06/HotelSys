@@ -56,15 +56,6 @@
     <div class="card-body p-4">
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-3">
-                <label class="form-label" for="hotel">Hotel</label>
-                <select class="form-select" id="hotel" name="hotel">
-                    <option value="">Todos</option>
-                    {% for hotel in hoteles %}
-                        <option value="{{ hotel.id }}" {% if request.GET.hotel == hotel.id|stringformat:'s' %}selected{% endif %}>{{ hotel.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-3">
                 <label class="form-label" for="tipo">Tipo</label>
                 <select class="form-select" id="tipo" name="tipo">
                     <option value="">Todos</option>
@@ -108,7 +99,7 @@
                         <tr>
                             <td class="room-column">
                                 <span class="fw-semibold">Hab. {{ fila.habitacion.numero }}</span>
-                                <span class="d-block small text-secondary">{{ fila.habitacion.tipo.nombre }} - {{ fila.habitacion.hotel.nombre }}</span>
+                                <span class="d-block small text-secondary">{{ fila.habitacion.tipo.nombre }}</span>
                             </td>
                             {% for celda in fila.celdas %}
                                 <td>
