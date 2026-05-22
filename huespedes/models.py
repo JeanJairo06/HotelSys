@@ -34,11 +34,13 @@ class Huesped(models.Model):
     def nombre_completo(self):
         if self.tipo_doc == TipoDocumento.RUC and self.razon_social:
             return self.razon_social
+
         return f'{self.nombres} {self.apellidos}'
 
     def clean(self):
         errors = {}
 
+        # Normalización
         if self.num_doc:
             self.num_doc = self.num_doc.strip().upper().replace(' ', '')
 
@@ -57,36 +59,97 @@ class Huesped(models.Model):
         if self.nacionalidad:
             self.nacionalidad = self.nacionalidad.strip()
 
+        # Validar teléfono
         if self.telefono:
-            telefono_limpio = self.telefono.replace('+', '').replace('-', '').replace(' ', '')
-            if not telefono_limpio.isdigit():
-                errors['telefono'] = 'El telefono solo debe contener numeros, espacios, + o -.'
-            elif len(telefono_limpio) < 7 or len(telefono_limpio) > 15:
-                errors['telefono'] = 'El telefono debe tener entre 7 y 15 digitos.'
+            telefono_limpio = (
+                self.telefono
+                .replace('+', '')
+                .replace('-', '')
+                .replace(' ', '')
+            )
 
+            if not telefono_limpio.isdigit():
+                errors['telefono'] = (
+                    'El telefono solo debe contener numeros, espacios, + o -.'
+                )
+
+            elif len(telefono_limpio) < 7 or len(telefono_limpio) > 15:
+                errors['telefono'] = (
+                    'El telefono debe tener entre 7 y 15 digitos.'
+                )
+
+        # Validaciones por tipo de documento
         if self.tipo_doc == TipoDocumento.RUC:
+
             if not self.num_doc or not self.num_doc.isdigit():
                 errors['num_doc'] = 'El RUC debe contener solo numeros.'
+
             elif len(self.num_doc) != 11:
-                errors['num_doc'] = 'El RUC debe tener exactamente 11 digitos.'
+                errors['num_doc'] = (
+                    'El RUC debe tener exactamente 11 digitos.'
+                )
+
             if not self.razon_social:
-                errors['razon_social'] = 'La razon social es obligatoria para RUC.'
+                errors['razon_social'] = (
+                    'La razon social es obligatoria para RUC.'
+                )
 
         if self.tipo_doc == TipoDocumento.DNI:
+
             if not self.num_doc or not self.num_doc.isdigit():
                 errors['num_doc'] = 'El DNI debe contener solo numeros.'
+
             elif len(self.num_doc) != 8:
-                errors['num_doc'] = 'El DNI debe tener exactamente 8 digitos.'
+                errors['num_doc'] = (
+                    'El DNI debe tener exactamente 8 digitos.'
+                )
+
             if not self.nombres:
-                errors['nombres'] = 'Los nombres son obligatorios para DNI.'
+                errors['nombres'] = (
+                    'Los nombres son obligatorios para DNI.'
+                )
+
             if not self.apellidos:
-                errors['apellidos'] = 'Los apellidos son obligatorios para DNI.'
+                errors['apellidos'] = (
+                    'Los apellidos son obligatorios para DNI.'
+                )
+
             if not self.fecha_nacimiento:
-                errors['fecha_nacimiento'] = 'La fecha de nacimiento es obligatoria para DNI.'
+                errors['fecha_nacimiento'] = (
+                    'La fecha de nacimiento es obligatoria para DNI.'
+                )
 
+        # Fecha válida
         if self.fecha_nacimiento and self.fecha_nacimiento >= date.today():
-            errors['fecha_nacimiento'] = 'La fecha de nacimiento debe ser anterior a hoy.'
+            errors['fecha_nacimiento'] = (
+                'La fecha de nacimiento debe ser anterior a hoy.'
+            )
 
+        # Validar email único
+        if self.email:
+            existe_email = Huesped.objects.filter(email=self.email)
+
+            if self.pk:
+                existe_email = existe_email.exclude(pk=self.pk)
+
+            if existe_email.exists():
+                errors['email'] = 'Este correo ya esta registrado.'
+
+        # Validar teléfono único
+        if self.telefono:
+            existe_telefono = Huesped.objects.filter(
+                telefono=self.telefono
+            )
+
+            if self.pk:
+                existe_telefono = existe_telefono.exclude(pk=self.pk)
+
+            if existe_telefono.exists():
+                errors['telefono'] = (
+                    'Este telefono ya esta registrado.'
+                )
+
+        # Lanzar errores
         if errors:
             raise ValidationError(errors)
 
