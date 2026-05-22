@@ -20,7 +20,7 @@
         name="fecha"
         value="{{ reporte.fecha|date:'Y-m-d' }}"
     >
-    <button class="btn btn-primary" type="submit">
+    <button class="btn btn-primary" type="submit" aria-label="Consultar fecha" title="Consultar fecha">
         <i class="bi bi-calendar2-check me-2" aria-hidden="true"></i>
     </button>
 </form>
@@ -201,8 +201,8 @@
                 <strong>{{ reporte.reservas.total }}</strong>
             </div>
             <div>
-                <span>Pendientes</span>
-                <strong>{{ reporte.reservas.pendientes }}</strong>
+                <span>Finalizadas</span>
+                <strong>{{ reporte.reservas.finalizadas }}</strong>
             </div>
             <div>
                 <span>Confirmadas</span>
