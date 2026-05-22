@@ -19,7 +19,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from config.views import home
 from cuentas.views import CuentaLoginView, CuentaLogoutView
-from reportes.views import DashboardView, ReporteOcupacionAPIView
+from reportes.views import DashboardView, ReporteOcupacionAPIView, ReportesView
 
 urlpatterns = [
     path('', home, name='home'),
@@ -42,6 +42,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/reportes/ocupacion/', ReporteOcupacionAPIView.as_view(), name='api_reporte_ocupacion'),
     path('facturacion/', include('facturacion.urls')),
+    path('reportes/', ReportesView.as_view(), name='reportes'),
 ]
 
 handler403 = 'config.views.error_403'
