@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block page_title %}Dashboard operativo{% endblock %}
-{% block page_subtitle %}Indicadores de ocupacion, reservas, huespedes, habitaciones e ingresos del hotel.{% endblock %}
+{% block page_subtitle %}Monitoreo rapido de ocupacion, reservas, habitaciones, huespedes e ingresos del hotel.{% endblock %}
 
 {% block page_actions %}
 <form method="get" class="dashboard-date-filter">
@@ -20,8 +20,8 @@
         name="fecha"
         value="{{ reporte.fecha|date:'Y-m-d' }}"
     >
-    <button class="btn btn-primary" type="submit">
-        <i class="bi bi-calendar2-check me-2" aria-hidden="true"></i>Consultar
+    <button class="btn btn-primary" type="submit" aria-label="Consultar fecha" title="Consultar fecha">
+        <i class="bi bi-calendar2-check me-2" aria-hidden="true"></i>
     </button>
 </form>
 {% endblock %}
@@ -33,217 +33,251 @@
     </div>
 {% endif %}
 
-<section class="dashboard-hero mb-4" aria-label="Resumen operativo">
-    <div>
-        <span class="dashboard-kicker">Fecha consultada</span>
+<section class="dashboard-hero" aria-label="Resumen operativo">
+    <div class="dashboard-hero-content">
+        <span class="dashboard-kicker">Operacion del dia</span>
         <h2>{{ reporte.fecha|date:'d/m/Y' }}</h2>
-        <p class="mb-0">Ocupacion actual: {{ reporte.habitaciones.ocupacion_porcentaje|floatformat:2 }}%</p>
-    </div>
-    <div class="dashboard-hero-meter" aria-label="Porcentaje de ocupacion">
-        <strong>{{ reporte.habitaciones.ocupacion_porcentaje|floatformat:0 }}%</strong>
-        <span>ocupacion</span>
-    </div>
-</section>
+        <p>Vista general del estado hotelero para tomar decisiones rapidas en recepcion, reservas y housekeeping.</p>
 
-<section class="dashboard-grid" aria-label="Indicadores principales">
-    <article class="dashboard-card dashboard-card-primary">
-        <span class="dashboard-card-label">
-            <i class="bi bi-door-open me-2" aria-hidden="true"></i>Total habitaciones
-        </span>
-        <strong>{{ reporte.habitaciones.total }}</strong>
-        <small>{{ reporte.habitaciones.disponibles }} disponibles</small>
-    </article>
-
-    <article class="dashboard-card">
-        <span class="dashboard-card-label">
-            <i class="bi bi-check2-circle me-2" aria-hidden="true"></i>Disponibles
-        </span>
-        <strong>{{ reporte.habitaciones.disponibles }}</strong>
-        <small>listas para asignar</small>
-    </article>
-
-    <article class="dashboard-card">
-        <span class="dashboard-card-label">
-            <i class="bi bi-person-workspace me-2" aria-hidden="true"></i>Ocupadas
-        </span>
-        <strong>{{ reporte.habitaciones.ocupadas }}</strong>
-        <small>{{ reporte.estancias.activas }} estancias activas</small>
-    </article>
-
-    <article class="dashboard-card">
-        <span class="dashboard-card-label">
-            <i class="bi bi-calendar-check me-2" aria-hidden="true"></i>Reservas activas
-        </span>
-        <strong>{{ reporte.reservas.en_fecha }}</strong>
-        <small>vigentes en la fecha</small>
-    </article>
-</section>
-
-<section class="row g-4 mt-1">
-    <div class="col-xl-8">
-        <div class="dashboard-panel h-100">
-            <div class="dashboard-panel-header">
-                <div>
-                    <span class="dashboard-kicker">Habitaciones</span>
-                    <h2 class="h5 mb-0">Estado operativo</h2>
-                </div>
-                <span class="dashboard-pill">{{ reporte.habitaciones.total }} habitaciones</span>
+        <div class="dashboard-hero-stats">
+            <div>
+                <span>Ocupadas</span>
+                <strong>{{ reporte.habitaciones.ocupadas }}</strong>
             </div>
-
-            <div class="dashboard-status-list">
-                <div class="dashboard-status-item">
-                    <span class="status-dot status-available"></span>
-                    <div>
-                        <strong>Disponibles</strong>
-                        <small>{{ reporte.habitaciones.disponibles }} habitaciones</small>
-                    </div>
-                </div>
-                <div class="dashboard-status-item">
-                    <span class="status-dot status-busy"></span>
-                    <div>
-                        <strong>Ocupadas</strong>
-                        <small>{{ reporte.habitaciones.ocupadas }} habitaciones</small>
-                    </div>
-                </div>
-                <div class="dashboard-status-item">
-                    <span class="status-dot status-cleaning"></span>
-                    <div>
-                        <strong>Limpieza</strong>
-                        <small>{{ reporte.habitaciones.limpieza }} pendientes</small>
-                    </div>
-                </div>
-                <div class="dashboard-status-item">
-                    <span class="status-dot status-maintenance"></span>
-                    <div>
-                        <strong>Mantenimiento</strong>
-                        <small>{{ reporte.habitaciones.mantenimiento }} no disponibles</small>
-                    </div>
-                </div>
+            <div>
+                <span>Disponibles</span>
+                <strong>{{ reporte.habitaciones.disponibles }}</strong>
             </div>
-
-            <progress
-                class="dashboard-progress"
-                value="{{ reporte.habitaciones.ocupacion_porcentaje|floatformat:0 }}"
-                max="100"
-                aria-label="Porcentaje de ocupacion de habitaciones"
-            ></progress>
-
-            <div class="dashboard-room-types">
-                {% for tipo in reporte.tipos_habitacion %}
-                    <div class="dashboard-room-type">
-                        <div>
-                            <strong>{{ tipo.nombre }}</strong>
-                            <small>{{ tipo.disponibles }} disponibles / {{ tipo.ocupadas }} ocupadas</small>
-                        </div>
-                        <span>{{ tipo.total }}</span>
-                    </div>
-                {% empty %}
-                    <p class="text-secondary mb-0">
-                        <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay tipos de habitacion registrados.
-                    </p>
-                {% endfor %}
+            <div>
+                <span>Reservas activas</span>
+                <strong>{{ reporte.reservas.en_fecha }}</strong>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-4">
-        <div class="dashboard-panel h-100">
-            <div class="dashboard-panel-header">
-                <div>
-                    <span class="dashboard-kicker">Reservas</span>
-                    <h2 class="h5 mb-0">Resumen</h2>
-                </div>
-            </div>
+    <div class="dashboard-hero-visual">
+        <div class="dashboard-donut" aria-label="Ocupacion {{ reporte.habitaciones.ocupacion_porcentaje|floatformat:0 }} por ciento">
+            <svg viewBox="0 0 42 42" role="img">
+                <circle class="donut-track" cx="21" cy="21" r="15.915"></circle>
+                <circle
+                    class="donut-value"
+                    cx="21"
+                    cy="21"
+                    r="15.915"
+                    pathLength="100"
+                    stroke-dasharray="{{ reporte.habitaciones.ocupacion_porcentaje|floatformat:0 }} 100"
+                ></circle>
+            </svg>
+            <strong>{{ reporte.habitaciones.ocupacion_porcentaje|floatformat:0 }}%</strong>
+            <span>ocupacion</span>
+        </div>
 
-            <div class="dashboard-mini-metrics">
-                <div>
-                    <span>Total</span>
-                    <strong>{{ reporte.reservas.total }}</strong>
-                </div>
-                <div>
-                    <span>Con entrada</span>
-                    <strong>{{ reporte.reservas.registradas_fecha }}</strong>
-                </div>
-                <div>
-                    <span>Pendientes</span>
-                    <strong>{{ reporte.reservas.pendientes }}</strong>
-                </div>
-                <div>
-                    <span>Confirmadas</span>
-                    <strong>{{ reporte.reservas.confirmadas }}</strong>
-                </div>
-            </div>
-
-            <hr>
-
-            <div class="dashboard-income">
-                <span class="dashboard-kicker">Ingresos</span>
-                <strong>S/ {{ reporte.ingresos.folios_pagados|floatformat:2 }}</strong>
-                <small>folios pagados o cerrados</small>
-            </div>
-
-            <div class="dashboard-income dashboard-income-soft">
-                <strong>S/ {{ reporte.ingresos.reservas_fecha|floatformat:2 }}</strong>
-                <small>monto de reservas con entrada en la fecha</small>
-            </div>
+        <div class="dashboard-hero-income">
+            <span>Ingresos folios</span>
+            <strong>S/ {{ reporte.ingresos.folios_pagados|floatformat:2 }}</strong>
+            <small>pagados o cerrados</small>
         </div>
     </div>
 </section>
 
-<section class="row g-4 mt-1">
-    <div class="col-xl-7">
-        <div class="dashboard-panel h-100">
-            <div class="dashboard-panel-header">
-                <div>
-                    <span class="dashboard-kicker">Agenda</span>
-                    <h2 class="h5 mb-0">Proximas reservas</h2>
-                </div>
-            </div>
+<section class="dashboard-kpi-grid" aria-label="Indicadores principales">
+    <article class="dashboard-kpi-card kpi-rooms">
+        <span class="kpi-icon"><i class="bi bi-building-check" aria-hidden="true"></i></span>
+        <div>
+            <small>Total habitaciones</small>
+            <strong>{{ reporte.habitaciones.total }}</strong>
+            <em>{{ reporte.habitaciones.reservadas_u_ocupadas }} reservadas u ocupadas</em>
+        </div>
+    </article>
 
-            <div class="dashboard-reservations">
-                {% for reserva in reporte.proximas_reservas %}
-                    <div class="dashboard-reservation">
-                        <div>
-                            <strong>{{ reserva.huesped }}</strong>
-                            <small>Hab. {{ reserva.habitacion }} · {{ reserva.fecha_entrada|date:'d/m/Y' }} - {{ reserva.fecha_salida|date:'d/m/Y' }}</small>
-                        </div>
-                        <span>{{ reserva.estado_display }}</span>
-                    </div>
-                {% empty %}
-                    <p class="text-secondary mb-0">
-                        <i class="bi bi-calendar-x me-2" aria-hidden="true"></i>No hay reservas proximas desde la fecha consultada.
-                    </p>
-                {% endfor %}
+    <article class="dashboard-kpi-card kpi-available">
+        <span class="kpi-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+        <div>
+            <small>Disponibles</small>
+            <strong>{{ reporte.habitaciones.disponibles }}</strong>
+            <em>listas para asignar</em>
+        </div>
+    </article>
+
+    <article class="dashboard-kpi-card kpi-busy">
+        <span class="kpi-icon"><i class="bi bi-person-workspace" aria-hidden="true"></i></span>
+        <div>
+            <small>Ocupadas</small>
+            <strong>{{ reporte.habitaciones.ocupadas }}</strong>
+            <em>{{ reporte.estancias.activas }} estancias activas</em>
+        </div>
+    </article>
+
+    <article class="dashboard-kpi-card kpi-reservations">
+        <span class="kpi-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
+        <div>
+            <small>Reservas vigentes</small>
+            <strong>{{ reporte.reservas.en_fecha }}</strong>
+            <em>{{ reporte.reservas.registradas_fecha }} con entrada</em>
+        </div>
+    </article>
+
+    <article class="dashboard-kpi-card kpi-income">
+        <span class="kpi-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+        <div>
+            <small>Reservas fecha</small>
+            <strong>S/ {{ reporte.ingresos.reservas_fecha|floatformat:2 }}</strong>
+            <em>monto estimado</em>
+        </div>
+    </article>
+
+    <article class="dashboard-kpi-card kpi-guests">
+        <span class="kpi-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+        <div>
+            <small>Huespedes</small>
+            <strong>{{ reporte.huespedes.total }}</strong>
+            <em>registrados</em>
+        </div>
+    </article>
+</section>
+
+<section class="dashboard-main-grid" aria-label="Operacion principal">
+    <div class="dashboard-panel dashboard-rooms-panel">
+        <div class="dashboard-panel-header">
+            <div>
+                <span class="dashboard-kicker">Habitaciones</span>
+                <h2>Estado operativo</h2>
             </div>
+            <span class="dashboard-pill">{{ reporte.habitaciones.total }} habitaciones</span>
+        </div>
+
+        <div class="dashboard-room-status">
+            <div class="room-status-card status-available">
+                <span>Disponibles</span>
+                <strong>{{ reporte.habitaciones.disponibles }}</strong>
+            </div>
+            <div class="room-status-card status-busy">
+                <span>Ocupadas</span>
+                <strong>{{ reporte.habitaciones.ocupadas }}</strong>
+            </div>
+            <div class="room-status-card status-cleaning">
+                <span>Limpieza</span>
+                <strong>{{ reporte.habitaciones.limpieza }}</strong>
+            </div>
+            <div class="room-status-card status-maintenance">
+                <span>Mantenimiento</span>
+                <strong>{{ reporte.habitaciones.mantenimiento }}</strong>
+            </div>
+        </div>
+
+        <div class="dashboard-room-types">
+            {% for tipo in reporte.tipos_habitacion %}
+                <div class="dashboard-room-type">
+                    <div>
+                        <strong>{{ tipo.nombre }}</strong>
+                        <small>{{ tipo.disponibles }} disponibles / {{ tipo.ocupadas }} ocupadas</small>
+                    </div>
+                    <progress
+                        value="{{ tipo.ocupadas }}"
+                        max="{{ tipo.total|default:1 }}"
+                        aria-label="Ocupacion del tipo {{ tipo.nombre }}"
+                    ></progress>
+                    <span>{{ tipo.total }}</span>
+                </div>
+            {% empty %}
+                <p class="text-secondary mb-0">
+                    <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay tipos de habitacion registrados.
+                </p>
+            {% endfor %}
         </div>
     </div>
 
-    <div class="col-xl-5">
-        <div class="dashboard-panel h-100">
-            <div class="dashboard-panel-header">
-                <div>
-                    <span class="dashboard-kicker">Clientes y operacion</span>
-                    <h2 class="h5 mb-0">Indicadores utiles</h2>
-                </div>
+    <aside class="dashboard-panel dashboard-command-panel">
+        <div class="dashboard-panel-header">
+            <div>
+                <span class="dashboard-kicker">Reservas</span>
+                <h2>Resumen rapido</h2>
             </div>
+        </div>
 
-            <div class="dashboard-side-list">
-                <div>
-                    <span><i class="bi bi-people me-2" aria-hidden="true"></i>Total huespedes</span>
-                    <strong>{{ reporte.huespedes.total }}</strong>
+        <div class="dashboard-reservation-grid">
+            <div>
+                <span>Total</span>
+                <strong>{{ reporte.reservas.total }}</strong>
+            </div>
+            <div>
+                <span>Finalizadas</span>
+                <strong>{{ reporte.reservas.finalizadas }}</strong>
+            </div>
+            <div>
+                <span>Confirmadas</span>
+                <strong>{{ reporte.reservas.confirmadas }}</strong>
+            </div>
+            <div>
+                <span>Check-in</span>
+                <strong>{{ reporte.reservas.checkin }}</strong>
+            </div>
+        </div>
+
+        <div class="dashboard-command-highlight">
+            <span>Housekeeping</span>
+            <strong>{{ reporte.habitaciones.limpieza }}</strong>
+            <small>habitaciones pendientes de limpieza</small>
+        </div>
+
+        <div class="dashboard-command-highlight dashboard-command-soft">
+            <span>Cargos registrados</span>
+            <strong>S/ {{ reporte.ingresos.cargos_totales|floatformat:2 }}</strong>
+            <small>cargos acumulados en estancias</small>
+        </div>
+    </aside>
+</section>
+
+<section class="dashboard-bottom-grid" aria-label="Agenda e indicadores secundarios">
+    <div class="dashboard-panel">
+        <div class="dashboard-panel-header">
+            <div>
+                <span class="dashboard-kicker">Agenda</span>
+                <h2>Proximas reservas</h2>
+            </div>
+        </div>
+
+        <div class="dashboard-reservations">
+            {% for reserva in reporte.proximas_reservas %}
+                <div class="dashboard-reservation">
+                    <div>
+                        <strong>{{ reserva.huesped }}</strong>
+                        <small>Hab. {{ reserva.habitacion }} &middot; {{ reserva.fecha_entrada|date:'d/m/Y' }} - {{ reserva.fecha_salida|date:'d/m/Y' }}</small>
+                    </div>
+                    <span>{{ reserva.estado_display }}</span>
                 </div>
-                <div>
-                    <span><i class="bi bi-stars me-2" aria-hidden="true"></i>Limpieza</span>
-                    <strong>{{ reporte.habitaciones.limpieza }}</strong>
-                </div>
-                <div>
-                    <span><i class="bi bi-receipt me-2" aria-hidden="true"></i>Cargos registrados</span>
-                    <strong>S/ {{ reporte.ingresos.cargos_totales|floatformat:2 }}</strong>
-                </div>
-                <div>
-                    <span><i class="bi bi-door-closed me-2" aria-hidden="true"></i>Reservadas u ocupadas</span>
-                    <strong>{{ reporte.habitaciones.reservadas_u_ocupadas }}</strong>
-                </div>
+            {% empty %}
+                <p class="text-secondary mb-0">
+                    <i class="bi bi-calendar-x me-2" aria-hidden="true"></i>No hay reservas proximas desde la fecha consultada.
+                </p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="dashboard-panel">
+        <div class="dashboard-panel-header">
+            <div>
+                <span class="dashboard-kicker">Operacion</span>
+                <h2>Indicadores utiles</h2>
+            </div>
+        </div>
+
+        <div class="dashboard-side-list">
+            <div>
+                <span><i class="bi bi-door-closed me-2" aria-hidden="true"></i>Reservadas u ocupadas</span>
+                <strong>{{ reporte.habitaciones.reservadas_u_ocupadas }}</strong>
+            </div>
+            <div>
+                <span><i class="bi bi-x-circle me-2" aria-hidden="true"></i>Canceladas</span>
+                <strong>{{ reporte.reservas.canceladas }}</strong>
+            </div>
+            <div>
+                <span><i class="bi bi-flag me-2" aria-hidden="true"></i>Finalizadas</span>
+                <strong>{{ reporte.reservas.finalizadas }}</strong>
+            </div>
+            <div>
+                <span><i class="bi bi-person-check me-2" aria-hidden="true"></i>Estancias finalizadas</span>
+                <strong>{{ reporte.estancias.finalizadas }}</strong>
             </div>
         </div>
     </div>

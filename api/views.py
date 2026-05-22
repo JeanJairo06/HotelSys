@@ -19,6 +19,7 @@ from api.serializers import (
     HabitacionReservaAutocompleteSerializer,
     HabitacionSerializer,
     HuespedAutocompleteSerializer,
+    ReservaSerializer,
 )
 
 from api.throttles import AutocompleteRateThrottle, UserApiRateThrottle, WriteRateThrottle
@@ -166,6 +167,30 @@ class HabitacionesDisponiblesReservaAutocompleteAPIView(generics.ListAPIView):
             )
 
         return queryset
+
+
+@extend_schema_view(
+    get=extend_schema(tags=['Reservas'], summary='Lista reservas'),
+    post=extend_schema(tags=['Reservas'], summary='Crea reserva con calculo de tarifa vigente'),
+)
+class ReservaListCreateAPIView(ApiThrottleMixin, generics.ListCreateAPIView):
+    serializer_class = ReservaSerializer
+    authentication_classes = API_AUTHENTICATION_CLASSES
+    permission_classes = [IsAuthenticated, HasAnyRole]
+    allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['estado', 'habitacion', 'huesped', 'origen']
+    search_fields = ['huesped__nombres', 'huesped__apellidos', 'huesped__num_doc', 'habitacion__numero']
+    ordering_fields = ['fecha_entrada', 'fecha_salida', 'precio_total']
+    ordering = ['-fecha_entrada']
+
+    def get_queryset(self):
+        return Reserva.objects.select_related(
+            'hotel',
+            'huesped',
+            'habitacion',
+            'habitacion__tipo',
+        )
 
 
 # API del modulo Habitaciones y Estancias.
