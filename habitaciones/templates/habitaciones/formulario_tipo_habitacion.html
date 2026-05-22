@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ titulo }} | HotelSys{% endblock %}
 {% block page_title %}{{ titulo }}{% endblock %}
@@ -10,10 +11,48 @@
 </a>
 {% endblock %}
 
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">{% endblock %}
+
 {% block content %}
 <form method="post" class="card border-0 shadow-sm app-form" novalidate>
     <div class="card-body p-4">
-        {% include 'includes/formulario.html' %}
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-circle me-2" aria-hidden="true"></i>{{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+                {{ form.nombre }}
+                {% for error in form.nombre.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.capacidad.id_for_label }}">{{ form.capacidad.label }}</label>
+                {{ form.capacidad }}
+                {% for error in form.capacidad.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.precio_base.id_for_label }}">{{ form.precio_base.label }}</label>
+                {{ form.precio_base }}
+                {% for error in form.precio_base.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <span class="form-label d-block">{{ form.amenidades.label }}</span>
+                <div class="amenities-options">
+                    {% for opcion in form.amenidades %}
+                        <label class="amenity-option">
+                            {{ opcion.tag }}
+                            <span>{{ opcion.choice_label }}</span>
+                        </label>
+                    {% empty %}
+                        <span class="text-secondary">No hay amenidades registradas.</span>
+                    {% endfor %}
+                </div>
+                {% for error in form.amenidades.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
     </div>
     <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
         <a class="btn btn-light" href="{% url 'habitaciones:listar_tipos_habitacion' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>

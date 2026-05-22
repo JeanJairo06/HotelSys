@@ -15,7 +15,7 @@ def panel_limpieza(request):
     """Muestra habitaciones pendientes de limpieza o mantenimiento."""
     habitaciones = Habitacion.objects.select_related('hotel', 'tipo').filter(
         estado__in=[EstadoHabitacion.LIMPIEZA, EstadoHabitacion.MANTENIMIENTO],
-    )
+    ).order_by('piso', 'numero')
 
     piso = request.GET.get('piso')
     if piso:

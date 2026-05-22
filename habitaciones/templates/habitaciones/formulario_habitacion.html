@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ titulo }} | HotelSys{% endblock %}
 {% block page_title %}{{ titulo }}{% endblock %}
@@ -10,7 +11,20 @@
 </a>
 {% endblock %}
 
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">{% endblock %}
+
 {% block content %}
+{% if hotel %}
+    <div class="hotel-assigned-card mb-3" role="status">
+        <div class="d-flex align-items-center gap-3">
+            <span class="hotel-assigned-icon"><i class="bi bi-building-check" aria-hidden="true"></i></span>
+            <div>
+                <strong class="d-block">{{ hotel.nombre }}</strong>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
 <form method="post" class="card border-0 shadow-sm app-form" novalidate>
     <div class="card-body p-4">
         {% include 'includes/formulario.html' %}

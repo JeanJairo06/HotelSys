@@ -15,7 +15,8 @@ from .services import cambiar_estado_manual
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
 def listar_habitaciones(request):
     """Muestra el panel operativo de habitaciones con filtros y contadores por estado."""
-    habitaciones = Habitacion.objects.select_related('hotel', 'tipo')
+    habitaciones_base = Habitacion.objects.select_related('hotel', 'tipo').order_by('piso', 'numero')
+    habitaciones = habitaciones_base
 
     hotel_id = request.GET.get('hotel')
     tipo_id = request.GET.get('tipo')
@@ -37,10 +38,10 @@ def listar_habitaciones(request):
         'tipos_habitacion': TipoHabitacion.objects.all(),
         'estados': Habitacion._meta.get_field('estado').choices,
         'pisos': Habitacion.objects.order_by('piso').values_list('piso', flat=True).distinct(),
-        'total_disponibles': habitaciones.filter(estado=EstadoHabitacion.DISPONIBLE).count(),
-        'total_ocupadas': habitaciones.filter(estado=EstadoHabitacion.OCUPADA).count(),
-        'total_limpieza': habitaciones.filter(estado=EstadoHabitacion.LIMPIEZA).count(),
-        'total_mantenimiento': habitaciones.filter(estado=EstadoHabitacion.MANTENIMIENTO).count(),
+        'total_disponibles': habitaciones_base.filter(estado=EstadoHabitacion.DISPONIBLE).count(),
+        'total_ocupadas': habitaciones_base.filter(estado=EstadoHabitacion.OCUPADA).count(),
+        'total_limpieza': habitaciones_base.filter(estado=EstadoHabitacion.LIMPIEZA).count(),
+        'total_mantenimiento': habitaciones_base.filter(estado=EstadoHabitacion.MANTENIMIENTO).count(),
     }
     return render(request, 'habitaciones/listar_habitaciones.html', contexto)
 
@@ -48,19 +49,21 @@ def listar_habitaciones(request):
 @role_required(ROLE_ADMIN)
 def crear_habitacion(request):
     """Registra una nueva habitacion fisica del hotel."""
+    hotel = Hotel.objects.order_by('id').first()
+
     if request.method == 'POST':
-        form = HabitacionForm(request.POST)
+        form = HabitacionForm(request.POST, hotel=hotel)
         if form.is_valid():
             form.save()
             messages.success(request, 'Habitacion registrada correctamente.')
             return redirect('habitaciones:listar_habitaciones')
     else:
-        form = HabitacionForm()
+        form = HabitacionForm(hotel=hotel)
 
     return render(
         request,
         'habitaciones/formulario_habitacion.html',
-        {'form': form, 'titulo': 'Registrar habitacion'},
+        {'form': form, 'titulo': 'Registrar habitacion', 'hotel': hotel},
     )
 
 
@@ -68,20 +71,21 @@ def crear_habitacion(request):
 def editar_habitacion(request, pk):
     """Actualiza los datos generales de una habitacion existente."""
     habitacion = get_object_or_404(Habitacion, pk=pk)
+    hotel = Hotel.objects.order_by('id').first() or habitacion.hotel
 
     if request.method == 'POST':
-        form = HabitacionForm(request.POST, instance=habitacion)
+        form = HabitacionForm(request.POST, instance=habitacion, hotel=hotel)
         if form.is_valid():
             form.save()
             messages.success(request, 'Habitacion actualizada correctamente.')
             return redirect('habitaciones:listar_habitaciones')
     else:
-        form = HabitacionForm(instance=habitacion)
+        form = HabitacionForm(instance=habitacion, hotel=hotel)
 
     return render(
         request,
         'habitaciones/formulario_habitacion.html',
-        {'form': form, 'titulo': 'Editar habitacion'},
+        {'form': form, 'titulo': 'Editar habitacion', 'hotel': hotel},
     )
 
 
