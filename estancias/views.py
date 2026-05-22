@@ -19,7 +19,7 @@ def listar_estancias(request):
         'reserva__huesped',
         'habitacion',
         'habitacion__hotel',
-    )
+    ).order_by('-fecha_checkin')
 
     estado = request.GET.get('estado')
     if estado:
@@ -40,7 +40,7 @@ def listar_reservas_checkin(request):
     """Lista reservas confirmadas que pueden iniciar el flujo de check-in."""
     reservas = Reserva.objects.select_related('hotel', 'huesped', 'habitacion').filter(
         estado=EstadoReserva.CONFIRMADA,
-    )
+    ).order_by('fecha_entrada', 'habitacion__numero')
     return render(request, 'estancias/listar_reservas_checkin.html', {'reservas': reservas})
 
 
