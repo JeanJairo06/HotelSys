@@ -9,6 +9,8 @@ from api.views import (
     HabitacionesDisponiblesAPIView,
     RealizarCheckinAPIView,
     RealizarCheckoutAPIView,
+    HuespedesReservaAutocompleteAPIView,
+    HabitacionesDisponiblesReservaAutocompleteAPIView
 )
 
 app_name = 'api'

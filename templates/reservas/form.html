@@ -120,7 +120,8 @@
         };
 
         const fetchOptions = function (tomSelect, query, callback, errorMessage) {
-            fetch(tomSelect.getUrl(query), {
+            const url = tomSelect.getUrl(query) || tomSelect.settings.firstUrl(query);
+            fetch(url, {
                 credentials: 'same-origin',
                 headers: { 'Accept': 'application/json' },
             })
@@ -138,6 +139,19 @@
                 })
                 .catch(function () {
                     callback();
+                });
+        };
+
+        const fetchHabitaciones = function (query) {
+            return fetch(buildHabitacionUrl(query), {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('No se pudo cargar habitaciones.');
+                    }
+                    return response.json();
                 });
         };
 
@@ -203,6 +217,13 @@
                 },
             },
             onChange: calcularTotal,
+            onFocus: function () {
+                if (!Object.keys(this.options).length) {
+                    this.loadedSearches = {};
+                    this.setNextUrl('', buildHabitacionUrl(''));
+                    this.load('');
+                }
+            },
         });
 
         function diasEstadia() {
@@ -216,33 +237,78 @@
         }
 
         function refrescarHabitaciones() {
-            habitacionSelect.clear();
+            const seleccionActual = habitacionSelect.getValue();
+            const itemActual = seleccionActual ? habitacionSelect.options[seleccionActual] : null;
+
             habitacionSelect.clearOptions();
-            habitacionSelect.setNextUrl('', null);
+            habitacionSelect.loadedSearches = {};
+            habitacionSelect.setNextUrl('', buildHabitacionUrl(''));
+
+            if (itemActual) {
+                habitacionSelect.addOption(itemActual);
+                habitacionSelect.setValue(seleccionActual, true);
+            } else {
+                habitacionSelect.clear(true);
+            }
+
             habitacionSelect.load('');
+
+            if (!seleccionActual || !itemActual || !entrada.value || !salida.value) {
+                calcularTotal();
+                return;
+            }
+
+            fetchHabitaciones(itemActual.numero || '')
+                .then(function (data) {
+                    const resultados = data.results || [];
+                    const sigueDisponible = resultados.some(function (item) {
+                        return String(item.id) === String(seleccionActual);
+                    });
+
+                    if (!sigueDisponible) {
+                        habitacionSelect.clear(true);
+                    }
+
+                    calcularTotal();
+                })
+                .catch(calcularTotal);
         }
 
         function calcularTotal() {
             const value = habitacionSelect.getValue();
             const item = value ? habitacionSelect.options[value] : null;
-            const precio = item ? Number(item.precio || 0) : 0;
+            const precioBase = item ? Number(item.precio || 0) : 0;
             const noches = diasEstadia();
-            if (precio && noches) {
-                total.value = (precio * noches).toFixed(2);
-            } else if (!value) {
+
+            if (!value) {
                 total.value = '0';
+                return;
             }
+
+            if (!precioBase || !noches) {
+                total.value = '';
+                return;
+            }
+
+            const tarifas = item.tarifas || [];
+            let acumulado = 0;
+            let fecha = new Date(entrada.value + 'T00:00:00');
+
+            for (let i = 0; i < noches; i += 1) {
+                const fechaNoche = fecha.toISOString().slice(0, 10);
+                const tarifa = tarifas.find(function (item) {
+                    return item.fechaInicio <= fechaNoche && fechaNoche <= item.fechaFin;
+                });
+                acumulado += tarifa ? Number(tarifa.precio) : precioBase;
+                fecha.setDate(fecha.getDate() + 1);
+            }
+
+            total.value = acumulado.toFixed(2);
         }
 
         tipo.addEventListener('change', refrescarHabitaciones);
-        entrada.addEventListener('change', function () {
-            refrescarHabitaciones();
-            calcularTotal();
-        });
-        salida.addEventListener('change', function () {
-            refrescarHabitaciones();
-            calcularTotal();
-        });
+        entrada.addEventListener('change', refrescarHabitaciones);
+        salida.addEventListener('change', refrescarHabitaciones);
         calcularTotal();
     })();
 </script>

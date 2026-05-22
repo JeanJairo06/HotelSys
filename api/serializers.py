@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from empleados.models import Empleado
 from estancias.models import Estancia
-from habitaciones.models import Habitacion
+from habitaciones.models import Habitacion, TipoHabitacion
 from huespedes.models import Huesped
 from reservas.models import Reserva
 
@@ -54,6 +54,7 @@ class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
     tipo_nombre = serializers.CharField(source='tipo.nombre', read_only=True)
     precio = serializers.DecimalField(source='tipo.precio_base', max_digits=10, decimal_places=2, read_only=True)
     capacidad = serializers.IntegerField(source='tipo.capacidad', read_only=True)
+    tarifas = serializers.SerializerMethodField()
 
     class Meta:
         model = Habitacion
@@ -66,10 +67,21 @@ class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
             'piso',
             'precio',
             'capacidad',
+            'tarifas',
         ]
 
     def get_text(self, obj):
         return f'Hab. {obj.numero} ({obj.tipo.nombre})'
+
+    def get_tarifas(self, obj):
+        return [
+            {
+                'fechaInicio': tarifa.fecha_inicio.isoformat(),
+                'fechaFin': tarifa.fecha_fin.isoformat(),
+                'precio': str(tarifa.precio_noche),
+            }
+            for tarifa in obj.tipo.tarifas.all()
+        ]
 
 
 class HabitacionEstadoSerializer(serializers.Serializer):

@@ -138,7 +138,7 @@ class HabitacionesDisponiblesReservaAutocompleteAPIView(generics.ListAPIView):
     ordering = ['piso', 'numero']
 
     def get_queryset(self):
-        queryset = Habitacion.objects.select_related('hotel', 'tipo')
+        queryset = Habitacion.objects.select_related('hotel', 'tipo').prefetch_related('tipo__tarifas')
         tipo = self.request.query_params.get('tipo')
         fecha_entrada = parse_date(self.request.query_params.get('fecha_entrada') or '')
         fecha_salida = parse_date(self.request.query_params.get('fecha_salida') or '')

@@ -7,6 +7,7 @@ from config.choices import EstadoReserva
 from habitaciones.models import Habitacion, TipoHabitacion
 from huespedes.models import Huesped
 from reservas.models import Reserva
+from reservas.services import calcular_precio_total_reserva
 
 
 class ReservaForm(forms.ModelForm):
@@ -126,8 +127,11 @@ class ReservaForm(forms.ModelForm):
             self.add_error('num_adultos', 'La cantidad de adultos supera la capacidad de la habitacion.')
 
         if fecha_entrada and fecha_salida and fecha_salida > fecha_entrada and habitacion:
-            noches = (fecha_salida - fecha_entrada).days
-            cleaned_data['precio_total'] = habitacion.tipo.precio_base * noches
+            cleaned_data['precio_total'] = calcular_precio_total_reserva(
+                habitacion.tipo,
+                fecha_entrada,
+                fecha_salida,
+            )
         elif fecha_entrada and fecha_salida and fecha_salida <= fecha_entrada:
             raise ValidationError('La fecha de salida debe ser mayor a la fecha de entrada.')
 
