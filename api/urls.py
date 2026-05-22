@@ -9,6 +9,7 @@ from api.views import (
     HabitacionesDisponiblesAPIView,
     RealizarCheckinAPIView,
     RealizarCheckoutAPIView,
+    ReservaListCreateAPIView,
     HuespedesReservaAutocompleteAPIView,
     HabitacionesDisponiblesReservaAutocompleteAPIView
 )
@@ -33,6 +34,7 @@ urlpatterns = [
         HabitacionesDisponiblesReservaAutocompleteAPIView.as_view(),
         name='reservas_habitaciones_disponibles',
     ),
+    path('reservas/', ReservaListCreateAPIView.as_view(), name='reservas_list_create'),
 
     # Endpoints del modulo Habitaciones y Estancias.
     path('habitaciones/disponibles/', HabitacionesDisponiblesAPIView.as_view(), name='habitaciones_disponibles'),
