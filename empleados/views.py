@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.db import models
+from django.db.models.deletion import ProtectedError
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
@@ -72,5 +74,11 @@ class EmpleadoDeleteView(DeleteView):
     success_url = reverse_lazy('empleados:list')
 
     def form_valid(self, form):
+        try:
+            response = super().form_valid(form)
+        except ProtectedError:
+            messages.error(self.request, 'No se puede eliminar el empleado porque tiene registros asociados.')
+            return redirect(self.success_url)
+
         messages.success(self.request, 'Empleado eliminado correctamente.')
-        return super().form_valid(form)
+        return response

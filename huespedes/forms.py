@@ -1,5 +1,8 @@
+from datetime import date
+
 from django import forms
 
+from config.choices import TipoDocumento
 from huespedes.models import Huesped
 
 
@@ -49,3 +52,21 @@ class HuespedForm(forms.ModelForm):
             'maxlength': '20',
             'inputmode': 'tel',
         })
+        hoy = date.today()
+        try:
+            fecha_maxima = hoy.replace(year=hoy.year - 18)
+        except ValueError:
+            fecha_maxima = hoy.replace(year=hoy.year - 18, day=28)
+
+        self.fields['fecha_nacimiento'].widget.attrs.update({
+            'max': fecha_maxima.isoformat(),
+        })
+
+    def clean_razon_social(self):
+        tipo_doc = self.cleaned_data.get('tipo_doc')
+        razon_social = self.cleaned_data.get('razon_social')
+
+        if tipo_doc == TipoDocumento.DNI:
+            return ''
+
+        return razon_social
