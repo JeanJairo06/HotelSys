@@ -24,8 +24,12 @@
                         <tr>
                             <td class="fw-bold text-secondary">#{{ folio.id }}</td>
                             <td>
+                                {%if folio.estancia.reserva.huesped.razon_social%}
+                                <div class="fw-semibold\">{{ folio.estancia.reserva.huesped.razon_social}}</div>
+                                {%else %}
                                 <div class="fw-semibold\">{{ folio.estancia.reserva.huesped.nombres }} {{ folio.estancia.reserva.huesped.apellidos }}</div>
-                                <small class="text-secondary">DNI: {{ folio.estancia.reserva.huesped.documento }}</small>
+                                {%endif%}
+                                <small class="text-secondary">{{folio.estancia.reserva.huesped.tipo_doc}}: {{ folio.estancia.reserva.huesped.num_doc }}</small>
                             </td>
                             <td>
                                 <span class="badge bg-light text-dark border">Hab. {{ folio.estancia.habitacion.numero }}</span>
