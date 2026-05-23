@@ -64,18 +64,25 @@ class FacturaCreateView(CreateView):
         return reverse_lazy('facturacion:folio_detail', kwargs={'pk': self.kwargs['folio_id']})
 
     def form_valid(self, form):
-        folio = Folio.objects.get(pk=self.kwargs['folio_id'])
-        folio.calcular_totales()
+        folio = Folio.objects.select_related('estancia__reserva__huesped').get(pk=self.kwargs['folio_id'])
+        folio.calcular_totales()       
         factura = form.save(commit=False)
-        factura.folio = folio
+        factura.folio = folio   
+        huesped = folio.estancia.reserva.huesped
+        factura.ruc_dni = huesped.num_doc  
+        
+        if huesped.tipo_doc == 'RUC':
+            factura.razon_social = huesped.razon_social 
+        else:
+            factura.razon_social = ""            
         factura.monto_subtotal = folio.subtotal
         factura.monto_igv = folio.igv
         factura.monto_total = folio.total
-        factura.save()
+        factura.save()     
         folio.estado = EstadoFolio.PAGADO
         folio.save()
 
-        messages.success(self.request, f'Factura #{factura.id} emitida correctamente por S/ {factura.monto_total}')
+        messages.success(self.request, f'Comprobante #{factura.id} emitido correctamente.')
         return super().form_valid(form)
     
 @method_decorator(any_role_required(ROLE_ADMIN), name='dispatch')
