@@ -71,7 +71,7 @@
                     {% if user_is_admin or user_is_housekeeping %}
                         <a class="sidebar-link {% if '/limpieza/' in request.path %}active{% endif %}" href="/limpieza/">
                             <span class="sidebar-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
-                            <span>Limpieza</span>
+                            <span>Housekeeping</span>
                         </a>
                     {% endif %}
                     {% if user_is_admin or user_is_recepcionista %}

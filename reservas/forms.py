@@ -34,7 +34,7 @@ class ReservaForm(forms.ModelForm):
             'habitacion': 'Habitacion',
             'fecha_entrada': 'Fecha de entrada',
             'fecha_salida': 'Fecha de salida',
-            'num_adultos': 'Adultos',
+            'num_adultos': 'Cantidad de huespedes',
             'origen': 'Origen',
             'precio_total': 'Total preliminar',
         }
