@@ -125,6 +125,21 @@ class Huesped(models.Model):
                 'La fecha de nacimiento debe ser anterior a hoy.'
             )
 
+        if self.fecha_nacimiento:
+            hoy = date.today()
+            edad = hoy.year - self.fecha_nacimiento.year
+
+            if (hoy.month, hoy.day) < (
+                self.fecha_nacimiento.month,
+                self.fecha_nacimiento.day,
+            ):
+                edad -= 1
+
+            if edad < 18:
+                errors['fecha_nacimiento'] = (
+                    'El huesped debe ser mayor de 18 años.'
+                )
+
         # Validar email único
         if self.email:
             existe_email = Huesped.objects.filter(email=self.email)

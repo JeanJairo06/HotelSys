@@ -42,9 +42,10 @@
                 {{ form.apellidos }}
                 {% for error in form.apellidos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" data-razon-social-field>
                 <label class="form-label" for="{{ form.razon_social.id_for_label }}">{{ form.razon_social.label }}</label>
                 {{ form.razon_social }}
+                <div class="form-text" data-razon-social-help>Disponible solo para RUC.</div>
                 {% for error in form.razon_social.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
             <div class="col-md-6">
@@ -69,4 +70,40 @@
         <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2" aria-hidden="true"></i>Guardar</button>
     </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        const tipoDoc = document.getElementById('{{ form.tipo_doc.id_for_label }}');
+        const razonSocial = document.getElementById('{{ form.razon_social.id_for_label }}');
+        const razonSocialField = document.querySelector('[data-razon-social-field]');
+        const razonSocialHelp = document.querySelector('[data-razon-social-help]');
+
+        if (!tipoDoc || !razonSocial || !razonSocialField) {
+            return;
+        }
+
+        function actualizarRazonSocial() {
+            const esRuc = tipoDoc.value === 'RUC';
+
+            razonSocial.disabled = !esRuc;
+            razonSocial.required = esRuc;
+            razonSocialField.classList.toggle('d-none', !esRuc);
+
+            if (!esRuc) {
+                razonSocial.value = '';
+            }
+
+            if (razonSocialHelp) {
+                razonSocialHelp.textContent = esRuc
+                    ? 'Obligatoria para documentos RUC.'
+                    : 'Disponible solo para RUC.';
+            }
+        }
+
+        tipoDoc.addEventListener('change', actualizarRazonSocial);
+        actualizarRazonSocial();
+    })();
+</script>
 {% endblock %}
