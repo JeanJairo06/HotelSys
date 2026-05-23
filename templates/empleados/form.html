@@ -17,11 +17,14 @@
         {% endif %}
 
         <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label" for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
-                {{ form.codigo }}
-                {% for error in form.codigo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
+            {% if object %}
+                <div class="col-md-4">
+                    <label class="form-label" for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
+                    {{ form.codigo }}
+                    <div class="form-text">El codigo no se modifica al editar.</div>
+                    {% for error in form.codigo.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            {% endif %}
             <div class="col-md-4">
                 <label class="form-label" for="{{ form.fecha_ingreso.id_for_label }}">{{ form.fecha_ingreso.label }}</label>
                 {{ form.fecha_ingreso }}

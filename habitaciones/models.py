@@ -24,6 +24,31 @@ class TipoHabitacion(models.Model):
     def __str__(self):
         return self.nombre
 
+    @property
+    def amenidades_lista(self):
+        """Devuelve amenidades como lista legible sin exponer el JSON crudo."""
+        if isinstance(self.amenidades, list):
+            return [self._normalizar_amenidad(amenidad) for amenidad in self.amenidades if amenidad]
+        if isinstance(self.amenidades, dict):
+            return [
+                self._normalizar_amenidad(clave)
+                for clave, activo in self.amenidades.items()
+                if activo
+            ]
+        if isinstance(self.amenidades, str) and self.amenidades.strip():
+            return [self._normalizar_amenidad(self.amenidades)]
+        return []
+
+    @staticmethod
+    def _normalizar_amenidad(amenidad):
+        texto = str(amenidad).replace('_', ' ').strip()
+        especiales = {
+            'tv': 'TV',
+            'wifi': 'Wifi',
+            'wi fi': 'Wifi',
+        }
+        return especiales.get(texto.lower(), texto.capitalize())
+
 
 class Habitacion(models.Model):
     hotel = models.ForeignKey(

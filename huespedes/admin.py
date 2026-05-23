@@ -4,6 +4,16 @@ from .models import Huesped
 
 @admin.register(Huesped)
 class HuespedAdmin(admin.ModelAdmin):
-    list_display = ('num_doc', 'tipo_doc', 'apellidos', 'nombres', 'email', 'telefono', 'nacionalidad')
-    search_fields = ('num_doc', 'nombres', 'apellidos', 'email')
+    list_display = (
+        'num_doc',
+        'tipo_doc',
+        'apellidos',
+        'nombres',
+        'razon_social',
+        'fecha_nacimiento',
+        'email',
+        'telefono',
+        'nacionalidad',
+    )
+    search_fields = ('num_doc', 'nombres', 'apellidos', 'razon_social', 'email')
     list_filter = ('tipo_doc', 'nacionalidad')

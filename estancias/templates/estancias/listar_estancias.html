@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Estancias | HotelSys{% endblock %}
+{% block page_title %}Estancias{% endblock %}
+{% block page_subtitle %}Consulta el estado operativo de check-in y checkout.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'estancias:listar_reservas_checkin' %}">
+    <i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>Check-in
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">
+<link rel="stylesheet" href="{% static 'css/estancias.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+    <section class="ops-filter-card">
+        <div class="ops-compact-bar mb-3">
+            <div class="ops-status-summary" aria-label="Resumen de estancias">
+                <span class="ops-status-chip status-activa"><strong>{{ total_activas }}</strong> Activas</span>
+                <span class="ops-status-chip status-finalizada"><strong>{{ total_finalizadas }}</strong> Finalizadas</span>
+                <span class="ops-status-chip status-cancelada"><strong>{{ total_canceladas }}</strong> Canceladas</span>
+            </div>
+            <a class="btn btn-sm btn-light" href="{% url 'estancias:listar_estancias' %}"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpiar filtros</a>
+        </div>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-12">
+                <label class="form-label" for="estado">Estado</label>
+                <select class="form-select" id="estado" name="estado" data-estancia-estado>
+                    <option value="">Todos</option>
+                    {% for valor, texto in estados %}
+                        <option value="{{ valor }}" {% if request.GET.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </section>
+
+    <section class="stay-timeline">
+        {% for estancia in estancias %}
+            <article class="stay-card stay-card-{{ estancia.estado|lower }}">
+                <div class="stay-detail">
+                    <span class="stay-label">Estancia #{{ estancia.id }}</span>
+                    <strong>{{ estancia.reserva.huesped }}</strong>
+                    <span class="text-secondary">Habitacion {{ estancia.habitacion.numero }}</span>
+                </div>
+                <div class="stay-detail">
+                    <span><i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>{{ estancia.fecha_checkin|date:'d/m/Y H:i' }}</span>
+                    <span><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ estancia.fecha_checkout|date:'d/m/Y H:i'|default:'Pendiente' }}</span>
+                    <span class="status-badge status-{{ estancia.estado|lower }}">{{ estancia.get_estado_display }}</span>
+                </div>
+                <div class="text-lg-end">
+                    {% if estancia.estado == 'ACTIVA' %}
+                        <a class="btn btn-sm btn-primary" href="{% url 'estancias:realizar_checkout' estancia.pk %}"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Checkout</a>
+                    {% else %}
+                        <span class="text-secondary">Sin acciones</span>
+                    {% endif %}
+                </div>
+            </article>
+        {% empty %}
+            <div class="ops-empty ops-list-card">
+                <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay estancias registradas.
+            </div>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/estancias.js' %}"></script>{% endblock %}

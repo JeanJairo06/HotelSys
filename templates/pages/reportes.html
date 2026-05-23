@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Reportes | HotelSys{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/reportes.css' %}">
+{% endblock %}
+
+{% block page_title %}Reportes analiticos{% endblock %}
+{% block page_subtitle %}Consulta administrativa de ocupacion, reservas, ingresos y huespedes del hotel.{% endblock %}
+
+{% block page_actions %}
+<form method="get" class="report-filter">
+    <label class="visually-hidden" for="desde">Desde</label>
+    <input
+        id="desde"
+        class="form-control"
+        type="date"
+        name="desde"
+        value="{{ reportes.periodo.desde|date:'Y-m-d' }}"
+    >
+
+    <label class="visually-hidden" for="hasta">Hasta</label>
+    <input
+        id="hasta"
+        class="form-control"
+        type="date"
+        name="hasta"
+        value="{{ reportes.periodo.hasta|date:'Y-m-d' }}"
+    >
+
+    <button class="btn btn-primary" type="submit">
+        <i class="bi bi-funnel me-2" aria-hidden="true"></i>Filtrar
+    </button>
+</form>
+{% endblock %}
+
+{% block content %}
+{% if rango_error %}
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>{{ rango_error }}
+    </div>
+{% endif %}
+
+<section class="report-summary" aria-label="Resumen general del reporte">
+    <div class="report-summary-heading">
+        <span class="report-kicker">Periodo del reporte</span>
+        <h2>{{ reportes.periodo.desde|date:'d/m/Y' }} - {{ reportes.periodo.hasta|date:'d/m/Y' }}</h2>
+        <p>{{ reportes.periodo.dias }} dias evaluados con informacion historica del sistema hotelero.</p>
+    </div>
+
+    <div class="report-summary-grid">
+        <div>
+            <span>Ingresos totales</span>
+            <strong>S/ {{ reportes.ingresos.total|floatformat:2 }}</strong>
+        </div>
+        <div>
+            <span>Ocupacion promedio</span>
+            <strong>{{ reportes.ocupacion.porcentaje_periodo|floatformat:2 }}%</strong>
+        </div>
+        <div>
+            <span>Reservas registradas</span>
+            <strong>{{ reportes.reservas.total }}</strong>
+        </div>
+        <div>
+            <span>Huespedes registrados</span>
+            <strong>{{ reportes.huespedes.total }}</strong>
+        </div>
+        <div>
+            <span>Habitaciones ocupadas</span>
+            <strong>{{ reportes.ocupacion.habitaciones.ocupadas }}/{{ reportes.ocupacion.habitaciones.total }}</strong>
+        </div>
+        <div>
+            <span>Promedio por estancia</span>
+            <strong>S/ {{ reportes.ingresos.promedio_estancia|floatformat:2 }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="report-section" aria-label="Reporte de ocupacion">
+    <div class="report-section-header">
+        <div>
+            <span class="report-kicker">Reporte de ocupacion</span>
+            <h2>Estado de habitaciones y ocupacion por tipo</h2>
+        </div>
+        <span class="report-pill">{{ reportes.ocupacion.porcentaje_actual|floatformat:0 }}% ocupacion actual</span>
+    </div>
+
+    <div class="report-status-row">
+        <div>
+            <span class="status-dot status-available"></span>
+            <small>Disponibles</small>
+            <strong>{{ reportes.ocupacion.habitaciones.disponibles }}</strong>
+        </div>
+        <div>
+            <span class="status-dot status-busy"></span>
+            <small>Ocupadas</small>
+            <strong>{{ reportes.ocupacion.habitaciones.ocupadas }}</strong>
+        </div>
+        <div>
+            <span class="status-dot status-cleaning"></span>
+            <small>Limpieza</small>
+            <strong>{{ reportes.ocupacion.habitaciones.limpieza }}</strong>
+        </div>
+        <div>
+            <span class="status-dot status-maintenance"></span>
+            <small>Mantenimiento</small>
+            <strong>{{ reportes.ocupacion.habitaciones.mantenimiento }}</strong>
+        </div>
+    </div>
+
+    <div class="report-table-wrap">
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Tipo de habitacion</th>
+                    <th>Ocupadas</th>
+                    <th>Total</th>
+                    <th>Ocupacion</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tipo in reportes.ocupacion.por_tipo %}
+                    <tr>
+                        <td>{{ tipo.nombre }}</td>
+                        <td>{{ tipo.ocupadas }}</td>
+                        <td>{{ tipo.total }}</td>
+                        <td>
+                            <div class="report-progress" aria-label="Ocupacion {{ tipo.porcentaje|floatformat:0 }} por ciento">
+                                <span style="--bar-value: {{ tipo.porcentaje|floatformat:0 }}%;"></span>
+                            </div>
+                            <strong class="report-progress-label">{{ tipo.porcentaje|floatformat:0 }}%</strong>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">No hay tipos de habitacion registrados.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="report-two-column" aria-label="Reservas e ingresos">
+    <div class="report-section">
+        <div class="report-section-header">
+            <div>
+                <span class="report-kicker">Reporte de reservas</span>
+                <h2>Resumen por estado</h2>
+            </div>
+            <span class="report-pill">{{ reportes.reservas.activas }} activas</span>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table report-table-compact">
+                <thead>
+                    <tr>
+                        <th>Estado</th>
+                        <th>Total</th>
+                        <th>Participacion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for estado in reportes.reservas.por_estado %}
+                        <tr>
+                            <td>{{ estado.nombre }}</td>
+                            <td>{{ estado.total }}</td>
+                            <td>
+                                <div class="report-progress report-progress-small" aria-label="Participacion {{ estado.porcentaje|floatformat:0 }} por ciento">
+                                    <span style="--bar-value: {{ estado.porcentaje|floatformat:0 }}%;"></span>
+                                </div>
+                                <strong class="report-progress-label">{{ estado.porcentaje|floatformat:0 }}%</strong>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="report-section">
+        <div class="report-section-header">
+            <div>
+                <span class="report-kicker">Reporte financiero</span>
+                <h2>Totales contables</h2>
+            </div>
+        </div>
+
+        <dl class="report-definition-list">
+            <div>
+                <dt>Subtotal</dt>
+                <dd>S/ {{ reportes.ingresos.subtotal|floatformat:2 }}</dd>
+            </div>
+            <div>
+                <dt>IGV</dt>
+                <dd>S/ {{ reportes.ingresos.igv|floatformat:2 }}</dd>
+            </div>
+            <div>
+                <dt>Cargos adicionales</dt>
+                <dd>S/ {{ reportes.ingresos.cargos_adicionales|floatformat:2 }}</dd>
+            </div>
+            <div>
+                <dt>Promedio por estancia</dt>
+                <dd>S/ {{ reportes.ingresos.promedio_estancia|floatformat:2 }}</dd>
+            </div>
+        </dl>
+    </div>
+</section>
+
+<section class="report-section" aria-label="Ingresos por habitacion y cargos">
+    <div class="report-section-header">
+        <div>
+            <span class="report-kicker">Detalle de ingresos</span>
+            <h2>Ingresos por tipo de habitacion y cargos adicionales</h2>
+        </div>
+    </div>
+
+    <div class="report-two-column report-two-column-inner">
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Tipo de habitacion</th>
+                        <th>Reservas</th>
+                        <th>Ingreso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in reportes.ingresos.por_tipo_habitacion %}
+                        <tr>
+                            <td>{{ item.nombre }}</td>
+                            <td>{{ item.reservas }}</td>
+                            <td>S/ {{ item.total|floatformat:2 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3">No hay ingresos por habitaciones en el rango.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table report-table-compact">
+                <thead>
+                    <tr>
+                        <th>Cargo</th>
+                        <th>Cantidad</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cargo in reportes.ingresos.por_cargos %}
+                        <tr>
+                            <td>{{ cargo.nombre }}</td>
+                            <td>{{ cargo.cantidad }}</td>
+                            <td>S/ {{ cargo.total|floatformat:2 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3">No hay cargos adicionales en el rango.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<section class="report-two-column" aria-label="Reporte de huespedes">
+    <div class="report-section">
+        <div class="report-section-header">
+            <div>
+                <span class="report-kicker">Reporte de huespedes</span>
+                <h2>Huespedes frecuentes</h2>
+            </div>
+            <span class="report-pill">{{ reportes.huespedes.promedio_noches|floatformat:1 }} noches promedio</span>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Huesped</th>
+                        <th>Reservas</th>
+                        <th>Noches</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in reportes.huespedes.frecuentes %}
+                        <tr>
+                            <td>{{ item.huesped.nombre_completo }}</td>
+                            <td>{{ item.reservas }}</td>
+                            <td>{{ item.noches }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3">No hay huespedes con reservas registradas.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="report-section">
+        <div class="report-section-header">
+            <div>
+                <span class="report-kicker">Reporte de huespedes</span>
+                <h2>Nacionalidades registradas</h2>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table report-table-compact">
+                <thead>
+                    <tr>
+                        <th>Nacionalidad</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for nacionalidad in reportes.huespedes.nacionalidades %}
+                        <tr>
+                            <td>{{ nacionalidad.nacionalidad }}</td>
+                            <td>{{ nacionalidad.total }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2">No hay nacionalidades registradas.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

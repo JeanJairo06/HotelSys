@@ -4,22 +4,103 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from config.choices import CargoEmpleado, EstadoGeneral
+from empleados.forms import EmpleadoForm
 from empleados.models import Empleado
 
 
 class EmpleadoModelTests(TestCase):
-    def test_normaliza_codigo_en_mayusculas(self):
+    def test_normaliza_datos_del_empleado(self):
         empleado = Empleado.objects.create(
-            codigo='emp001',
-            nombres='Ana',
-            apellidos='Torres',
+            codigo=' emp001 ',
+            nombres=' Ana ',
+            apellidos=' Torres ',
             cargo=CargoEmpleado.RECEPCIONISTA,
-            email='ana.torres@example.com',
+            email='ANA.TORRES@EXAMPLE.COM',
+            telefono=' 999 888 777 ',
             estado=EstadoGeneral.ACTIVO,
-            fecha_ingreso=date(2026, 5, 1),
+            fecha_ingreso=date.today(),
         )
 
         self.assertEqual(empleado.codigo, 'EMP001')
+        self.assertEqual(empleado.nombres, 'Ana')
+        self.assertEqual(empleado.apellidos, 'Torres')
+        self.assertEqual(empleado.email, 'ana.torres@example.com')
+        self.assertEqual(empleado.telefono, '999 888 777')
+
+    def test_genera_codigo_automaticamente(self):
+        empleado = Empleado.objects.create(
+            nombres='Ana',
+            apellidos='Torres',
+            cargo=CargoEmpleado.RECEPCIONISTA,
+            email='ana.codigo@example.com',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+
+    def test_incrementa_codigo_automaticamente(self):
+        Empleado.objects.create(
+            nombres='Ana',
+            apellidos='Torres',
+            cargo=CargoEmpleado.RECEPCIONISTA,
+            email='ana.incremento@example.com',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+        empleado = Empleado.objects.create(
+            nombres='Luis',
+            apellidos='Ramos',
+            cargo=CargoEmpleado.HOUSEKEEPING,
+            email='luis.incremento@example.com',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+
+        self.assertEqual(empleado.codigo, 'EMP-0002')
+
+    def test_formulario_ignora_codigo_manual_al_crear(self):
+        form = EmpleadoForm(data={
+            'codigo': 'MANUAL',
+            'nombres': 'Ana',
+            'apellidos': 'Torres',
+            'cargo': CargoEmpleado.RECEPCIONISTA,
+            'email': 'ana.form@example.com',
+            'telefono': '',
+            'estado': EstadoGeneral.ACTIVO,
+            'fecha_ingreso': date.today().isoformat(),
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        empleado = form.save()
+
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+
+    def test_formulario_conserva_codigo_al_editar(self):
+        empleado = Empleado.objects.create(
+            nombres='Ana',
+            apellidos='Torres',
+            cargo=CargoEmpleado.RECEPCIONISTA,
+            email='ana.editar@example.com',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+        form = EmpleadoForm(data={
+            'codigo': 'MANUAL',
+            'nombres': 'Ana Maria',
+            'apellidos': 'Torres',
+            'cargo': CargoEmpleado.RECEPCIONISTA,
+            'email': 'ana.editar@example.com',
+            'telefono': '',
+            'estado': EstadoGeneral.ACTIVO,
+            'fecha_ingreso': date.today().isoformat(),
+        }, instance=empleado)
+
+        self.assertTrue(form.is_valid(), form.errors)
+        empleado = form.save()
+
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+        self.assertEqual(empleado.nombres, 'Ana Maria')
 
     def test_rechaza_telefono_invalido(self):
         empleado = Empleado(
@@ -30,8 +111,95 @@ class EmpleadoModelTests(TestCase):
             email='luis.ramos@example.com',
             telefono='abc123',
             estado=EstadoGeneral.ACTIVO,
-            fecha_ingreso=date(2026, 5, 1),
+            fecha_ingreso=date.today(),
         )
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(ValidationError) as context:
             empleado.full_clean()
+
+        self.assertIn('telefono', context.exception.message_dict)
+
+    def test_rechaza_telefono_con_longitud_invalida(self):
+        empleado = Empleado(
+            codigo='EMP003',
+            nombres='Mario',
+            apellidos='Lopez',
+            cargo=CargoEmpleado.HOUSEKEEPING,
+            email='mario.lopez@example.com',
+            telefono='123456',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            empleado.full_clean()
+
+        self.assertIn('telefono', context.exception.message_dict)
+
+    def test_rechaza_fecha_ingreso_futura(self):
+        empleado = Empleado(
+            codigo='EMP004',
+            nombres='Rosa',
+            apellidos='Vega',
+            cargo=CargoEmpleado.RECEPCIONISTA,
+            email='rosa.vega@example.com',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date(date.today().year + 1, 1, 1),
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            empleado.full_clean()
+
+        self.assertIn('fecha_ingreso', context.exception.message_dict)
+
+    def test_rechaza_email_duplicado(self):
+        Empleado.objects.create(
+            codigo='EMP005',
+            nombres='Elena',
+            apellidos='Diaz',
+            cargo=CargoEmpleado.RECEPCIONISTA,
+            email='elena.diaz@example.com',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+        empleado = Empleado(
+            codigo='EMP006',
+            nombres='Elena',
+            apellidos='Rojas',
+            cargo=CargoEmpleado.RECEPCIONISTA,
+            email='ELENA.DIAZ@EXAMPLE.COM',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            empleado.full_clean()
+
+        self.assertIn('email', context.exception.message_dict)
+
+    def test_rechaza_telefono_duplicado(self):
+        Empleado.objects.create(
+            codigo='EMP007',
+            nombres='Pedro',
+            apellidos='Soto',
+            cargo=CargoEmpleado.HOUSEKEEPING,
+            email='pedro.soto@example.com',
+            telefono='999888777',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+        empleado = Empleado(
+            codigo='EMP008',
+            nombres='Pedro',
+            apellidos='Mora',
+            cargo=CargoEmpleado.HOUSEKEEPING,
+            email='pedro.mora@example.com',
+            telefono='999888777',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+
+        with self.assertRaises(ValidationError) as context:
+            empleado.full_clean()
+
+        self.assertIn('telefono', context.exception.message_dict)

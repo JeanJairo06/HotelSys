@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar reserva{% else %}Nueva reserva{% endif %} | HotelSys{% endblock %}
+{% block page_title %}{% if object %}Editar reserva{% else %}Nueva reserva{% endif %}{% endblock %}
+{% block page_subtitle %}Registra fechas, huesped, habitacion y calcula el total preliminar de la estadia.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'reservas:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<form method="post" class="card border-0 shadow-sm app-form" novalidate>
+    {% csrf_token %}
+    <div class="card-body p-4">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert"><i class="bi bi-exclamation-circle me-2" aria-hidden="true"></i>{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.huesped.id_for_label }}">{{ form.huesped.label }}</label>
+                <div data-huesped-autocomplete-url="{% url 'api:reservas_huespedes_autocomplete' %}">
+                    {{ form.huesped }}
+                </div>
+                {% for error in form.huesped.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.tipo_habitacion.id_for_label }}">{{ form.tipo_habitacion.label }}</label>
+                {{ form.tipo_habitacion }}
+                {% for error in form.tipo_habitacion.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.habitacion.id_for_label }}">{{ form.habitacion.label }}</label>
+                <div data-habitacion-autocomplete-url="{% url 'api:reservas_habitaciones_disponibles' %}" data-reserva-id="{{ reserva_id }}">
+                    {{ form.habitacion }}
+                </div>
+                {% for error in form.habitacion.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.fecha_entrada.id_for_label }}">{{ form.fecha_entrada.label }}</label>
+                {{ form.fecha_entrada }}
+                {% for error in form.fecha_entrada.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.fecha_salida.id_for_label }}">{{ form.fecha_salida.label }}</label>
+                {{ form.fecha_salida }}
+                {% for error in form.fecha_salida.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.num_adultos.id_for_label }}">{{ form.num_adultos.label }}</label>
+                {{ form.num_adultos }}
+                {% for error in form.num_adultos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.origen.id_for_label }}">{{ form.origen.label }}</label>
+                {{ form.origen }}
+                {% for error in form.origen.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.precio_total.id_for_label }}">{{ form.precio_total.label }}</label>
+                {{ form.precio_total }}
+                {% for error in form.precio_total.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+        <a class="btn btn-light" href="{% url 'reservas:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2" aria-hidden="true"></i>Guardar</button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+    (function () {
+        const tipo = document.getElementById('{{ form.tipo_habitacion.id_for_label }}');
+        const huesped = document.querySelector('.js-huesped-select');
+        const habitacion = document.querySelector('.js-habitacion-select');
+        const huespedWrapper = document.querySelector('[data-huesped-autocomplete-url]');
+        const habitacionWrapper = document.querySelector('[data-habitacion-autocomplete-url]');
+        const entrada = document.getElementById('{{ form.fecha_entrada.id_for_label }}');
+        const salida = document.getElementById('{{ form.fecha_salida.id_for_label }}');
+        const total = document.getElementById('{{ form.precio_total.id_for_label }}');
+
+        if (!huesped || !habitacion || !huespedWrapper || !habitacionWrapper || typeof TomSelect === 'undefined') {
+            return;
+        }
+
+        const buildHuespedUrl = function (query) {
+            const params = new URLSearchParams({ page_size: '15' });
+            if (query) {
+                params.set('search', query);
+            }
+            return huespedWrapper.dataset.huespedAutocompleteUrl + '?' + params.toString();
+        };
+
+        const buildHabitacionUrl = function (query) {
+            const params = new URLSearchParams({ page_size: '15' });
+            if (query) {
+                params.set('search', query);
+            }
+            if (tipo.value) {
+                params.set('tipo', tipo.value);
+            }
+            if (entrada.value) {
+                params.set('fecha_entrada', entrada.value);
+            }
+            if (salida.value) {
+                params.set('fecha_salida', salida.value);
+            }
+            if (habitacionWrapper.dataset.reservaId) {
+                params.set('reserva_id', habitacionWrapper.dataset.reservaId);
+            }
+            return habitacionWrapper.dataset.habitacionAutocompleteUrl + '?' + params.toString();
+        };
+
+        const fetchOptions = function (tomSelect, query, callback, errorMessage) {
+            const url = tomSelect.getUrl(query) || tomSelect.settings.firstUrl(query);
+            fetch(url, {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error(errorMessage);
+                    }
+                    return response.json();
+                })
+                .then(function (data) {
+                    if (data.next) {
+                        tomSelect.setNextUrl(query, data.next);
+                    }
+                    callback(data.results || []);
+                })
+                .catch(function () {
+                    callback();
+                });
+        };
+
+        const fetchHabitaciones = function (query) {
+            return fetch(buildHabitacionUrl(query), {
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json' },
+            })
+                .then(function (response) {
+                    if (!response.ok) {
+                        throw new Error('No se pudo cargar habitaciones.');
+                    }
+                    return response.json();
+                });
+        };
+
+        new TomSelect(huesped, {
+            valueField: 'id',
+            labelField: 'text',
+            searchField: ['num_doc', 'text', 'email', 'telefono'],
+            maxItems: 1,
+            preload: 'focus',
+            loadThrottle: 300,
+            plugins: ['virtual_scroll'],
+            firstUrl: buildHuespedUrl,
+            load: function (query, callback) {
+                fetchOptions(this, query, callback, 'No se pudo cargar huespedes.');
+            },
+            render: {
+                option: function (item, rendererEscape) {
+                    const meta = [item.tipo_doc_display, item.num_doc, item.email].filter(Boolean).join(' - ');
+                    return '<div>'
+                        + '<div class="fw-semibold">' + rendererEscape(item.text) + '</div>'
+                        + (meta ? '<div class="small text-secondary">' + rendererEscape(meta) + '</div>' : '')
+                        + '</div>';
+                },
+                item: function (item, rendererEscape) {
+                    const meta = item.num_doc ? ' (' + item.num_doc + ')' : '';
+                    return '<div>' + rendererEscape(item.text) + rendererEscape(meta) + '</div>';
+                },
+                no_results: function () {
+                    return '<div class="no-results">No se encontraron huespedes.</div>';
+                },
+            },
+        });
+
+        const habitacionSelect = new TomSelect(habitacion, {
+            valueField: 'id',
+            labelField: 'text',
+            searchField: ['numero', 'tipo_nombre'],
+            maxItems: 1,
+            preload: 'focus',
+            loadThrottle: 300,
+            plugins: ['virtual_scroll'],
+            firstUrl: buildHabitacionUrl,
+            load: function (query, callback) {
+                fetchOptions(this, query, callback, 'No se pudo cargar habitaciones.');
+            },
+            render: {
+                option: function (item, rendererEscape) {
+                    const meta = [
+                        item.tipo_nombre,
+                        item.capacidad ? 'Cap. ' + item.capacidad : null,
+                        item.precio ? 'S/ ' + item.precio : null,
+                    ].filter(Boolean).join(' - ');
+                    return '<div>'
+                        + '<div class="fw-semibold">' + rendererEscape(item.text) + '</div>'
+                        + (meta ? '<div class="small text-secondary">' + rendererEscape(meta) + '</div>' : '')
+                        + '</div>';
+                },
+                item: function (item, rendererEscape) {
+                    return '<div>' + rendererEscape(item.text) + '</div>';
+                },
+                no_results: function () {
+                    return '<div class="no-results">No hay habitaciones disponibles con esos filtros.</div>';
+                },
+            },
+            onChange: calcularTotal,
+            onFocus: function () {
+                if (!Object.keys(this.options).length) {
+                    this.loadedSearches = {};
+                    this.setNextUrl('', buildHabitacionUrl(''));
+                    this.load('');
+                }
+            },
+        });
+
+        function diasEstadia() {
+            if (!entrada.value || !salida.value) {
+                return 0;
+            }
+            const inicio = new Date(entrada.value + 'T00:00:00');
+            const fin = new Date(salida.value + 'T00:00:00');
+            const dias = Math.round((fin - inicio) / 86400000);
+            return dias > 0 ? dias : 0;
+        }
+
+        function refrescarHabitaciones() {
+            const seleccionActual = habitacionSelect.getValue();
+            const itemActual = seleccionActual ? habitacionSelect.options[seleccionActual] : null;
+
+            habitacionSelect.clearOptions();
+            habitacionSelect.loadedSearches = {};
+            habitacionSelect.setNextUrl('', buildHabitacionUrl(''));
+
+            if (itemActual) {
+                habitacionSelect.addOption(itemActual);
+                habitacionSelect.setValue(seleccionActual, true);
+            } else {
+                habitacionSelect.clear(true);
+            }
+
+            habitacionSelect.load('');
+
+            if (!seleccionActual || !itemActual || !entrada.value || !salida.value) {
+                calcularTotal();
+                return;
+            }
+
+            fetchHabitaciones(itemActual.numero || '')
+                .then(function (data) {
+                    const resultados = data.results || [];
+                    const sigueDisponible = resultados.some(function (item) {
+                        return String(item.id) === String(seleccionActual);
+                    });
+
+                    if (!sigueDisponible) {
+                        habitacionSelect.clear(true);
+                    }
+
+                    calcularTotal();
+                })
+                .catch(calcularTotal);
+        }
+
+        function calcularTotal() {
+            const value = habitacionSelect.getValue();
+            const item = value ? habitacionSelect.options[value] : null;
+            const precioBase = item ? Number(item.precio || 0) : 0;
+            const noches = diasEstadia();
+
+            if (!value) {
+                total.value = '0';
+                return;
+            }
+
+            if (!precioBase || !noches) {
+                total.value = '';
+                return;
+            }
+
+            const tarifas = item.tarifas || [];
+            let acumulado = 0;
+            let fecha = new Date(entrada.value + 'T00:00:00');
+
+            for (let i = 0; i < noches; i += 1) {
+                const fechaNoche = fecha.toISOString().slice(0, 10);
+                const tarifa = tarifas.find(function (item) {
+                    return item.fechaInicio <= fechaNoche && fechaNoche <= item.fechaFin;
+                });
+                acumulado += tarifa ? Number(tarifa.precio) : precioBase;
+                fecha.setDate(fecha.getDate() + 1);
+            }
+
+            total.value = acumulado.toFixed(2);
+        }
+
+        tipo.addEventListener('change', refrescarHabitaciones);
+        entrada.addEventListener('change', refrescarHabitaciones);
+        salida.addEventListener('change', refrescarHabitaciones);
+        calcularTotal();
+    })();
+</script>
+{% endblock %}

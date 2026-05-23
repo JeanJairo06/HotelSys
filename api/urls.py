@@ -2,7 +2,17 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from api.auth import HotelSysTokenObtainPairView
-from api.views import EmpleadosDisponiblesUsuarioAPIView
+from api.views import (
+    EmpleadosDisponiblesUsuarioAPIView,
+    EstanciaDetailAPIView,
+    HabitacionHousekeepingAPIView,
+    HabitacionesDisponiblesAPIView,
+    RealizarCheckinAPIView,
+    RealizarCheckoutAPIView,
+    ReservaListCreateAPIView,
+    HuespedesReservaAutocompleteAPIView,
+    HabitacionesDisponiblesReservaAutocompleteAPIView
+)
 
 app_name = 'api'
 
@@ -14,4 +24,22 @@ urlpatterns = [
         EmpleadosDisponiblesUsuarioAPIView.as_view(),
         name='empleados_disponibles_usuario',
     ),
+    path(
+        'reservas/huespedes-autocomplete/',
+        HuespedesReservaAutocompleteAPIView.as_view(),
+        name='reservas_huespedes_autocomplete',
+    ),
+    path(
+        'reservas/habitaciones-disponibles/',
+        HabitacionesDisponiblesReservaAutocompleteAPIView.as_view(),
+        name='reservas_habitaciones_disponibles',
+    ),
+    path('reservas/', ReservaListCreateAPIView.as_view(), name='reservas_list_create'),
+
+    # Endpoints del modulo Habitaciones y Estancias.
+    path('habitaciones/disponibles/', HabitacionesDisponiblesAPIView.as_view(), name='habitaciones_disponibles'),
+    path('reservas/<int:reserva_id>/checkin/', RealizarCheckinAPIView.as_view(), name='realizar_checkin'),
+    path('estancias/<int:pk>/', EstanciaDetailAPIView.as_view(), name='estancias_detail'),
+    path('estancias/<int:estancia_id>/checkout/', RealizarCheckoutAPIView.as_view(), name='realizar_checkout'),
+    path('habitaciones/<int:habitacion_id>/housekeeping/', HabitacionHousekeepingAPIView.as_view(), name='habitacion_housekeeping'),
 ]

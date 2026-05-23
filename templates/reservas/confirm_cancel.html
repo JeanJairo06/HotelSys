@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancelar reserva | HotelSys{% endblock %}
+{% block page_title %}Cancelar reserva{% endblock %}
+{% block page_subtitle %}Confirma la cancelacion del registro seleccionado.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'reservas:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block content %}
+<div class="error-card">
+    <span class="error-code"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+    <h2 class="h4 mb-3">Cancelar reserva #{{ reserva.id }}?</h2>
+    <p class="text-secondary mb-4">Esta accion cambiara el estado de la reserva de {{ reserva.huesped.nombre_completo }} a cancelada. La habitacion quedara disponible para nuevas reservas en esas fechas.</p>
+    <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <a class="btn btn-light" href="{% url 'reservas:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Volver</a>
+        <button class="btn btn-danger" type="submit"><i class="bi bi-x-circle me-2" aria-hidden="true"></i>Cancelar reserva</button>
+    </form>
+</div>
+{% endblock %}

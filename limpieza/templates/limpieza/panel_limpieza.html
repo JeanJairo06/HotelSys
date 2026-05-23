@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Limpieza | HotelSys{% endblock %}
+{% block page_title %}Limpieza{% endblock %}
+{% block page_subtitle %}Gestiona habitaciones en limpieza y mantenimiento.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">
+<link rel="stylesheet" href="{% static 'css/limpieza.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+    <section class="ops-filter-card">
+        <div class="ops-compact-bar mb-3">
+            <div class="ops-status-summary" aria-label="Resumen de limpieza">
+                <span class="ops-status-chip status-limpieza"><strong>{{ total_limpieza }}</strong> En limpieza</span>
+                <span class="ops-status-chip status-mantenimiento"><strong>{{ total_mantenimiento }}</strong> Mantenimiento</span>
+            </div>
+            <a class="btn btn-sm btn-light" href="{% url 'limpieza:panel_limpieza' %}"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpiar filtros</a>
+        </div>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-12">
+                <label class="form-label" for="piso">Piso</label>
+                <select class="form-select" id="piso" name="piso" data-housekeeping-piso>
+                    <option value="">Todos</option>
+                    {% for piso in pisos %}
+                        <option value="{{ piso }}" {% if request.GET.piso == piso|stringformat:'s' %}selected{% endif %}>Piso {{ piso }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </section>
+
+    <section class="housekeeping-board">
+        <div class="housekeeping-column">
+            <div class="housekeeping-column-header">
+                <h2 class="h5 mb-0">Limpieza</h2>
+                <span class="status-badge status-limpieza">{{ total_limpieza }}</span>
+            </div>
+            <div class="housekeeping-list">
+                {% for habitacion in habitaciones %}
+                    {% if habitacion.estado == 'LIMPIEZA' %}
+                        <article class="housekeeping-card housekeeping-card-limpieza">
+                            <div class="housekeeping-card-header">
+                                <div>
+                                    <span class="housekeeping-room">{{ habitacion.numero }}</span>
+                                    <span class="text-secondary">Piso {{ habitacion.piso }} - {{ habitacion.tipo.nombre }}</span>
+                                </div>
+                                <span class="status-badge status-limpieza">{{ habitacion.get_estado_display }}</span>
+                            </div>
+                            <div class="housekeeping-actions">
+                                <form method="post" action="{% url 'limpieza:marcar_habitacion_disponible' habitacion.pk %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm room-action room-action-disponible" type="submit"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Disponible</button>
+                                </form>
+                                <form method="post" action="{% url 'limpieza:marcar_habitacion_mantenimiento' habitacion.pk %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm room-action room-action-mantenimiento" type="submit"><i class="bi bi-tools me-1" aria-hidden="true"></i>Mantenimiento</button>
+                                </form>
+                            </div>
+                        </article>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="housekeeping-column">
+            <div class="housekeeping-column-header">
+                <h2 class="h5 mb-0">Mantenimiento</h2>
+                <span class="status-badge status-mantenimiento">{{ total_mantenimiento }}</span>
+            </div>
+            <div class="housekeeping-list">
+                {% for habitacion in habitaciones %}
+                    {% if habitacion.estado == 'MANTENIMIENTO' %}
+                        <article class="housekeeping-card housekeeping-card-mantenimiento">
+                            <div class="housekeeping-card-header">
+                                <div>
+                                    <span class="housekeeping-room">{{ habitacion.numero }}</span>
+                                    <span class="text-secondary">Piso {{ habitacion.piso }} - {{ habitacion.tipo.nombre }}</span>
+                                </div>
+                                <span class="status-badge status-mantenimiento">{{ habitacion.get_estado_display }}</span>
+                            </div>
+                            <div class="housekeeping-actions">
+                                <form method="post" action="{% url 'limpieza:marcar_habitacion_disponible' habitacion.pk %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm room-action room-action-disponible" type="submit"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Disponible</button>
+                                </form>
+                            </div>
+                        </article>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/limpieza.js' %}"></script>{% endblock %}

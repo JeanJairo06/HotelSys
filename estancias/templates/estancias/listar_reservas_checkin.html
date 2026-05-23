@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Check-in | HotelSys{% endblock %}
+{% block page_title %}Check-in{% endblock %}
+{% block page_subtitle %}Selecciona reservas confirmadas para iniciar estancia.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'estancias:listar_estancias' %}">
+    <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Estancias
+</a>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">
+<link rel="stylesheet" href="{% static 'css/estancias.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+    {% for reserva in reservas %}
+        <article class="reservation-card">
+            <div>
+                <span class="stay-label">Reserva #{{ reserva.id }}</span>
+                <h2 class="h5 mb-2">{{ reserva.huesped }}</h2>
+                <div class="room-meta">
+                    <span><i class="bi bi-door-open" aria-hidden="true"></i>Habitacion {{ reserva.habitacion.numero }}</span>
+                    <span><i class="bi bi-calendar-event" aria-hidden="true"></i>{{ reserva.fecha_entrada|date:'d/m/Y' }} - {{ reserva.fecha_salida|date:'d/m/Y' }}</span>
+                </div>
+            </div>
+            <a class="btn btn-primary" href="{% url 'estancias:realizar_checkin' reserva.pk %}"><i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>Check-in</a>
+        </article>
+    {% empty %}
+        <div class="ops-empty ops-list-card">
+            <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay reservas confirmadas para check-in.
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

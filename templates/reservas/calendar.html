@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}Calendario de reservas | HotelSys{% endblock %}
+{% block page_title %}Calendario de reservas{% endblock %}
+{% block page_subtitle %}Visualiza reservas activas en una linea de tiempo por habitacion.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'reservas:list' %}"><i class="bi bi-list-ul me-2" aria-hidden="true"></i>Historial</a>
+<a class="btn btn-primary" href="{% url 'reservas:create' %}"><i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nueva reserva</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reservation-calendar {
+        min-width: 980px;
+    }
+    .reservation-calendar th,
+    .reservation-calendar td {
+        min-width: 96px;
+        vertical-align: middle;
+    }
+    .reservation-calendar .room-column {
+        min-width: 220px;
+        position: sticky;
+        left: 0;
+        z-index: 2;
+        background: #fff;
+    }
+    .reservation-slot {
+        min-height: 42px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px;
+        font-size: .78rem;
+        line-height: 1.1;
+        text-align: center;
+    }
+    .reservation-slot.is-free {
+        background: #f8f9fa;
+        color: #6c757d;
+        border: 1px dashed #dee2e6;
+    }
+    .reservation-slot.is-booked {
+        background: #e7f1ff;
+        color: #084298;
+        border: 1px solid #9ec5fe;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" for="tipo">Tipo</label>
+                <select class="form-select" id="tipo" name="tipo">
+                    <option value="">Todos</option>
+                    {% for tipo in tipos_habitacion %}
+                        <option value="{{ tipo.id }}" {% if request.GET.tipo == tipo.id|stringformat:'s' %}selected{% endif %}>{{ tipo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="desde">Desde</label>
+                <input class="form-control" type="date" id="desde" name="desde" value="{{ desde|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="hasta">Hasta</label>
+                <input class="form-control" type="date" id="hasta" name="hasta" value="{{ hasta|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-2" aria-hidden="true"></i>Filtrar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 app-table reservation-calendar">
+                <thead>
+                    <tr>
+                        <th class="room-column">Habitacion</th>
+                        {% for dia in dias %}
+                            <th class="text-center">
+                                {{ dia|date:'d/m' }}
+                                <span class="d-block small text-secondary">{{ dia|date:'D' }}</span>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for fila in filas %}
+                        <tr>
+                            <td class="room-column">
+                                <span class="fw-semibold">Hab. {{ fila.habitacion.numero }}</span>
+                                <span class="d-block small text-secondary">{{ fila.habitacion.tipo.nombre }}</span>
+                            </td>
+                            {% for celda in fila.celdas %}
+                                <td>
+                                    {% if celda.reserva %}
+                                        <a class="reservation-slot is-booked text-decoration-none" href="{% url 'reservas:detail' celda.reserva.pk %}" title="Reserva #{{ celda.reserva.id }}">
+                                            #{{ celda.reserva.id }} {{ celda.reserva.huesped.nombre_completo }}
+                                        </a>
+                                    {% else %}
+                                        <span class="reservation-slot is-free">Libre</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="{{ dias|length|add:'1' }}" class="text-center py-5 text-secondary"><i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay habitaciones para los filtros seleccionados.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

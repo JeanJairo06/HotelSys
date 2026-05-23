@@ -11,43 +11,97 @@
             <span class="sidebar-icon"><i class="bi bi-speedometer2" aria-hidden="true"></i></span>
             <span>Dashboard</span>
         </a>
+
         {% if user_is_admin or user_is_recepcionista %}
-            <a class="sidebar-link {% if '/habitaciones/' in request.path %}active{% endif %}" href="/habitaciones/">
-                <span class="sidebar-icon"><i class="bi bi-door-open" aria-hidden="true"></i></span>
-                <span>Habitaciones</span>
-            </a>
-            <a class="sidebar-link {% if '/reservas/' in request.path %}active{% endif %}" href="/reservas/">
-                <span class="sidebar-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
-                <span>Reservas</span>
-            </a>
-            <a class="sidebar-link {% if '/huespedes/' in request.path %}active{% endif %}" href="/huespedes/">
-                <span class="sidebar-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
-                <span>Huéspedes</span>
-            </a>
+            <details class="sidebar-group" {% if '/habitaciones/' in request.path or '/estancias/' in request.path or '/reservas/' in request.path or '/huespedes/' in request.path %}open{% endif %}>
+                <summary class="sidebar-group-toggle">
+                    <span class="sidebar-icon"><i class="bi bi-building-check" aria-hidden="true"></i></span>
+                    <span>Recepción</span>
+                    <i class="bi bi-chevron-down sidebar-group-icon" aria-hidden="true"></i>
+                </summary>
+                <div class="sidebar-group-links">
+                    <a class="sidebar-link {% if '/reservas/' in request.path %}active{% endif %}" href="/reservas/">
+                        <span class="sidebar-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
+                        <span>Reservas</span>
+                    </a>
+                    <a class="sidebar-link {% if '/estancias/' in request.path %}active{% endif %}" href="{% url 'estancias:listar_estancias' %}">
+                        <span class="sidebar-icon"><i class="bi bi-card-checklist" aria-hidden="true"></i></span>
+                        <span>Estancias</span>
+                    </a>
+                    <a class="sidebar-link {% if '/huespedes/' in request.path %}active{% endif %}" href="/huespedes/">
+                        <span class="sidebar-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                        <span>Huéspedes</span>
+                    </a>
+                    <a class="sidebar-link {% if '/habitaciones/' in request.path %}active{% endif %}" href="/habitaciones/">
+                        <span class="sidebar-icon"><i class="bi bi-door-open" aria-hidden="true"></i></span>
+                        <span>Habitaciones</span>
+                    </a>
+                </div>
+            </details>
+
+            <details class="sidebar-group" {% if '/facturacion/folios/' in request.path or '/facturacion/tarifas/' in request.path %}open{% endif %}>
+                <summary class="sidebar-group-toggle">
+                    <span class="sidebar-icon"><i class="bi bi-cash-coin" aria-hidden="true"></i></span>
+                    <span>Facturación</span>
+                    <i class="bi bi-chevron-down sidebar-group-icon" aria-hidden="true"></i>
+                </summary>
+                <div class="sidebar-group-links">
+                    <a class="sidebar-link {% if '/facturacion/folios/' in request.path %}active{% endif %}" href="{% url 'facturacion:folio_list' %}">
+                        <span class="sidebar-icon"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></span>
+                        <span>Folios (Cuentas)</span>
+                    </a>
+                    {% if user_is_admin %}
+                        <a class="sidebar-link {% if '/facturacion/tarifas/' in request.path %}active{% endif %}" href="{% url 'facturacion:tarifa_list' %}">
+                            <span class="sidebar-icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
+                            <span>Tarifas Temporada</span>
+                        </a>
+                    {% endif %}
+                </div>
+            </details>
         {% endif %}
-        {% if user_is_admin %}
-            <a class="sidebar-link {% if '/empleados/' in request.path %}active{% endif %}" href="{% url 'empleados:list' %}">
-                <span class="sidebar-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
-                <span>Empleados</span>
-            </a>
-        {% endif %}
+
         {% if user_is_admin or user_is_housekeeping %}
-            <a class="sidebar-link {% if '/limpieza/' in request.path %}active{% endif %}" href="/limpieza/">
-                <span class="sidebar-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
-                <span>Housekeeping</span>
-            </a>
+            <details class="sidebar-group" {% if '/limpieza/' in request.path or '/reportes/' in request.path %}open{% endif %}>
+                <summary class="sidebar-group-toggle">
+                    <span class="sidebar-icon"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></span>
+                    <span>Operación</span>
+                    <i class="bi bi-chevron-down sidebar-group-icon" aria-hidden="true"></i>
+                </summary>
+                <div class="sidebar-group-links">
+                    {% if user_is_admin or user_is_housekeeping %}
+                        <a class="sidebar-link {% if '/limpieza/' in request.path %}active{% endif %}" href="/limpieza/">
+                            <span class="sidebar-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                            <span>Limpieza</span>
+                        </a>
+                    {% endif %}
+                    {% if user_is_admin or user_is_recepcionista %}
+                        <a class="sidebar-link {% if '/reportes/' in request.path %}active{% endif %}" href="/reportes/">
+                            <span class="sidebar-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></span>
+                            <span>Reportes</span>
+                        </a>
+                    {% endif %}
+                </div>
+            </details>
         {% endif %}
-        {% if user_is_admin or user_is_recepcionista %}
-            <a class="sidebar-link {% if '/reportes/' in request.path %}active{% endif %}" href="/reportes/">
-                <span class="sidebar-icon"><i class="bi bi-bar-chart" aria-hidden="true"></i></span>
-                <span>Reportes</span>
-            </a>
-        {% endif %}
+
         {% if user_is_admin %}
-            <a class="sidebar-link {% if '/usuarios/' in request.path %}active{% endif %}" href="{% url 'usuarios:list' %}">
-                <span class="sidebar-icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
-                <span>Usuarios</span>
-            </a>
+            <details class="sidebar-group" {% if '/empleados/' in request.path or '/usuarios/' in request.path %}open{% endif %}>
+                <summary class="sidebar-group-toggle">
+                    <span class="sidebar-icon"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+                    <span>Administración</span>
+                    <i class="bi bi-chevron-down sidebar-group-icon" aria-hidden="true"></i>
+                </summary>
+                <div class="sidebar-group-links">
+                    <a class="sidebar-link {% if '/empleados/' in request.path %}active{% endif %}" href="{% url 'empleados:list' %}">
+                        <span class="sidebar-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
+                        <span>Empleados</span>
+                    </a>
+                    <a class="sidebar-link {% if '/usuarios/' in request.path %}active{% endif %}" href="{% url 'usuarios:list' %}">
+                        <span class="sidebar-icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+                        <span>Usuarios</span>
+                    </a>
+                </div>
+            </details>
         {% endif %}
     </nav>
 

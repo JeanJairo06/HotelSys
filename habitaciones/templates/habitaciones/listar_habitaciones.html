@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Habitaciones | HotelSys{% endblock %}
+{% block page_title %}Habitaciones{% endblock %}
+{% block page_subtitle %}Controla disponibilidad, ocupacion, limpieza y mantenimiento.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'habitaciones:listar_tipos_habitacion' %}">
+    <i class="bi bi-tags me-2" aria-hidden="true"></i>Tipos
+</a>
+{% if user_is_admin %}
+    <a class="btn btn-primary" href="{% url 'habitaciones:crear_habitacion' %}">
+        <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nueva habitacion
+    </a>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+    <section class="ops-filter-card">
+        <div class="ops-compact-bar mb-3">
+            <div class="ops-status-summary" aria-label="Resumen de estados">
+                <a class="ops-status-chip status-disponible {% if request.GET.estado == 'DISPONIBLE' %}active{% endif %}" href="?estado=DISPONIBLE"><strong>{{ total_disponibles }}</strong> Disponibles</a>
+                <a class="ops-status-chip status-ocupada {% if request.GET.estado == 'OCUPADA' %}active{% endif %}" href="?estado=OCUPADA"><strong>{{ total_ocupadas }}</strong> Ocupadas</a>
+                <a class="ops-status-chip status-limpieza {% if request.GET.estado == 'LIMPIEZA' %}active{% endif %}" href="?estado=LIMPIEZA"><strong>{{ total_limpieza }}</strong> En limpieza</a>
+                <a class="ops-status-chip status-mantenimiento {% if request.GET.estado == 'MANTENIMIENTO' %}active{% endif %}" href="?estado=MANTENIMIENTO"><strong>{{ total_mantenimiento }}</strong> Mantenimiento</a>
+            </div>
+            <a class="btn btn-sm btn-light" href="{% url 'habitaciones:listar_habitaciones' %}"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpiar filtros</a>
+        </div>
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label" for="tipo">Tipo</label>
+                <select class="form-select" id="tipo" name="tipo" data-auto-submit>
+                    <option value="">Todos</option>
+                    {% for tipo in tipos_habitacion %}
+                        <option value="{{ tipo.id }}" {% if request.GET.tipo == tipo.id|stringformat:'s' %}selected{% endif %}>{{ tipo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="estado">Estado</label>
+                <select class="form-select" id="estado" name="estado" data-auto-submit>
+                    <option value="">Todos</option>
+                    {% for valor, texto in estados %}
+                        <option value="{{ valor }}" {% if request.GET.estado == valor %}selected{% endif %}>{{ texto }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="piso">Piso</label>
+                <select class="form-select" id="piso" name="piso" data-auto-submit>
+                    <option value="">Todos</option>
+                    {% for piso in pisos %}
+                        <option value="{{ piso }}" {% if request.GET.piso == piso|stringformat:'s' %}selected{% endif %}>Piso {{ piso }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label" for="buscar_habitacion">Buscar en resultado</label>
+                <input class="form-control" id="buscar_habitacion" type="search" placeholder="Numero, tipo o estado" data-room-search>
+            </div>
+        </form>
+    </section>
+
+    <section class="room-grid">
+        {% for habitacion in habitaciones %}
+            <article class="room-card room-card-{{ habitacion.estado|lower }}" data-room-card>
+                <div class="room-card-header">
+                    <div>
+                        <span class="room-number">{{ habitacion.numero }}</span>
+                        <span class="text-secondary">Piso {{ habitacion.piso }}</span>
+                    </div>
+                    <span class="status-badge status-{{ habitacion.estado|lower }}">{{ habitacion.get_estado_display }}</span>
+                </div>
+                <div class="room-meta">
+                    <span><i class="bi bi-door-open" aria-hidden="true"></i>{{ habitacion.tipo.nombre }}</span>
+                    <span><i class="bi bi-people" aria-hidden="true"></i>{{ habitacion.tipo.capacidad }} personas</span>
+                </div>
+                <div class="ops-actions">
+                    {% if user_is_admin %}
+                    <a class="btn btn-sm room-action room-action-edit" href="{% url 'habitaciones:editar_habitacion' habitacion.pk %}" title="Editar" aria-label="Editar habitacion"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                    {% endif %}
+                    <form class="room-state-form" method="post" action="{% url 'habitaciones:cambiar_estado_habitacion' habitacion.pk %}" aria-label="Cambiar estado de habitacion {{ habitacion.numero }}">
+                        {% csrf_token %}
+                        <button class="room-state-button state-disponible {% if habitacion.estado == 'DISPONIBLE' %}active{% endif %}" type="submit" name="estado" value="DISPONIBLE" title="Disponible" aria-label="Marcar disponible"><i class="bi bi-check-circle" aria-hidden="true"></i></button>
+                        <button class="room-state-button state-ocupada {% if habitacion.estado == 'OCUPADA' %}active{% endif %}" type="submit" name="estado" value="OCUPADA" title="Ocupada" aria-label="Marcar ocupada"><i class="bi bi-person-fill-lock" aria-hidden="true"></i></button>
+                        <button class="room-state-button state-limpieza {% if habitacion.estado == 'LIMPIEZA' %}active{% endif %}" type="submit" name="estado" value="LIMPIEZA" title="Limpieza" aria-label="Marcar en limpieza"><i class="bi bi-stars" aria-hidden="true"></i></button>
+                        <button class="room-state-button state-mantenimiento {% if habitacion.estado == 'MANTENIMIENTO' %}active{% endif %}" type="submit" name="estado" value="MANTENIMIENTO" title="Mantenimiento" aria-label="Marcar en mantenimiento"><i class="bi bi-tools" aria-hidden="true"></i></button>
+                    </form>
+                </div>
+            </article>
+        {% empty %}
+            <div class="ops-empty ops-list-card">
+                <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay habitaciones registradas.
+            </div>
+        {% endfor %}
+    </section>
+
+    <div class="flow-actions" aria-label="Flujo operativo">
+        <a class="flow-link" href="{% url 'estancias:listar_reservas_checkin' %}"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Check-in</a>
+        <a class="flow-link" href="{% url 'estancias:listar_estancias' %}"><i class="bi bi-card-checklist" aria-hidden="true"></i>Estancias</a>
+        <a class="flow-link" href="{% url 'limpieza:panel_limpieza' %}"><i class="bi bi-stars" aria-hidden="true"></i>Limpieza</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/habitaciones.js' %}"></script>{% endblock %}

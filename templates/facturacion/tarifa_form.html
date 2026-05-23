@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar tarifa{% else %}Nueva tarifa{% endif %} | HotelSys{% endblock %}
+{% block page_title %}{% if object %}Editar tarifa{% else %}Nueva tarifa{% endif %}{% endblock %}
+{% block page_subtitle %}Establece o actualiza los precios comerciales por noche según temporadas y tipos de habitación.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'facturacion:tarifa_list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="card border-0 shadow-sm app-form" novalidate>
+    {% csrf_token %}
+    <div class="card-body p-4">
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-circle me-2" aria-hidden="true"></i>{{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+                {{ form.nombre }}
+                {% for error in form.nombre.errors %}<div class="invalid-feedback d-block">%s</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="{{ form.tipo_habitacion.id_for_label }}">{{ form.tipo_habitacion.label }}</label>
+                {{ form.tipo_habitacion }}
+                {% for error in form.tipo_habitacion.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.precio_noche.id_for_label }}">{{ form.precio_noche.label }}</label>
+                {{ form.precio_noche }}
+                {% for error in form.precio_noche.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.fecha_inicio.id_for_label }}">{{ form.fecha_inicio.label }}</label>
+                {{ form.fecha_inicio }}
+                {% for error in form.fecha_inicio.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="{{ form.fecha_fin.id_for_label }}">{{ form.fecha_fin.label }}</label>
+                {{ form.fecha_fin }}
+                {% for error in form.fecha_fin.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+        <a class="btn btn-light" href="{% url 'facturacion:tarifa_list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+        <button class="btn btn-primary" type="submit">
+            <i class="bi bi-floppy me-2" aria-hidden="true"></i>Guardar tarifa
+        </button>
+    </div>
+</form>
+{% endblock %}

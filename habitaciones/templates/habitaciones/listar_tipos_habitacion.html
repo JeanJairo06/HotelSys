@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tipos de habitacion | HotelSys{% endblock %}
+{% block page_title %}Tipos de habitacion{% endblock %}
+{% block page_subtitle %}Administra categorias, capacidad y precio base de habitaciones.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'habitaciones:listar_habitaciones' %}">
+    <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Habitaciones
+</a>
+{% if user_is_admin %}
+<a class="btn btn-primary" href="{% url 'habitaciones:crear_tipo_habitacion' %}">
+    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nuevo tipo
+</a>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">{% endblock %}
+
+{% block content %}
+<div class="ops-page">
+    <section class="room-type-grid">
+        {% for tipo in tipos_habitacion %}
+            <article class="room-type-card">
+                <div class="room-type-card-header">
+                    <div>
+                        <h2 class="h5 mb-1">{{ tipo.nombre }}</h2>
+                        <span class="text-secondary">S/ {{ tipo.precio_base }}</span>
+                    </div>
+                    {% if user_is_admin %}
+                        <a class="btn btn-sm btn-outline-primary" href="{% url 'habitaciones:editar_tipo_habitacion' tipo.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
+                    {% endif %}
+                </div>
+                <div class="room-type-meta">
+                    <span><i class="bi bi-people" aria-hidden="true"></i>{{ tipo.capacidad }} personas</span>
+                    {% for amenidad in tipo.amenidades_lista %}
+                        <span><i class="bi bi-stars" aria-hidden="true"></i>{{ amenidad }}</span>
+                    {% empty %}
+                        <span><i class="bi bi-dash-circle" aria-hidden="true"></i>Sin amenidades</span>
+                    {% endfor %}
+                </div>
+            </article>
+        {% empty %}
+            <div class="ops-empty ops-list-card">
+                <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay tipos registrados.
+            </div>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

@@ -17,21 +17,32 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
-from config.views import DashboardView, home
+from config.views import home
 from cuentas.views import CuentaLoginView, CuentaLogoutView
+from reportes.views import DashboardView, ReporteOcupacionAPIView, ReportesView
 
 urlpatterns = [
     path('', home, name='home'),
+
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('login/', CuentaLoginView.as_view(), name='login'),
     path('logout/', CuentaLogoutView.as_view(), name='logout'),
     path('usuarios/', include('cuentas.urls')),
     path('empleados/', include('empleados.urls')),
+    path('hoteles/', include('hoteles.urls')),
+    path('habitaciones/', include('habitaciones.urls')),
+    path('estancias/', include('estancias.urls')),
+    path('limpieza/', include('limpieza.urls')),
+    path('huespedes/', include('huespedes.urls')),
+    path('reservas/', include('reservas.urls')),
     path('api/v1/', include('api.urls')),
     path('api/v1/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/v1/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('api/v1/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('admin/', admin.site.urls),
+    path('api/reportes/ocupacion/', ReporteOcupacionAPIView.as_view(), name='api_reporte_ocupacion'),
+    path('facturacion/', include('facturacion.urls')),
+    path('reportes/', ReportesView.as_view(), name='reportes'),
 ]
 
 handler403 = 'config.views.error_403'
