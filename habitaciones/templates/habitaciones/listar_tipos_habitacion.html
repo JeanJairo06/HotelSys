@@ -9,9 +9,11 @@
 <a class="btn btn-outline-primary" href="{% url 'habitaciones:listar_habitaciones' %}">
     <i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Habitaciones
 </a>
+{% if user_is_admin %}
 <a class="btn btn-primary" href="{% url 'habitaciones:crear_tipo_habitacion' %}">
     <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nuevo tipo
 </a>
+{% endif %}
 {% endblock %}
 
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">{% endblock %}
@@ -26,7 +28,9 @@
                         <h2 class="h5 mb-1">{{ tipo.nombre }}</h2>
                         <span class="text-secondary">S/ {{ tipo.precio_base }}</span>
                     </div>
-                    <a class="btn btn-sm btn-outline-primary" href="{% url 'habitaciones:editar_tipo_habitacion' tipo.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
+                    {% if user_is_admin %}
+                        <a class="btn btn-sm btn-outline-primary" href="{% url 'habitaciones:editar_tipo_habitacion' tipo.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
+                    {% endif %}
                 </div>
                 <div class="room-type-meta">
                     <span><i class="bi bi-people" aria-hidden="true"></i>{{ tipo.capacidad }} personas</span>

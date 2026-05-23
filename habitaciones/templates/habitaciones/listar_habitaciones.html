@@ -9,9 +9,11 @@
 <a class="btn btn-outline-primary" href="{% url 'habitaciones:listar_tipos_habitacion' %}">
     <i class="bi bi-tags me-2" aria-hidden="true"></i>Tipos
 </a>
-<a class="btn btn-primary" href="{% url 'habitaciones:crear_habitacion' %}">
-    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nueva habitacion
-</a>
+{% if user_is_admin %}
+    <a class="btn btn-primary" href="{% url 'habitaciones:crear_habitacion' %}">
+        <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Nueva habitacion
+    </a>
+{% endif %}
 {% endblock %}
 
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">{% endblock %}
@@ -78,7 +80,9 @@
                     <span><i class="bi bi-people" aria-hidden="true"></i>{{ habitacion.tipo.capacidad }} personas</span>
                 </div>
                 <div class="ops-actions">
+                    {% if user_is_admin %}
                     <a class="btn btn-sm room-action room-action-edit" href="{% url 'habitaciones:editar_habitacion' habitacion.pk %}" title="Editar" aria-label="Editar habitacion"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                    {% endif %}
                     <form class="room-state-form" method="post" action="{% url 'habitaciones:cambiar_estado_habitacion' habitacion.pk %}" aria-label="Cambiar estado de habitacion {{ habitacion.numero }}">
                         {% csrf_token %}
                         <button class="room-state-button state-disponible {% if habitacion.estado == 'DISPONIBLE' %}active{% endif %}" type="submit" name="estado" value="DISPONIBLE" title="Disponible" aria-label="Marcar disponible"><i class="bi bi-check-circle" aria-hidden="true"></i></button>

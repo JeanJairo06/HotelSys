@@ -20,21 +20,21 @@
                     <i class="bi bi-chevron-down sidebar-group-icon" aria-hidden="true"></i>
                 </summary>
                 <div class="sidebar-group-links">
-                    <a class="sidebar-link {% if '/habitaciones/' in request.path %}active{% endif %}" href="/habitaciones/">
-                        <span class="sidebar-icon"><i class="bi bi-door-open" aria-hidden="true"></i></span>
-                        <span>Habitaciones</span>
+                    <a class="sidebar-link {% if '/reservas/' in request.path %}active{% endif %}" href="/reservas/">
+                        <span class="sidebar-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
+                        <span>Reservas</span>
                     </a>
                     <a class="sidebar-link {% if '/estancias/' in request.path %}active{% endif %}" href="{% url 'estancias:listar_estancias' %}">
                         <span class="sidebar-icon"><i class="bi bi-card-checklist" aria-hidden="true"></i></span>
                         <span>Estancias</span>
                     </a>
-                    <a class="sidebar-link {% if '/reservas/' in request.path %}active{% endif %}" href="/reservas/">
-                        <span class="sidebar-icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></span>
-                        <span>Reservas</span>
-                    </a>
                     <a class="sidebar-link {% if '/huespedes/' in request.path %}active{% endif %}" href="/huespedes/">
                         <span class="sidebar-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
                         <span>Huéspedes</span>
+                    </a>
+                    <a class="sidebar-link {% if '/habitaciones/' in request.path %}active{% endif %}" href="/habitaciones/">
+                        <span class="sidebar-icon"><i class="bi bi-door-open" aria-hidden="true"></i></span>
+                        <span>Habitaciones</span>
                     </a>
                 </div>
             </details>
@@ -50,15 +50,17 @@
                         <span class="sidebar-icon"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></span>
                         <span>Folios (Cuentas)</span>
                     </a>
-                    <a class="sidebar-link {% if '/facturacion/tarifas/' in request.path %}active{% endif %}" href="{% url 'facturacion:tarifa_list' %}">
-                        <span class="sidebar-icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
-                        <span>Tarifas Temporada</span>
-                    </a>
+                    {% if user_is_admin %}
+                        <a class="sidebar-link {% if '/facturacion/tarifas/' in request.path %}active{% endif %}" href="{% url 'facturacion:tarifa_list' %}">
+                            <span class="sidebar-icon"><i class="bi bi-tags" aria-hidden="true"></i></span>
+                            <span>Tarifas Temporada</span>
+                        </a>
+                    {% endif %}
                 </div>
             </details>
         {% endif %}
 
-        {% if user_is_admin or user_is_housekeeping or user_is_recepcionista %}
+        {% if user_is_admin or user_is_housekeeping %}
             <details class="sidebar-group" {% if '/limpieza/' in request.path or '/reportes/' in request.path %}open{% endif %}>
                 <summary class="sidebar-group-toggle">
                     <span class="sidebar-icon"><i class="bi bi-clipboard2-pulse" aria-hidden="true"></i></span>
