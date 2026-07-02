@@ -33,6 +33,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,8 +46,10 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     'rest_framework',
+    'channels',
 
     # Apps del sistema HotelSys
+    'core',
     'api',
     'cuentas',
     'empleados',
@@ -90,6 +93,21 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [
+                (
+                    config('REDIS_HOST', default='localhost'),
+                    config('REDIS_PORT', cast=int, default=6379),
+                )
+            ],
+        },
+    },
+}
 
 
 # Database
