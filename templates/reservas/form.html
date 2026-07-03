@@ -85,6 +85,7 @@
         const habitacionWrapper = document.querySelector('[data-habitacion-autocomplete-url]');
         const entrada = document.getElementById('{{ form.fecha_entrada.id_for_label }}');
         const salida = document.getElementById('{{ form.fecha_salida.id_for_label }}');
+        const numAdultos = document.getElementById('{{ form.num_adultos.id_for_label }}');
         const total = document.getElementById('{{ form.precio_total.id_for_label }}');
 
         if (!huesped || !habitacion || !huespedWrapper || !habitacionWrapper || typeof TomSelect === 'undefined') {
@@ -112,6 +113,9 @@
             }
             if (salida.value) {
                 params.set('fecha_salida', salida.value);
+            }
+            if (numAdultos && numAdultos.value) {
+                params.set('num_huespedes', numAdultos.value);
             }
             if (habitacionWrapper.dataset.reservaId) {
                 params.set('reserva_id', habitacionWrapper.dataset.reservaId);
@@ -309,6 +313,9 @@
         tipo.addEventListener('change', refrescarHabitaciones);
         entrada.addEventListener('change', refrescarHabitaciones);
         salida.addEventListener('change', refrescarHabitaciones);
+        if (numAdultos) {
+            numAdultos.addEventListener('change', refrescarHabitaciones);
+        }
         calcularTotal();
     })();
 </script>

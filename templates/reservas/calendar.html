@@ -48,6 +48,31 @@
         border: 1px solid #9ec5fe;
         font-weight: 600;
     }
+    .reservation-slot.estado-pendiente {
+        background: #fff3cd;
+        color: #664d03;
+        border-color: #ffda6a;
+    }
+    .reservation-slot.estado-confirmada {
+        background: #d1e7dd;
+        color: #0f5132;
+        border-color: #75b798;
+    }
+    .reservation-slot.estado-checkin {
+        background: #cfe2ff;
+        color: #084298;
+        border-color: #6ea8fe;
+    }
+    .reservation-slot.estado-cancelada {
+        background: #f8d7da;
+        color: #842029;
+        border-color: #ea868f;
+    }
+    .reservation-slot.estado-finalizada {
+        background: #e2e3e5;
+        color: #41464b;
+        border-color: #adb5bd;
+    }
 </style>
 {% endblock %}
 
@@ -61,6 +86,15 @@
                     <option value="">Todos</option>
                     {% for tipo in tipos_habitacion %}
                         <option value="{{ tipo.id }}" {% if request.GET.tipo == tipo.id|stringformat:'s' %}selected{% endif %}>{{ tipo.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label" for="estado">Estado</label>
+                <select class="form-select" id="estado" name="estado">
+                    <option value="">Activas</option>
+                    {% for value, label in estados_reserva %}
+                        <option value="{{ value }}" {% if request.GET.estado == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -104,8 +138,8 @@
                             {% for celda in fila.celdas %}
                                 <td>
                                     {% if celda.reserva %}
-                                        <a class="reservation-slot is-booked text-decoration-none" href="{% url 'reservas:detail' celda.reserva.pk %}" title="Reserva #{{ celda.reserva.id }}">
-                                            #{{ celda.reserva.id }} {{ celda.reserva.huesped.nombre_completo }}
+                                        <a class="reservation-slot is-booked estado-{{ celda.reserva.estado|lower }} text-decoration-none" href="{% url 'reservas:detail' celda.reserva.pk %}" title="Reserva {{ celda.reserva.codigo|default:celda.reserva.id }}">
+                                            {{ celda.reserva.codigo|default:celda.reserva.id }} {{ celda.reserva.huesped.nombre_completo }}
                                         </a>
                                     {% else %}
                                         <span class="reservation-slot is-free">Libre</span>

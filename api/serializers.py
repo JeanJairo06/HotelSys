@@ -1,14 +1,12 @@
-from django.db import transaction
-from django.utils import timezone
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
-from config.choices import EstadoReserva
 from empleados.models import Empleado
 from estancias.models import Estancia
 from habitaciones.models import Habitacion, TipoHabitacion
 from huespedes.models import Huesped
 from reservas.models import Reserva
-from reservas.services import calcular_precio_total_reserva
+from reservas.services import crear_reserva, editar_reserva, validar_reserva
 
 
 class EmpleadoAutocompleteSerializer(serializers.ModelSerializer):
@@ -90,6 +88,7 @@ class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
 
 class ReservaSerializer(serializers.ModelSerializer):
     hotel = serializers.PrimaryKeyRelatedField(read_only=True)
+    codigo = serializers.CharField(read_only=True)
     estado = serializers.CharField(read_only=True)
     precio_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     noches = serializers.IntegerField(read_only=True)
@@ -101,6 +100,7 @@ class ReservaSerializer(serializers.ModelSerializer):
         model = Reserva
         fields = [
             'id',
+            'codigo',
             'hotel',
             'huesped',
             'habitacion',
@@ -117,6 +117,7 @@ class ReservaSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             'id',
+            'codigo',
             'hotel',
             'habitacion_numero',
             'tipo_habitacion',
@@ -127,77 +128,61 @@ class ReservaSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        habitacion = attrs.get('habitacion')
-        fecha_entrada = attrs.get('fecha_entrada')
-        fecha_salida = attrs.get('fecha_salida')
-        num_adultos = attrs.get('num_adultos', 1)
+        habitacion = attrs.get('habitacion', self.instance.habitacion if self.instance else None)
+        fecha_entrada = attrs.get('fecha_entrada', self.instance.fecha_entrada if self.instance else None)
+        fecha_salida = attrs.get('fecha_salida', self.instance.fecha_salida if self.instance else None)
+        num_adultos = attrs.get('num_adultos', self.instance.num_adultos if self.instance else 1)
 
-        if fecha_entrada and fecha_entrada < timezone.localdate():
-            raise serializers.ValidationError({
-                'fecha_entrada': 'La fecha de entrada no puede ser anterior a hoy.',
-            })
-
-        if fecha_entrada and fecha_salida and fecha_salida <= fecha_entrada:
-            raise serializers.ValidationError({
-                'fecha_salida': 'La fecha de salida debe ser mayor a la fecha de entrada.',
-            })
-
-        if num_adultos is not None and num_adultos < 1:
-            raise serializers.ValidationError({
-                'num_adultos': 'Debe registrar al menos un adulto.',
-            })
-
-        if habitacion and num_adultos and num_adultos > habitacion.tipo.capacidad:
-            raise serializers.ValidationError({
-                'num_adultos': 'La cantidad de adultos supera la capacidad del tipo de habitacion.',
-            })
-
-        if habitacion and fecha_entrada and fecha_salida:
-            self._validar_disponibilidad(habitacion, fecha_entrada, fecha_salida)
+        if habitacion or fecha_entrada or fecha_salida or num_adultos is not None:
+            try:
+                validar_reserva(
+                    habitacion=habitacion,
+                    fecha_entrada=fecha_entrada,
+                    fecha_salida=fecha_salida,
+                    num_adultos=num_adultos,
+                    reserva_id=self.instance.pk if self.instance else None,
+                )
+            except DjangoValidationError as error:
+                raise serializers.ValidationError(self._format_django_error(error)) from error
 
         return attrs
 
     def create(self, validated_data):
-        with transaction.atomic():
-            habitacion = Habitacion.objects.select_for_update().select_related('hotel', 'tipo').get(
-                pk=validated_data['habitacion'].pk,
-            )
-            fecha_entrada = validated_data['fecha_entrada']
-            fecha_salida = validated_data['fecha_salida']
-
-            self._validar_disponibilidad(habitacion, fecha_entrada, fecha_salida)
-            precio_total = calcular_precio_total_reserva(
-                habitacion.tipo,
-                fecha_entrada,
-                fecha_salida,
-            )
-
-            return Reserva.objects.create(
-                hotel=habitacion.hotel,
+        request = self.context.get('request')
+        try:
+            return crear_reserva(
                 huesped=validated_data['huesped'],
-                habitacion=habitacion,
-                fecha_entrada=fecha_entrada,
-                fecha_salida=fecha_salida,
+                habitacion=validated_data['habitacion'],
+                fecha_entrada=validated_data['fecha_entrada'],
+                fecha_salida=validated_data['fecha_salida'],
                 num_adultos=validated_data.get('num_adultos', 1),
                 origen=validated_data.get('origen', Reserva._meta.get_field('origen').default),
-                estado=EstadoReserva.CONFIRMADA,
-                precio_total=precio_total,
+                usuario=request.user if request else None,
             )
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(self._format_django_error(error)) from error
+
+    def update(self, instance, validated_data):
+        request = self.context.get('request')
+        try:
+            return editar_reserva(
+                instance,
+                huesped=validated_data.get('huesped', instance.huesped),
+                habitacion=validated_data.get('habitacion', instance.habitacion),
+                fecha_entrada=validated_data.get('fecha_entrada', instance.fecha_entrada),
+                fecha_salida=validated_data.get('fecha_salida', instance.fecha_salida),
+                num_adultos=validated_data.get('num_adultos', instance.num_adultos),
+                origen=validated_data.get('origen', instance.origen),
+                usuario=request.user if request else None,
+            )
+        except DjangoValidationError as error:
+            raise serializers.ValidationError(self._format_django_error(error)) from error
 
     @staticmethod
-    def _validar_disponibilidad(habitacion, fecha_entrada, fecha_salida):
-        reserva_solapada = Reserva.objects.filter(
-            habitacion=habitacion,
-            fecha_entrada__lt=fecha_salida,
-            fecha_salida__gt=fecha_entrada,
-        ).exclude(
-            estado__in=[EstadoReserva.CANCELADA, EstadoReserva.FINALIZADA],
-        ).exists()
-
-        if reserva_solapada:
-            raise serializers.ValidationError({
-                'habitacion': 'La habitacion ya tiene una reserva activa en ese rango de fechas.',
-            })
+    def _format_django_error(error):
+        if hasattr(error, 'message_dict'):
+            return error.message_dict
+        return {'detail': error.messages}
 
 
 class HabitacionEstadoSerializer(serializers.Serializer):
@@ -205,7 +190,7 @@ class HabitacionEstadoSerializer(serializers.Serializer):
 
 
 class EstanciaSerializer(serializers.ModelSerializer):
-    reserva_codigo = serializers.CharField(source='reserva.id', read_only=True)
+    reserva_codigo = serializers.CharField(source='reserva.codigo', read_only=True)
     huesped_nombre = serializers.CharField(source='reserva.huesped.nombre_completo', read_only=True)
     habitacion_numero = serializers.CharField(source='habitacion.numero', read_only=True)
     hotel_nombre = serializers.CharField(source='habitacion.hotel.nombre', read_only=True)

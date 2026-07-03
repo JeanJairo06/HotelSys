@@ -3,11 +3,16 @@ from datetime import datetime
 from django import forms
 from django.core.exceptions import ValidationError
 
-from config.choices import EstadoReserva
 from habitaciones.models import Habitacion, TipoHabitacion
 from huespedes.models import Huesped
 from reservas.models import Reserva
-from reservas.services import calcular_precio_total_reserva
+from reservas.services import (
+    calcular_precio_total_reserva,
+    crear_reserva,
+    editar_reserva,
+    habitaciones_disponibles,
+    validar_reserva,
+)
 
 
 class ReservaForm(forms.ModelForm):
@@ -72,16 +77,23 @@ class ReservaForm(forms.ModelForm):
         fecha_entrada_filtro = self._parse_filter_date(fecha_entrada)
         fecha_salida_filtro = self._parse_filter_date(fecha_salida)
 
+        num_adultos_filtro = self.data.get('num_adultos') if self.is_bound else self.initial.get('num_adultos')
+        try:
+            num_adultos_filtro = int(num_adultos_filtro) if num_adultos_filtro else None
+        except (TypeError, ValueError):
+            num_adultos_filtro = None
+
         if fecha_entrada_filtro and fecha_salida_filtro and fecha_salida_filtro > fecha_entrada_filtro:
-            habitaciones_ocupadas = Reserva.objects.filter(
-                fecha_entrada__lt=fecha_salida_filtro,
-                fecha_salida__gt=fecha_entrada_filtro,
-            ).exclude(
-                pk=self.instance.pk if self.instance and self.instance.pk else None,
-            ).exclude(
-                estado__in=[EstadoReserva.CANCELADA, EstadoReserva.FINALIZADA],
-            ).values('habitacion_id')
-            habitaciones = habitaciones.exclude(pk__in=habitaciones_ocupadas)
+            habitaciones = habitaciones_disponibles(
+                fecha_entrada=fecha_entrada_filtro,
+                fecha_salida=fecha_salida_filtro,
+                num_huespedes=num_adultos_filtro,
+                reserva_id=self.instance.pk if self.instance and self.instance.pk else None,
+            )
+            if tipo_id:
+                habitaciones = habitaciones.filter(tipo_id=tipo_id)
+            if habitacion_id:
+                habitaciones = habitaciones | Habitacion.objects.select_related('hotel', 'tipo').filter(pk=habitacion_id)
 
         self.fields['habitacion'].queryset = habitaciones
         self.fields['fecha_entrada'].input_formats = ['%Y-%m-%d']
@@ -127,6 +139,16 @@ class ReservaForm(forms.ModelForm):
             self.add_error('num_adultos', 'La cantidad de adultos supera la capacidad de la habitacion.')
 
         if fecha_entrada and fecha_salida and fecha_salida > fecha_entrada and habitacion:
+            try:
+                validar_reserva(
+                    habitacion=habitacion,
+                    fecha_entrada=fecha_entrada,
+                    fecha_salida=fecha_salida,
+                    num_adultos=num_adultos,
+                    reserva_id=self.instance.pk if self.instance and self.instance.pk else None,
+                )
+            except ValidationError as error:
+                self.add_error(None, error)
             cleaned_data['precio_total'] = calcular_precio_total_reserva(
                 habitacion.tipo,
                 fecha_entrada,
@@ -138,11 +160,19 @@ class ReservaForm(forms.ModelForm):
         return cleaned_data
 
     def save(self, commit=True):
-        reserva = super().save(commit=False)
-        reserva.estado = EstadoReserva.CONFIRMADA
-        if reserva.habitacion_id:
-            reserva.hotel = reserva.habitacion.hotel
-        if commit:
-            reserva.save()
-            self.save_m2m()
-        return reserva
+        if not commit:
+            return super().save(commit=False)
+
+        datos = {
+            'huesped': self.cleaned_data['huesped'],
+            'habitacion': self.cleaned_data['habitacion'],
+            'fecha_entrada': self.cleaned_data['fecha_entrada'],
+            'fecha_salida': self.cleaned_data['fecha_salida'],
+            'num_adultos': self.cleaned_data['num_adultos'],
+            'origen': self.cleaned_data['origen'],
+        }
+
+        if self.instance and self.instance.pk:
+            return editar_reserva(self.instance, usuario=getattr(self, 'usuario', None), **datos)
+
+        return crear_reserva(usuario=getattr(self, 'usuario', None), **datos)
