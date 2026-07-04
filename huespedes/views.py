@@ -55,6 +55,9 @@ class HuespedCreateView(CreateView):
         messages.success(self.request, 'Huesped registrado correctamente.')
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return self.request.GET.get('next') or self.success_url
+
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class HuespedUpdateView(UpdateView):
