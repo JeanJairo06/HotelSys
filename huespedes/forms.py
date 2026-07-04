@@ -4,6 +4,7 @@ from django import forms
 
 from config.choices import TipoDocumento
 from huespedes.models import Huesped
+from huespedes.services import crear_huesped, editar_huesped
 
 
 class HuespedForm(forms.ModelForm):
@@ -70,3 +71,17 @@ class HuespedForm(forms.ModelForm):
             return ''
 
         return razon_social
+
+    def save(self, commit=True):
+        if not commit:
+            return super().save(commit=False)
+
+        datos = {
+            campo: self.cleaned_data[campo]
+            for campo in self.Meta.fields
+        }
+
+        if self.instance and self.instance.pk:
+            return editar_huesped(self.instance, usuario=getattr(self, 'usuario', None), **datos)
+
+        return crear_huesped(usuario=getattr(self, 'usuario', None), **datos)
