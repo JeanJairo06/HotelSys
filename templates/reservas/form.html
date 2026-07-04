@@ -59,10 +59,19 @@
             {% endfor %}
         </div>
 
+
         <!-- Cantidad de huéspedes -->
         <div class="col-md-6">
-            <label class="form-label" for="{{ form.num_adultos.id_for_label }}">{{ form.num_adultos.label }}</label>
-            {{ form.num_adultos }}
+            <label class="form-label" for="{{ form.num_adultos.id_for_label }}">
+                {{ form.num_adultos.label }}
+            </label>
+
+            <select
+                name="{{ form.num_adultos.html_name }}"
+                id="{{ form.num_adultos.id_for_label }}"
+                class="form-select">
+            </select>
+
             {% for error in form.num_adultos.errors %}
                 <div class="invalid-feedback d-block">{{ error }}</div>
             {% endfor %}
@@ -122,7 +131,12 @@
         const salida = document.getElementById('{{ form.fecha_salida.id_for_label }}');
         const numAdultos = document.getElementById('{{ form.num_adultos.id_for_label }}');
         const total = document.getElementById('{{ form.precio_total.id_for_label }}');
-
+        const capacidades = {
+            {% for t in form.fields.tipo_habitacion.queryset %}
+                "{{ t.id }}": {{ t.capacidad }},
+            {% endfor %}
+        };
+        
         if (!huesped || !habitacion || !huespedWrapper || !habitacionWrapper || typeof TomSelect === 'undefined') {
             return;
         }
@@ -276,6 +290,38 @@
         });
         habitacionSelect.disable();
 
+        function actualizarCantidadHuespedes() {
+
+            const capacidad = capacidades[tipo.value];
+
+            numAdultos.innerHTML = '';
+
+            if (!capacidad) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '---------';
+                numAdultos.appendChild(option);
+                refrescarHabitaciones();
+                return;
+            }
+
+            for (let i = 1; i <= capacidad; i++) {
+
+                const option = document.createElement('option');
+
+                option.value = i;
+                option.textContent = i;
+
+                if (i === capacidad) {
+                    option.selected = true;
+                }
+
+                numAdultos.appendChild(option);
+            }
+
+            refrescarHabitaciones();
+        }
+
         function diasEstadia() {
             if (!entrada.value || !salida.value) {
                 return 0;
@@ -374,12 +420,13 @@
             total.value = acumulado.toFixed(2);
         }
 
-        tipo.addEventListener('change', refrescarHabitaciones);
+        tipo.addEventListener('change', actualizarCantidadHuespedes);
         entrada.addEventListener('change', refrescarHabitaciones);
         salida.addEventListener('change', refrescarHabitaciones);
         if (numAdultos) {
             numAdultos.addEventListener('change', refrescarHabitaciones);
         }
+        actualizarCantidadHuespedes();
         calcularTotal();
     })();
 </script>
