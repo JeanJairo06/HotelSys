@@ -19,6 +19,7 @@ def listar_estancias(request):
         'reserva__huesped',
         'habitacion',
         'habitacion__hotel',
+        'folio',
     ).order_by('-fecha_checkin')
 
     estado = request.GET.get('estado')

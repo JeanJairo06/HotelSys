@@ -92,7 +92,16 @@
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de reserva">
                                     <a class="btn btn-outline-primary" href="{% url 'reservas:detail' reserva.pk %}" title="Ver" aria-label="Ver reserva"><i class="bi bi-eye" aria-hidden="true"></i></a>
-                                    <a class="btn btn-outline-primary" href="{% url 'reservas:update' reserva.pk %}" title="Editar" aria-label="Editar reserva"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                                    {% if reserva.estado == 'CANCELADA' or reserva.estado == 'FINALIZADA' or reserva.estado == 'CHECKIN' %}
+                                        {# No mostrar botón editar #}
+                                    {% else %}
+                                        <a class="btn btn-outline-primary"
+                                        href="{% url 'reservas:update' reserva.pk %}"
+                                        title="Editar"
+                                        aria-label="Editar reserva">
+                                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                        </a>
+                                    {% endif %}
                                     {% if reserva.estado != 'CANCELADA' and reserva.estado != 'FINALIZADA' and reserva.estado != 'CHECKIN' %}
                                         <a class="btn btn-outline-danger" href="{% url 'reservas:cancel' reserva.pk %}" title="Cancelar" aria-label="Cancelar reserva"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
                                     {% endif %}

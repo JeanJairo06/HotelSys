@@ -24,8 +24,12 @@
                         <tr>
                             <td class="fw-bold text-secondary">#{{ folio.id }}</td>
                             <td>
-                                <div class="fw-semibold\">{{ folio.estancia.reserva.huesped.nombres }} {{ folio.estancia.reserva.huesped.apellidos }}</div>
-                                <small class="text-secondary">DNI: {{ folio.estancia.reserva.huesped.num_doc }}</small>
+                                {%if folio.estancia.reserva.huesped.razon_social%}
+                                <div class="fw-semibold">{{ folio.estancia.reserva.huesped.razon_social}}</div>
+                                {%else %}
+                                <div class="fw-semibold">{{ folio.estancia.reserva.huesped.nombres }} {{ folio.estancia.reserva.huesped.apellidos }}</div>
+                                {%endif%}
+                                <small class="text-secondary">{{folio.estancia.reserva.huesped.tipo_doc}}: {{ folio.estancia.reserva.huesped.num_doc }}</small>
                             </td>
                             <td>
                                 <span class="badge bg-light text-dark border">Hab. {{ folio.estancia.habitacion.numero }}</span>
@@ -38,9 +42,9 @@
                                     <span class="badge text-bg-success"><i class="bi bi-check-all me-1" aria-hidden="true"></i>Pagado / Cerrado</span>
                                 {% endif %}
                             </td>
-                            <td class="text-end\">
+                            <td class="text-end">
                                 <a class="btn btn-sm btn-outline-primary" href="{% url 'facturacion:folio_detail' folio.pk %}">
-                                    <i class="bi bi-receipt-cutoff me-1" aria-hidden="true\"></i> Ver Cuenta
+                                    <i class="bi bi-receipt-cutoff me-1" aria-hidden="true"></i> Ver Cuenta
                                 </a>
                             </td>
                         </tr>

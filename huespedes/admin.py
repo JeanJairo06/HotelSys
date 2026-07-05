@@ -5,6 +5,7 @@ from .models import Huesped
 @admin.register(Huesped)
 class HuespedAdmin(admin.ModelAdmin):
     list_display = (
+        'id',
         'num_doc',
         'tipo_doc',
         'apellidos',
