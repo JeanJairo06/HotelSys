@@ -61,15 +61,15 @@
                             {% endfor %}
                             <tr class="table-light border-top">
                                 <td class="text-end text-secondary small">Subtotal (Sin IGV):</td>
-                                <td class="text-end text-secondary small fw-semibold">S/ {{ folio.subtotal|floatformat:4 }}</td>
+                                <td class="text-end text-secondary small fw-semibold">S/ {{ folio.subtotal|floatformat:2 }}</td>
                             </tr>
                             <tr class="table-light">
                                 <td class="text-end text-secondary small">IGV (18.00%):</td>
-                                <td class="text-end text-secondary small fw-semibold">S/ {{ folio.igv|floatformat:4 }}</td>
+                                <td class="text-end text-secondary small fw-semibold">S/ {{ folio.igv|floatformat:2 }}</td>
                             </tr>
                             <tr class="table-primary-subtle fw-bold">
                                 <td class="text-end">TOTAL NETO A PAGAR:</td>
-                                <td class="text-end text-primary fs-5">S/ {{ folio.total|floatformat:4 }}</td>
+                                <td class="text-end text-primary fs-5">S/ {{ folio.total|floatformat:2 }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -93,12 +93,25 @@
                         <strong>CUENTA LIQUIDADA:</strong> Este folio se encuentra cerrado y archivado de forma contable.
                     </div>
                     {% for factura in facturas %}
-                        <div class="p-3 bg-light rounded border border-success-subtle">
-                            <div class="small fw-bold text-success"><i class="bi bi-file-earmark-check-fill me-1"></i> Factura Emitida</div>
-                            <div class="small mt-1"><strong>Razón Social:</strong> {{ factura.razon_social }}</div>
-                            <div class="small"><strong>RUC/DNI:</strong> {{ factura.ruc_dni }}</div>
-                            <div class="small text-secondary mt-1 nudge-down">{{ factura.fecha_emision|date:'d/m/Y H:i' }}</div>
-                        </div>
+                        {% if factura.ruc_dni|length == 11 %}
+                            <div class="p-3 bg-light rounded border border-success-subtle mb-2">
+                                <div class="small fw-bold text-success">
+                                    <i class="bi bi-file-earmark-check-fill me-1"></i> Factura Emitida
+                                </div>
+                                <div class="small mt-1"><strong>Razón Social:</strong> {{ factura.razon_social }}</div>
+                                <div class="small"><strong>RUC:</strong> {{ factura.ruc_dni }}</div>
+                                <div class="small text-secondary mt-1">{{ factura.fecha_emision|date:'d/m/Y H:i' }}</div>
+                            </div>
+                        {% else %}
+                            <div class="p-3 bg-light rounded border border-primary-subtle mb-2">
+                                <div class="small fw-bold text-primary">
+                                    <i class="bi bi-file-earmark-text-fill me-1"></i> Boleta de Venta Emitida
+                                </div>
+                                <div class="small mt-1"><strong>Cliente:</strong> {{ folio.estancia.reserva.huesped.nombres }} {{ folio.estancia.reserva.huesped.apellidos }}</div>
+                                <div class="small"><strong>DNI / Doc:</strong> {{ factura.ruc_dni }}</div>
+                                <div class="small text-secondary mt-1">{{ factura.fecha_emision|date:'d/m/Y H:i' }}</div>
+                            </div>
+                        {% endif %}
                     {% endfor %}
                 {% endif %}
             </div>
