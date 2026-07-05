@@ -45,8 +45,15 @@
                                 <span class="d-block small text-secondary mt-1">{{ huesped.num_doc }}</span>
                             </td>
                             <td>
-                                <a class="fw-semibold text-decoration-none" href="{% url 'huespedes:detail' huesped.pk %}">{{ huesped.nombre_completo }}</a>
-                                {% if huesped.fecha_nacimiento %}<span class="d-block small text-secondary mt-1">{{ huesped.fecha_nacimiento|date:'d/m/Y' }}</span>{% endif %}
+                                <span class="fw-semibold">
+                                    {{ huesped.nombre_completo }}
+                                </span>
+                            
+                                {% if huesped.fecha_nacimiento %}
+                                <span class="d-block small text-secondary mt-1">
+                                    {{ huesped.fecha_nacimiento|date:'d/m/Y' }}
+                                </span>
+                                {% endif %}
                             </td>
                             <td>{{ huesped.email|default:'-' }}</td>
                             <td>{{ huesped.telefono|default:'-' }}</td>

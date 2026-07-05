@@ -222,11 +222,13 @@ def cancelar_reserva(reserva, *, usuario=None):
         return reserva
 
     if reserva.estado in [EstadoReserva.CHECKIN, EstadoReserva.FINALIZADA]:
-        raise TransicionReservaInvalida('No se puede cancelar una reserva con check-in o finalizada.')
+        raise TransicionReservaInvalida(
+            'No se puede cancelar una reserva con check-in o finalizada.'
+        )
 
     reserva.estado = EstadoReserva.CANCELADA
-    reserva.activo = False
-    reserva.save(update_fields=['estado', 'activo', 'actualizado_en'])
+    reserva.save(update_fields=['estado', 'actualizado_en'])
+
     publicar_actualizacion_reserva(reserva, accion='cancelada')
     return reserva
 
