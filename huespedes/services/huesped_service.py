@@ -1,6 +1,8 @@
 from datetime import date
+import re
 
 from django.core.exceptions import ValidationError
+...
 from django.db import IntegrityError, transaction
 
 from config.choices import EstadoEstancia, TipoDocumento
@@ -35,17 +37,41 @@ def validar_documento_huesped(*, tipo_doc, num_doc, nombres='', apellidos='', ra
         if not razon_social:
             errors['razon_social'] = 'La razon social es obligatoria para RUC.'
 
-    if tipo_doc == TipoDocumento.DNI:
+    elif tipo_doc == TipoDocumento.DNI:
         if not num_doc or not num_doc.isdigit():
             errors['num_doc'] = 'El DNI debe contener solo numeros.'
         elif len(num_doc) != 8:
             errors['num_doc'] = 'El DNI debe tener exactamente 8 digitos.'
 
         if not nombres:
-            errors['nombres'] = 'Los nombres son obligatorios para DNI.'
+            errors['nombres'] = 'Los nombres son obligatorios.'
 
         if not apellidos:
-            errors['apellidos'] = 'Los apellidos son obligatorios para DNI.'
+            errors['apellidos'] = 'Los apellidos son obligatorios.'
+
+    elif tipo_doc == TipoDocumento.PASAPORTE:
+        if not re.fullmatch(r'[A-Z0-9]{6,20}', num_doc or ''):
+            errors['num_doc'] = (
+                'El pasaporte debe tener entre 6 y 20 caracteres alfanumericos.'
+            )
+
+        if not nombres:
+            errors['nombres'] = 'Los nombres son obligatorios.'
+
+        if not apellidos:
+            errors['apellidos'] = 'Los apellidos son obligatorios.'
+
+    elif tipo_doc == TipoDocumento.CARNET_EXTRANJERIA:
+        if not re.fullmatch(r'[A-Z0-9]{6,15}', num_doc or ''):
+            errors['num_doc'] = (
+                'El carne de extranjeria debe tener entre 6 y 15 caracteres alfanumericos.'
+            )
+
+        if not nombres:
+            errors['nombres'] = 'Los nombres son obligatorios.'
+
+        if not apellidos:
+            errors['apellidos'] = 'Los apellidos son obligatorios.'
 
     if errors:
         raise ValidationError(errors)
@@ -78,8 +104,14 @@ def validar_datos_huesped(datos, *, huesped_id=None):
     except ValidationError as error:
         errors.update(error.message_dict)
 
-    if tipo_doc == TipoDocumento.DNI and not fecha_nacimiento:
-        errors['fecha_nacimiento'] = 'La fecha de nacimiento es obligatoria para DNI.'
+    if tipo_doc in (
+        TipoDocumento.DNI,
+        TipoDocumento.PASAPORTE,
+        TipoDocumento.CARNET_EXTRANJERIA,
+    ) and not fecha_nacimiento:
+        errors['fecha_nacimiento'] = (
+            'La fecha de nacimiento es obligatoria.'
+    )
 
     if telefono:
         telefono_limpio = telefono.replace('+', '').replace('-', '').replace(' ', '')
