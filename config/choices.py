@@ -71,3 +71,10 @@ class RolUsuario(models.TextChoices):
     ADMIN = 'ADMIN', 'Administrador'
     RECEPCIONISTA = 'RECEPCIONISTA', 'Recepcionista'
     HOUSEKEEPING = 'HOUSEKEEPING', 'Housekeeping'
+
+
+class MetodoPago(models.TextChoices):
+    EFECTIVO = 'EFECTIVO', 'Efectivo'
+    TARJETA = 'TARJETA', 'Tarjeta de Crédito/Débito'
+    TRANSFERENCIA = 'TRANSFERENCIA', 'Transferencia Bancaria'
+    YAPE_PLIN = 'YAPE_PLIN', 'Yape / Plin'
