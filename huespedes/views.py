@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.db import models
-from django.db.models.deletion import ProtectedError
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
@@ -10,6 +9,7 @@ from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 from huespedes.forms import HuespedForm
 from huespedes.models import Huesped
+from huespedes.services import eliminar_huesped, estancia_actual_huesped, historial_huesped
 
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
@@ -43,6 +43,12 @@ class HuespedDetailView(DetailView):
     template_name = 'huespedes/detail.html'
     context_object_name = 'huesped'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['historial_reservas'] = historial_huesped(self.object)
+        context['estancia_actual'] = estancia_actual_huesped(self.object)
+        return context
+
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class HuespedCreateView(CreateView):
@@ -52,8 +58,12 @@ class HuespedCreateView(CreateView):
     success_url = reverse_lazy('huespedes:list')
 
     def form_valid(self, form):
+        form.usuario = self.request.user
         messages.success(self.request, 'Huesped registrado correctamente.')
         return super().form_valid(form)
+
+    def get_success_url(self):
+        return self.request.GET.get('next') or self.success_url
 
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
@@ -64,6 +74,7 @@ class HuespedUpdateView(UpdateView):
     success_url = reverse_lazy('huespedes:list')
 
     def form_valid(self, form):
+        form.usuario = self.request.user
         messages.success(self.request, 'Huesped actualizado correctamente.')
         return super().form_valid(form)
 
@@ -76,11 +87,6 @@ class HuespedDeleteView(DeleteView):
     success_url = reverse_lazy('huespedes:list')
 
     def form_valid(self, form):
-        try:
-            response = super().form_valid(form)
-        except ProtectedError:
-            messages.error(self.request, 'No se puede eliminar el huesped porque tiene registros asociados.')
-            return redirect(self.success_url)
-
+        eliminar_huesped(self.object, usuario=self.request.user)
         messages.success(self.request, 'Huesped eliminado correctamente.')
-        return response
+        return redirect(self.success_url)

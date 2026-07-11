@@ -11,6 +11,8 @@ class EstadoHabitacion(models.TextChoices):
 class TipoDocumento(models.TextChoices):
     DNI = 'DNI', 'DNI'
     RUC = 'RUC', 'RUC'
+    PASAPORTE = 'PAS', 'Pasaporte'
+    CARNET_EXTRANJERIA = 'CE', 'Carné de Extranjería'
 
 
 class EstadoGeneral(models.IntegerChoices):

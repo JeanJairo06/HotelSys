@@ -6,6 +6,7 @@ from .models import Reserva
 class ReservaAdmin(admin.ModelAdmin):
     list_display = (
         'id',
+        'codigo',
         'hotel',
         'huesped',
         'habitacion',
@@ -15,13 +16,15 @@ class ReservaAdmin(admin.ModelAdmin):
         'estado',
         'precio_total',
         'origen',
+        'activo',
     )
     search_fields = (
+        'codigo',
         'huesped__num_doc',
         'huesped__nombres',
         'huesped__apellidos',
         'habitacion__numero',
         'hotel__nombre',
     )
-    list_filter = ('estado', 'origen', 'hotel', 'fecha_entrada', 'fecha_salida')
+    list_filter = ('estado', 'origen', 'activo', 'hotel', 'fecha_entrada', 'fecha_salida')
     date_hierarchy = 'fecha_entrada'

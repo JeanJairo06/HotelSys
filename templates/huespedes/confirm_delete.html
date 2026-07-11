@@ -12,7 +12,7 @@
 <div class="error-card">
     <span class="error-code"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
     <h2 class="h4 mb-3">Eliminar a {{ huesped.nombre_completo }}?</h2>
-    <p class="text-secondary mb-4">Esta accion eliminara el registro del huesped con documento {{ huesped.num_doc }}. Si tiene reservas asociadas, el sistema impedira eliminarlo.</p>
+    <p class="text-secondary mb-4">Esta accion desactivara el registro del huesped con documento {{ huesped.num_doc }} y lo excluira de las operaciones normales.</p>
     <form method="post" class="d-flex gap-2">
         {% csrf_token %}
         <a class="btn btn-light" href="{% url 'huespedes:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>

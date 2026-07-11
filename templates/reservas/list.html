@@ -15,7 +15,7 @@
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label" for="q">Buscar reserva</label>
-                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="ID, huesped, documento o habitacion">
+                <input class="form-control" type="search" id="q" name="q" value="{{ request.GET.q }}" placeholder="Codigo, ID, huesped, documento o habitacion">
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="estado">Estado</label>
@@ -60,7 +60,7 @@
                     {% for reserva in reservas %}
                         <tr>
                             <td>
-                                <span class="badge text-bg-light border">#{{ reserva.id }}</span>
+                                <span class="badge text-bg-light border">{{ reserva.codigo|default:reserva.id }}</span>
                                 <span class="d-block small text-secondary mt-1">{{ reserva.get_origen_display }}</span>
                             </td>
                             <td>
