@@ -78,7 +78,7 @@ class FacturaCreateView(CreateView):
         factura.monto_subtotal = folio.subtotal
         factura.monto_igv = folio.igv
         factura.monto_total = folio.total
-        factura.save()     
+        factura.save()
         folio.estado = EstadoFolio.PAGADO
         folio.save()
 
