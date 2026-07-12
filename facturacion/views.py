@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, DeleteView, View
-from django.shortcuts import redirect, get_object_or_400
+from django.shortcuts import redirect, get_object_or_404
 from decimal import Decimal
 
 from config.choices import EstadoFolio
@@ -78,7 +78,7 @@ class CargoEstanciaCreateView(CreateView):
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class RegistrarPagoView(View):
     def post(self, request, folio_id):
-        folio = get_object_or_400(Folio, pk=folio_id)
+        folio = get_object_or_404(Folio, pk=folio_id)
         monto_str = request.POST.get('monto')
         metodo_pago = request.POST.get('metodo_pago')
 
@@ -112,11 +112,11 @@ class FacturaCreateView(CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['folio'] = get_object_or_400(Folio, pk=self.kwargs['folio_id'])
+        context['folio'] = get_object_or_404(Folio, pk=self.kwargs['folio_id'])
         return context
 
     def form_valid(self, form):
-        folio = get_object_or_400(Folio, pk=self.kwargs['folio_id'])
+        folio = get_object_or_404(Folio, pk=self.kwargs['folio_id'])
         
         factura = form.save(commit=False)
         factura.folio = folio
