@@ -9,7 +9,9 @@ from django.utils import timezone
 from config.choices import EstadoFolio, EstadoHabitacion, EstadoReserva
 from core.events import EVENTO_HABITACION_EN_LIMPIEZA, EVENTO_HABITACION_OCUPADA
 from estancias.services import registrar_checkin, registrar_checkout
+from facturacion.exceptions import CheckoutBloqueadoError
 from facturacion.models import Folio
+from facturacion.services import PagoService
 from habitaciones.models import Habitacion, TipoHabitacion
 from hoteles.models import Hotel
 from huespedes.models import Huesped
@@ -81,11 +83,11 @@ class CheckinFolioTests(TestCase):
             evento=EVENTO_HABITACION_OCUPADA,
         )
 
-    def test_registrar_checkout_bloquea_folio_abierto(self):
+    def test_registrar_checkout_bloquea_saldo_pendiente(self):
         reserva = self._crear_reserva_confirmada()
         estancia = registrar_checkin(reserva)
 
-        with self.assertRaisesMessage(ValidationError, 'No se puede hacer checkout con folio pendiente de pago.'):
+        with self.assertRaisesMessage(CheckoutBloqueadoError, 'No se puede hacer checkout. Saldo pendiente: S/ 141.60.'):
             registrar_checkout(estancia)
 
     @patch('habitaciones.services.publicar_evento_habitacion')
@@ -94,8 +96,7 @@ class CheckinFolioTests(TestCase):
         estancia = registrar_checkin(reserva)
         publicar_evento.reset_mock()
         folio = Folio.objects.get(estancia=estancia)
-        folio.estado = EstadoFolio.PAGADO
-        folio.save(update_fields=['estado'])
+        PagoService.registrar_pago_parcial(folio.id, folio.saldo_pendiente, 'EFECTIVO')
         estancia.refresh_from_db()
 
         registrar_checkout(estancia)
@@ -106,3 +107,6 @@ class CheckinFolioTests(TestCase):
             estado_anterior=EstadoHabitacion.OCUPADA,
             evento=EVENTO_HABITACION_EN_LIMPIEZA,
         )
+
+        folio.refresh_from_db()
+        self.assertEqual(folio.estado, EstadoFolio.CERRADO)

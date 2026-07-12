@@ -27,9 +27,10 @@ def registrar_checkin(reserva):
     )
 
     from facturacion.models import Folio
+    from facturacion.services import FolioService
 
     folio = Folio.objects.create(estancia=estancia)
-    folio.calcular_totales()
+    FolioService.recalcular_totales(folio)
 
     reserva.estado = EstadoReserva.CHECKIN
     reserva.save(update_fields=['estado'])
@@ -47,7 +48,7 @@ def registrar_checkout(estancia):
     Deja la reserva finalizada y mueve la habitacion a LIMPIEZA para continuar el
     flujo operativo de housekeeping.
     """
-    _validar_checkout(estancia)
+    folio = _validar_checkout(estancia)
 
     estancia.estado = EstadoEstancia.FINALIZADA
     estancia.fecha_checkout = timezone.now()
@@ -55,6 +56,10 @@ def registrar_checkout(estancia):
 
     estancia.reserva.estado = EstadoReserva.FINALIZADA
     estancia.reserva.save(update_fields=['estado'])
+
+    if folio and folio.estado != EstadoFolio.CERRADO:
+        folio.estado = EstadoFolio.CERRADO
+        folio.save(update_fields=['estado'])
 
     _cambiar_estado_habitacion(estancia.habitacion, EstadoHabitacion.LIMPIEZA)
 
@@ -84,8 +89,18 @@ def _validar_checkout(estancia):
         raise ValidationError('Solo se puede finalizar una estancia activa.')
 
     folio = getattr(estancia, 'folio', None)
-    if folio and folio.estado not in [EstadoFolio.PAGADO, EstadoFolio.CERRADO]:
-        raise ValidationError('No se puede hacer checkout con folio pendiente de pago.')
+    if not folio:
+        raise ValidationError('No se puede hacer checkout porque la estancia no tiene folio.')
+
+    from facturacion.exceptions import CheckoutBloqueadoError
+    from facturacion.services import FolioService
+
+    FolioService.recalcular_totales(folio)
+    saldo_pendiente = folio.saldo_pendiente
+    if saldo_pendiente > 0:
+        raise CheckoutBloqueadoError(f'No se puede hacer checkout. Saldo pendiente: S/ {saldo_pendiente}.')
+
+    return folio
 
 
 def _cambiar_estado_habitacion(habitacion, nuevo_estado):
