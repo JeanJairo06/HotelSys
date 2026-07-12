@@ -1,18 +1,22 @@
-# Create your views here.
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
-from django.views.generic import CreateView, DetailView, ListView, UpdateView,DeleteView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView, DeleteView, View
+from django.shortcuts import redirect, get_object_or_404
+from decimal import Decimal
 
 from config.choices import EstadoFolio
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 
 from .forms import FacturaEmisionForm, TarifaForm, CargoEstanciaForm
-from .models import Factura, Folio
-from django.db import models
+from .models import Factura, Folio, Pago
 from habitaciones.models import Tarifa
 from estancias.models import CargoEstancia
+
+from .services import FolioService, PagoService
+from core.exceptions import ReglaNegocioViolada
+
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class FolioListView(ListView):
     model = Folio
@@ -33,74 +37,105 @@ class FolioDetailView(DetailView):
     template_name = 'facturacion/folio_detail.html'
     context_object_name = 'folio'
 
-    def get_object(self, queryset=None):
-        if queryset is None:
-            queryset = self.get_queryset()
-        
-        queryset = queryset.select_related(
-            'estancia__reserva__huesped',
-            'estancia__habitacion'
-        )
-        folio = super().get_object(queryset)
-        if folio:
-            folio.calcular_totales()
-        return folio
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['form'] = FacturaEmisionForm()
         context['cargo_form'] = CargoEstanciaForm()
-        context['facturas'] = self.object.facturas.all()
+        context['pagos'] = self.object.pagos.filter(activo=True)
         return context
 
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
-class FacturaCreateView(CreateView):
-    model = Factura
-    form_class = FacturaEmisionForm
+class CargoEstanciaCreateView(CreateView):
+    model = CargoEstancia
+    form_class = CargoEstanciaForm
     template_name = 'facturacion/folio_detail.html'
 
     def get_success_url(self):
         return reverse_lazy('facturacion:folio_detail', kwargs={'pk': self.kwargs['folio_id']})
 
     def form_valid(self, form):
-        folio = Folio.objects.select_related('estancia__reserva__huesped').get(pk=self.kwargs['folio_id'])
-        folio.calcular_totales()       
-        factura = form.save(commit=False)
-        factura.folio = folio   
-        huesped = folio.estancia.reserva.huesped
-        factura.ruc_dni = huesped.num_doc  
+        try:
+            FolioService.registrar_cargo_extra(
+                folio_id=self.kwargs['folio_id'],
+                concepto=form.cleaned_data['concepto'],
+                monto=form.cleaned_data['monto'],
+                tipo=form.cleaned_data['tipo'],
+                usuario=self.request.user
+            )
+            messages.success(self.request, 'Cargo adicional registrado y acumulado con éxito.')
+        except ReglaNegocioViolada as e:
+            messages.error(self.request, str(e))
+        except Exception:
+            messages.error(self.request, 'Ocurrió un error inesperado al registrar el cargo.')
+            
+        return redirect(self.get_success_url())
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Datos inválidos. El monto debe ser estrictamente positivo.')
+        return redirect(reverse_lazy('facturacion:folio_detail', kwargs={'pk': self.kwargs['folio_id']}))
+
+
+@method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
+class RegistrarPagoView(View):
+    def post(self, request, folio_id):
+        folio = get_object_or_404(Folio, pk=folio_id)
+        monto_str = request.POST.get('monto')
+        metodo_pago = request.POST.get('metodo_pago')
+
+        try:
+            monto = Decimal(monto_str)
+            PagoService.registrar_pago_parcial(
+                folio_id=folio_id,
+                monto=monto,
+                metodo_pago=metodo_pago,
+                usuario=request.user
+            )
+            messages.success(request, f'¡Pago de S/ {monto} registrado correctamente!')
+        except ReglaNegocioViolada as e:
+            messages.error(request, str(e))
+        except (ValueError, TypeError, KeyError):
+            messages.error(request, 'El monto ingresado no posee un formato numérico válido.')
+        except Exception:
+            messages.error(request, 'Error interno del servidor al procesar el pago.')
+
+        return redirect('facturacion:folio_detail', pk=folio_id)
+
+
+@method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
+class FacturaCreateView(CreateView):
+    model = Factura
+    form_class = FacturaEmisionForm
+    template_name = 'facturacion/factura_form.html'
+
+    def get_success_url(self):
+        return reverse_lazy('facturacion:folio_detail', kwargs={'pk': self.kwargs['folio_id']})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['folio'] = get_object_or_404(Folio, pk=self.kwargs['folio_id'])
+        return context
+
+    def form_valid(self, form):
+        folio = get_object_or_404(Folio, pk=self.kwargs['folio_id'])
         
-        if huesped.tipo_doc == 'RUC':
-            factura.razon_social = huesped.razon_social 
-        else:
-            factura.razon_social = ""            
+        factura = form.save(commit=False)
+        factura.folio = folio
         factura.monto_subtotal = folio.subtotal
         factura.monto_igv = folio.igv
         factura.monto_total = folio.total
+        factura.creado_por = self.request.user
         factura.save()
-        folio.estado = EstadoFolio.PAGADO
-        folio.save()
 
-        messages.success(self.request, f'Comprobante #{factura.id} emitido correctamente.')
+        messages.success(self.request, f'Comprobante emitido correctamente para el Folio #{folio.id}.')
         return super().form_valid(form)
-    
-@method_decorator(any_role_required(ROLE_ADMIN), name='dispatch')
+
+
+@method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class TarifaListView(ListView):
     model = Tarifa
     template_name = 'facturacion/tarifa_list.html'
     context_object_name = 'tarifas'
     paginate_by = 10
-
-    def get_queryset(self):
-        queryset = Tarifa.objects.select_related('tipo_habitacion').order_by('-fecha_inicio')
-        query = self.request.GET.get('q')
-        if query:
-            queryset = queryset.filter(
-                models.Q(nombre__icontains=query) |
-                models.Q(tipo_habitacion__nombre__icontains=query)
-            )
-        return queryset
 
 
 @method_decorator(any_role_required(ROLE_ADMIN), name='dispatch')
@@ -111,7 +146,7 @@ class TarifaCreateView(CreateView):
     success_url = reverse_lazy('facturacion:tarifa_list')
 
     def form_valid(self, form):
-        messages.success(self.request, 'Tarifa por temporada creada correctamente.')
+        messages.success(self.request, 'Nueva regla tarifaria guardada con éxito.')
         return super().form_valid(form)
 
 
@@ -136,27 +171,4 @@ class TarifaDeleteView(DeleteView):
 
     def form_valid(self, form):
         messages.success(self.request, 'Tarifa eliminada correctamente.')
-        return super().form_valid(form)
-
-
-@method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
-class CargoEstanciaCreateView(CreateView):
-    model = CargoEstancia
-    form_class = CargoEstanciaForm
-    template_name = 'facturacion/folio_detail.html'
-
-    def get_success_url(self):
-        return reverse_lazy('facturacion:folio_detail', kwargs={'pk': self.kwargs['folio_id']})
-
-    def form_valid(self, form):
-        # Recuperamos el folio directamente de forma nativa
-        folio = Folio.objects.get(pk=self.kwargs['folio_id'])
-
-        cargo = form.save(commit=False)
-        cargo.estancia = folio.estancia
-        cargo.save()
-
-        folio.calcular_totales()
-
-        messages.success(self.request, f"Cargo de '{cargo.concepto}' por S/ {cargo.monto} añadido correctamente.")
         return super().form_valid(form)
