@@ -27,9 +27,10 @@ def registrar_checkin(reserva):
     )
 
     from facturacion.models import Folio
+    from facturacion.services import FolioService
 
     folio = Folio.objects.create(estancia=estancia)
-    folio.calcular_totales()
+    FolioService.recalcular_totales(folio)
 
     reserva.estado = EstadoReserva.CHECKIN
     reserva.save(update_fields=['estado'])
