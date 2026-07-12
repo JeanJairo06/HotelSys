@@ -1,11 +1,13 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
 from config.choices import EstadoFolio, EstadoHabitacion, EstadoReserva
+from core.events import EVENTO_HABITACION_EN_LIMPIEZA, EVENTO_HABITACION_OCUPADA
 from estancias.services import registrar_checkin, registrar_checkout
 from facturacion.models import Folio
 from habitaciones.models import Habitacion, TipoHabitacion
@@ -40,6 +42,7 @@ class CheckinFolioTests(TestCase):
             num_doc='12345678',
             nombres='Ana',
             apellidos='Torres',
+            fecha_nacimiento=date(1990, 1, 1),
         )
 
     def _crear_reserva_confirmada(self):
@@ -65,9 +68,41 @@ class CheckinFolioTests(TestCase):
         self.assertEqual(folio.igv, Decimal('21.60'))
         self.assertEqual(folio.total, Decimal('141.60'))
 
+    @patch('habitaciones.services.publicar_evento_habitacion')
+    def test_registrar_checkin_publica_evento_habitacion_ocupada(self, publicar_evento):
+        reserva = self._crear_reserva_confirmada()
+
+        registrar_checkin(reserva)
+
+        self.habitacion.refresh_from_db()
+        publicar_evento.assert_called_once_with(
+            self.habitacion,
+            estado_anterior=EstadoHabitacion.DISPONIBLE,
+            evento=EVENTO_HABITACION_OCUPADA,
+        )
+
     def test_registrar_checkout_bloquea_folio_abierto(self):
         reserva = self._crear_reserva_confirmada()
         estancia = registrar_checkin(reserva)
 
         with self.assertRaisesMessage(ValidationError, 'No se puede hacer checkout con folio pendiente de pago.'):
             registrar_checkout(estancia)
+
+    @patch('habitaciones.services.publicar_evento_habitacion')
+    def test_registrar_checkout_publica_evento_habitacion_en_limpieza(self, publicar_evento):
+        reserva = self._crear_reserva_confirmada()
+        estancia = registrar_checkin(reserva)
+        publicar_evento.reset_mock()
+        folio = Folio.objects.get(estancia=estancia)
+        folio.estado = EstadoFolio.PAGADO
+        folio.save(update_fields=['estado'])
+        estancia.refresh_from_db()
+
+        registrar_checkout(estancia)
+
+        self.habitacion.refresh_from_db()
+        publicar_evento.assert_called_once_with(
+            self.habitacion,
+            estado_anterior=EstadoHabitacion.OCUPADA,
+            evento=EVENTO_HABITACION_EN_LIMPIEZA,
+        )
