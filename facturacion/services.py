@@ -67,7 +67,7 @@ class PagoService:
             folio=folio,
             monto=monto.quantize(Decimal('0.01')),
             metodo_pago=metodo_pago,
-            creado_by=usuario 
+            creado_por=usuario,
         )
         
         if folio.saldo_pendiente == Decimal('0.00'):

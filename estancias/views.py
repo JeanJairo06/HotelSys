@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 
 from config.choices import EstadoEstancia, EstadoReserva
+from core.exceptions import AppError
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 from reservas.models import Reserva
@@ -80,6 +81,9 @@ def realizar_checkout(request, estancia_id):
             return redirect('estancias:listar_estancias')
         except ValidationError as error:
             messages.error(request, error.messages[0])
+            return redirect('estancias:listar_estancias')
+        except AppError as error:
+            messages.error(request, error.message)
             return redirect('estancias:listar_estancias')
 
     return render(request, 'estancias/confirmar_checkout.html', {'estancia': estancia})
