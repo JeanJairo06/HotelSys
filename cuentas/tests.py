@@ -54,6 +54,33 @@ class UsuarioServiceTests(TestCase):
                 groups=[],
             )
 
+    def test_empleados_disponibles_excluye_empleado_con_cuenta_historica(self):
+        user = UsuarioService.crear_usuario(
+            username='jean',
+            password='test12345',
+            empleado=self.empleado,
+            groups=[],
+        )
+        UsuarioService.desactivar_usuario(user=user, usuario_actor=self.actor)
+
+        queryset = UsuarioService.empleados_disponibles_queryset()
+
+        self.assertNotIn(self.empleado, queryset)
+
+    def test_empleados_disponibles_incluye_empleado_actual_en_edicion(self):
+        UsuarioService.crear_usuario(
+            username='jean',
+            password='test12345',
+            empleado=self.empleado,
+            groups=[],
+        )
+
+        queryset = UsuarioService.empleados_disponibles_queryset(
+            empleado_actual=self.empleado,
+        )
+
+        self.assertIn(self.empleado, queryset)
+
     def test_desactivar_usuario_aplica_soft_delete_al_perfil(self):
         user = UsuarioService.crear_usuario(
             username='jean',

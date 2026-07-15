@@ -19,23 +19,18 @@ class UsuarioService:
 
     @staticmethod
     def empleados_disponibles_queryset(*, empleado_actual=None, empleado_id=None):
-        queryset = Empleado.objects.none()
+        empleados_con_cuenta_historica = UsuarioEmpleado.todos.values('empleado_id')
+        queryset = Empleado.objects.filter(estado=EstadoGeneral.ACTIVO).exclude(
+            pk__in=empleados_con_cuenta_historica,
+        )
 
         if empleado_actual:
-            queryset = Empleado.objects.filter(pk=empleado_actual.pk)
+            queryset = queryset | Empleado.objects.filter(pk=empleado_actual.pk)
 
         if empleado_id:
-            queryset = Empleado.objects.filter(
-                pk=empleado_id,
-                estado=EstadoGeneral.ACTIVO,
-                cuenta_usuario__isnull=True,
-            )
-            if empleado_actual:
-                queryset = Empleado.objects.filter(pk=empleado_id).filter(
-                    pk=empleado_actual.pk,
-                ) | queryset
+            queryset = queryset.filter(pk=empleado_id)
 
-        return queryset.order_by('apellidos', 'nombres')
+        return queryset.distinct().order_by('apellidos', 'nombres')
 
     @staticmethod
     @transaction.atomic
