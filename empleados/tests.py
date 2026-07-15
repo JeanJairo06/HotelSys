@@ -6,6 +6,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from config.choices import CargoEmpleado, EstadoGeneral
+from cuentas.models import UsuarioEmpleado
+from cuentas.services import UsuarioService
 from empleados.exceptions import CargoEmpleadoInvalido, DatosEmpleadoInvalidos, EmpleadoDuplicado
 from empleados.forms import EmpleadoForm
 from empleados.models import Empleado
@@ -125,6 +127,11 @@ class EmpleadoModelTests(TestCase):
 
 
 class EmpleadoServiceTests(TestCase):
+    def setUp(self):
+        self.grupo_admin = Group.objects.get(name='admin')
+        self.actor = User.objects.create_user(username='admin-servicio', password='test123')
+        self.actor.groups.add(self.grupo_admin)
+
     def _datos_empleado(self, **overrides):
         data = {
             'nombres': 'Ana',
@@ -137,6 +144,15 @@ class EmpleadoServiceTests(TestCase):
         }
         data.update(overrides)
         return data
+
+    def _crear_usuario_empleado(self, empleado):
+        return UsuarioService.crear_usuario(
+            username='usuario-empleado',
+            password='test12345',
+            empleado=empleado,
+            groups=[],
+            usuario_actor=self.actor,
+        )
 
     def test_crear_empleado_normaliza_y_genera_codigo(self):
         empleado = EmpleadoService.crear_empleado(
@@ -214,6 +230,31 @@ class EmpleadoServiceTests(TestCase):
         self.assertFalse(empleado.activo)
         self.assertFalse(Empleado.objects.filter(pk=empleado.pk).exists())
         self.assertTrue(Empleado.todos.filter(pk=empleado.pk).exists())
+
+    def test_desactivar_empleado_desactiva_usuario_asociado(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado(email='ana.usuario@example.com'))
+        user = self._crear_usuario_empleado(empleado)
+
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.actor)
+
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+        self.assertFalse(UsuarioEmpleado.objects.filter(usuario=user).exists())
+        self.assertTrue(UsuarioEmpleado.todos.filter(usuario=user, empleado=empleado, activo=False).exists())
+
+    def test_activar_empleado_no_reactiva_usuario_asociado(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado(email='ana.reactivar.usuario@example.com'))
+        user = self._crear_usuario_empleado(empleado)
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.actor)
+
+        EmpleadoService.activar_empleado(empleado=empleado, usuario_actor=self.actor)
+
+        user.refresh_from_db()
+        perfil = UsuarioEmpleado.todos.get(usuario=user, empleado=empleado)
+        self.assertEqual(empleado.estado, EstadoGeneral.ACTIVO)
+        self.assertTrue(empleado.activo)
+        self.assertFalse(user.is_active)
+        self.assertFalse(perfil.activo)
 
     def test_activar_empleado_restaura_estado_activo(self):
         empleado = EmpleadoService.crear_empleado(data=self._datos_empleado())

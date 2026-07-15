@@ -73,6 +73,10 @@ class EmpleadoService:
     @staticmethod
     @transaction.atomic
     def desactivar_empleado(*, empleado, usuario_actor=None):
+        EmpleadoService._desactivar_cuenta_asociada(
+            empleado=empleado,
+            usuario_actor=usuario_actor,
+        )
         empleado.estado = EstadoGeneral.INACTIVO
         empleado.activo = False
         empleado.save(update_fields=['estado', 'activo', 'actualizado_en'])
@@ -180,3 +184,17 @@ class EmpleadoService:
     @staticmethod
     def _usuario_persistido(user):
         return bool(user and getattr(user, 'is_authenticated', False) and user.pk)
+
+    @staticmethod
+    def _desactivar_cuenta_asociada(*, empleado, usuario_actor=None):
+        from cuentas.models import UsuarioEmpleado
+        from cuentas.services import UsuarioService
+
+        perfil = UsuarioEmpleado.objects.select_related('usuario').filter(empleado=empleado).first()
+        if not perfil or not perfil.usuario.is_active:
+            return
+
+        UsuarioService.desactivar_usuario(
+            user=perfil.usuario,
+            usuario_actor=usuario_actor,
+        )
