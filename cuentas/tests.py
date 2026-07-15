@@ -2,6 +2,7 @@ from datetime import date
 
 from django.contrib.auth.models import Group, User
 from django.test import TestCase
+from django.urls import reverse
 
 from config.choices import CargoEmpleado, EstadoGeneral
 from cuentas.exceptions import EmpleadoNoDisponible, RolUsuarioInvalido, UsuarioNoDesactivable
@@ -191,3 +192,45 @@ class UsuarioServiceTests(TestCase):
                 groups=[],
                 is_active=True,
             )
+
+
+class UsuarioViewsTests(TestCase):
+    def setUp(self):
+        self.grupo_admin = Group.objects.get(name='admin')
+        self.admin = User.objects.create_user(username='admin-test', password='test123')
+        self.admin.groups.add(self.grupo_admin)
+        self.empleado_admin = Empleado.objects.create(
+            codigo='EMP-9100',
+            nombres='Admin',
+            apellidos='Sistema',
+            cargo=CargoEmpleado.ADMINISTRADOR,
+            email='admin-test@example.com',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+        UsuarioEmpleado.objects.create(usuario=self.admin, empleado=self.empleado_admin)
+
+        empleado_inactivo = Empleado.objects.create(
+            codigo='EMP-9101',
+            nombres='Usuario',
+            apellidos='Inactivo',
+            cargo=CargoEmpleado.RECEPCIONISTA,
+            email='usuario-inactivo@example.com',
+            estado=EstadoGeneral.ACTIVO,
+            fecha_ingreso=date.today(),
+        )
+        self.usuario_inactivo = UsuarioService.crear_usuario(
+            username='usuario-inactivo',
+            password='test12345',
+            empleado=empleado_inactivo,
+            groups=[],
+        )
+        UsuarioService.desactivar_usuario(user=self.usuario_inactivo, usuario_actor=self.admin)
+
+    def test_listado_muestra_activar_para_usuario_inactivo(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('usuarios:list'))
+
+        self.assertContains(response, reverse('usuarios:activate', args=[self.usuario_inactivo.pk]))
+        self.assertNotContains(response, reverse('usuarios:deactivate', args=[self.usuario_inactivo.pk]))

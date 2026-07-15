@@ -122,3 +122,25 @@ class UsuarioDeactivateView(DeleteView):
 
         messages.success(self.request, 'Usuario desactivado correctamente.')
         return HttpResponseRedirect(self.get_success_url())
+
+
+@method_decorator(role_required(ROLE_ADMIN), name='dispatch')
+class UsuarioActivateView(DetailView):
+    model = User
+    template_name = 'cuentas/usuarios/confirm_activate.html'
+    context_object_name = 'usuario'
+    success_url = reverse_lazy('usuarios:list')
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        try:
+            UsuarioService.reactivar_usuario(
+                user=self.object,
+                usuario_actor=request.user,
+            )
+        except AppError as error:
+            messages.error(request, error.message)
+            return self.get(request, *args, **kwargs)
+
+        messages.success(request, 'Usuario activado correctamente.')
+        return HttpResponseRedirect(self.success_url)
