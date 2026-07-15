@@ -1,10 +1,8 @@
 from django.contrib import messages
-from django.db.models.deletion import ProtectedError
 from django.http import HttpResponseRedirect
-from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
-from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from core.exceptions import AppError
 from cuentas.decorators import role_required
@@ -78,19 +76,48 @@ class EmpleadoUpdateView(UpdateView):
         return HttpResponseRedirect(self.get_success_url())
 
 
-@method_decorator(role_required(ROLE_ADMIN), name='dispatch')
-class EmpleadoDeleteView(DeleteView):
+class EmpleadoEstadoMixin:
     model = Empleado
-    template_name = 'empleados/confirm_delete.html'
     context_object_name = 'empleado'
     success_url = reverse_lazy('empleados:list')
 
-    def form_valid(self, form):
-        try:
-            response = super().form_valid(form)
-        except ProtectedError:
-            messages.error(self.request, 'No se puede eliminar el empleado porque tiene registros asociados.')
-            return redirect(self.success_url)
+    def get_queryset(self):
+        return EmpleadoService.detalle_queryset()
 
-        messages.success(self.request, 'Empleado eliminado correctamente.')
-        return response
+
+@method_decorator(role_required(ROLE_ADMIN), name='dispatch')
+class EmpleadoDeactivateView(EmpleadoEstadoMixin, DetailView):
+    template_name = 'empleados/confirm_deactivate.html'
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        try:
+            EmpleadoService.desactivar_empleado(
+                empleado=self.object,
+                usuario_actor=request.user,
+            )
+        except AppError as error:
+            messages.error(request, error.message)
+            return self.get(request, *args, **kwargs)
+
+        messages.success(request, 'Empleado desactivado correctamente.')
+        return HttpResponseRedirect(self.success_url)
+
+
+@method_decorator(role_required(ROLE_ADMIN), name='dispatch')
+class EmpleadoActivateView(EmpleadoEstadoMixin, DetailView):
+    template_name = 'empleados/confirm_activate.html'
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        try:
+            EmpleadoService.activar_empleado(
+                empleado=self.object,
+                usuario_actor=request.user,
+            )
+        except AppError as error:
+            messages.error(request, error.message)
+            return self.get(request, *args, **kwargs)
+
+        messages.success(request, 'Empleado activado correctamente.')
+        return HttpResponseRedirect(self.success_url)

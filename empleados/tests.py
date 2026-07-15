@@ -285,6 +285,44 @@ class EmpleadoViewsTests(TestCase):
         self.assertContains(response, 'Luis')
         self.assertNotContains(response, 'Ana')
 
+    def test_listado_muestra_accion_segun_estado(self):
+        self.client.force_login(self.admin)
+        activo = EmpleadoService.crear_empleado(data=self._form_data(email='activo.list@example.com'))
+        inactivo = EmpleadoService.crear_empleado(data=self._form_data(
+            nombres='Luis',
+            email='inactivo.list@example.com',
+            telefono='999111222',
+        ))
+        EmpleadoService.desactivar_empleado(empleado=inactivo)
+
+        response = self.client.get(reverse('empleados:list'))
+
+        self.assertContains(response, reverse('empleados:deactivate', args=[activo.pk]))
+        self.assertContains(response, reverse('empleados:activate', args=[inactivo.pk]))
+
+    def test_desactivar_empleado_desde_view_usa_servicio(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data())
+
+        response = self.client.post(reverse('empleados:deactivate', args=[empleado.pk]))
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.estado, EstadoGeneral.INACTIVO)
+        self.assertFalse(empleado.activo)
+
+    def test_activar_empleado_desde_view_usa_servicio(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data())
+        EmpleadoService.desactivar_empleado(empleado=empleado)
+
+        response = self.client.post(reverse('empleados:activate', args=[empleado.pk]))
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.estado, EstadoGeneral.ACTIVO)
+        self.assertTrue(empleado.activo)
+
     def test_rechaza_telefono_con_longitud_invalida(self):
         empleado = Empleado(
             codigo='EMP003',
