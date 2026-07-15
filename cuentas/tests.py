@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from config.choices import CargoEmpleado, EstadoGeneral
-from cuentas.exceptions import EmpleadoNoDisponible, RolUsuarioInvalido, UsuarioNoDesactivable
+from cuentas.exceptions import EmpleadoNoDisponible, RolUsuarioInvalido, UsuarioDuplicado, UsuarioNoDesactivable
 from cuentas.models import UsuarioEmpleado
 from cuentas.services import UsuarioService
 from empleados.models import Empleado
@@ -60,6 +60,34 @@ class UsuarioServiceTests(TestCase):
                 username='otro',
                 password='test12345',
                 empleado=self.empleado,
+                groups=[],
+            )
+
+    def test_crear_usuario_rechaza_username_duplicado(self):
+        User.objects.create_user(username='jean', password='test12345')
+
+        with self.assertRaises(UsuarioDuplicado):
+            UsuarioService.crear_usuario(
+                username='jean',
+                password='test12345',
+                empleado=self.empleado,
+                groups=[],
+            )
+
+    def test_crear_usuario_rechaza_empleado_inactivo(self):
+        empleado_inactivo = self._crear_empleado(
+            codigo='EMP-9004',
+            nombres='Empleado',
+            apellidos='Inactivo',
+            email='empleado-inactivo@example.com',
+            estado=EstadoGeneral.INACTIVO,
+        )
+
+        with self.assertRaises(EmpleadoNoDisponible):
+            UsuarioService.crear_usuario(
+                username='inactivo',
+                password='test12345',
+                empleado=empleado_inactivo,
                 groups=[],
             )
 
@@ -135,6 +163,20 @@ class UsuarioServiceTests(TestCase):
         perfil = UsuarioEmpleado.todos.get(usuario=user)
         self.assertTrue(user.is_active)
         self.assertTrue(perfil.activo)
+
+    def test_reactivar_usuario_rechaza_empleado_inactivo(self):
+        user = UsuarioService.crear_usuario(
+            username='jean',
+            password='test12345',
+            empleado=self.empleado,
+            groups=[],
+        )
+        UsuarioService.desactivar_usuario(user=user, usuario_actor=self.actor)
+        self.empleado.estado = EstadoGeneral.INACTIVO
+        self.empleado.save(update_fields=['estado'])
+
+        with self.assertRaises(EmpleadoNoDisponible):
+            UsuarioService.reactivar_usuario(user=user, usuario_actor=self.actor)
 
     def test_actualizar_usuario_rechaza_auto_desactivacion(self):
         self.actor.groups.add(self.grupo_admin)
@@ -234,3 +276,14 @@ class UsuarioViewsTests(TestCase):
 
         self.assertContains(response, reverse('usuarios:activate', args=[self.usuario_inactivo.pk]))
         self.assertNotContains(response, reverse('usuarios:deactivate', args=[self.usuario_inactivo.pk]))
+
+    def test_detalle_muestra_auditoria_del_perfil(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('usuarios:detail', args=[self.usuario_inactivo.pk]))
+
+        self.assertContains(response, 'Auditoría del perfil')
+        self.assertContains(response, 'Perfil activo')
+        self.assertContains(response, 'Creado por')
+        self.assertContains(response, 'Creado en')
+        self.assertContains(response, 'Actualizado en')
