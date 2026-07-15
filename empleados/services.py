@@ -99,7 +99,7 @@ class EmpleadoService:
             'cargo': data.get('cargo') or CargoEmpleado.RECEPCIONISTA,
             'email': data.get('email') or '',
             'telefono': data.get('telefono') or '',
-            'estado': data.get('estado', EstadoGeneral.ACTIVO),
+            'estado': empleado.estado if empleado else data.get('estado', EstadoGeneral.ACTIVO),
             'fecha_ingreso': EmpleadoService._normalizar_fecha(data.get('fecha_ingreso')),
         }
 

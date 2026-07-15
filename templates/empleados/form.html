@@ -30,11 +30,6 @@
                 {{ form.fecha_ingreso }}
                 {% for error in form.fecha_ingreso.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
-            <div class="col-md-4">
-                <label class="form-label" for="{{ form.estado.id_for_label }}">{{ form.estado.label }}</label>
-                {{ form.estado }}
-                {% for error in form.estado.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
             <div class="col-md-6">
                 <label class="form-label" for="{{ form.nombres.id_for_label }}">{{ form.nombres.label }}</label>
                 {{ form.nombres }}

@@ -82,6 +82,11 @@ class EmpleadoModelTests(TestCase):
 
         self.assertEqual(empleado.codigo, 'EMP-0001')
 
+    def test_formulario_no_expone_estado(self):
+        form = EmpleadoForm()
+
+        self.assertNotIn('estado', form.fields)
+
     def test_formulario_conserva_codigo_al_editar(self):
         empleado = Empleado.objects.create(
             nombres='Ana',
@@ -256,6 +261,29 @@ class EmpleadoServiceTests(TestCase):
         self.assertFalse(user.is_active)
         self.assertFalse(perfil.activo)
 
+    def test_actualizar_empleado_inactivo_conserva_estado_y_usuario_inactivo(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado(email='ana.editar.inactiva@example.com'))
+        user = self._crear_usuario_empleado(empleado)
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.actor)
+
+        EmpleadoService.actualizar_empleado(
+            empleado=empleado,
+            data=self._datos_empleado(
+                nombres='Ana Editada',
+                email='ana.editar.inactiva@example.com',
+            ),
+            usuario_actor=self.actor,
+        )
+
+        empleado.refresh_from_db()
+        user.refresh_from_db()
+        perfil = UsuarioEmpleado.todos.get(usuario=user, empleado=empleado)
+        self.assertEqual(empleado.nombres, 'Ana Editada')
+        self.assertEqual(empleado.estado, EstadoGeneral.INACTIVO)
+        self.assertFalse(empleado.activo)
+        self.assertFalse(user.is_active)
+        self.assertFalse(perfil.activo)
+
     def test_activar_empleado_restaura_estado_activo(self):
         empleado = EmpleadoService.crear_empleado(data=self._datos_empleado())
         EmpleadoService.desactivar_empleado(empleado=empleado)
@@ -315,6 +343,26 @@ class EmpleadoViewsTests(TestCase):
         self.assertEqual(empleado.codigo, 'EMP-0001')
         self.assertEqual(empleado.nombres, 'Ana Maria')
         self.assertEqual(empleado.email, 'ana.views.actualizada@example.com')
+
+    def test_actualizar_empleado_desde_view_no_cambia_estado(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data(email='ana.estado.view@example.com'))
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.admin)
+
+        response = self.client.post(
+            reverse('empleados:update', args=[empleado.pk]),
+            data=self._form_data(
+                nombres='Ana Editada',
+                email='ana.estado.view@example.com',
+                estado=EstadoGeneral.ACTIVO,
+            ),
+        )
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.nombres, 'Ana Editada')
+        self.assertEqual(empleado.estado, EstadoGeneral.INACTIVO)
+        self.assertFalse(empleado.activo)
 
     def test_listado_empleados_usa_busqueda(self):
         self.client.force_login(self.admin)

@@ -15,7 +15,6 @@ class EmpleadoForm(forms.ModelForm):
             'cargo',
             'email',
             'telefono',
-            'estado',
             'fecha_ingreso',
         ]
         labels = {
@@ -25,7 +24,6 @@ class EmpleadoForm(forms.ModelForm):
             'cargo': 'Cargo',
             'email': 'Correo electrónico',
             'telefono': 'Teléfono',
-            'estado': 'Estado',
             'fecha_ingreso': 'Fecha de ingreso',
         }
         widgets = {

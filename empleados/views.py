@@ -61,6 +61,9 @@ class EmpleadoUpdateView(UpdateView):
     template_name = 'empleados/form.html'
     success_url = reverse_lazy('empleados:list')
 
+    def get_queryset(self):
+        return EmpleadoService.detalle_queryset()
+
     def form_valid(self, form):
         try:
             self.object = EmpleadoService.actualizar_empleado(
