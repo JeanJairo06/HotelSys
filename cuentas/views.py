@@ -97,9 +97,9 @@ class UsuarioUpdateView(UpdateView):
 
 
 @method_decorator(role_required(ROLE_ADMIN), name='dispatch')
-class UsuarioDeleteView(DeleteView):
+class UsuarioDeactivateView(DeleteView):
     model = User
-    template_name = 'cuentas/usuarios/confirm_delete.html'
+    template_name = 'cuentas/usuarios/confirm_deactivate.html'
     context_object_name = 'usuario'
     success_url = reverse_lazy('usuarios:list')
 

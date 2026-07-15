@@ -1,11 +1,11 @@
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 
 from config.choices import EstadoGeneral
-from cuentas.exceptions import EmpleadoNoDisponible, UsuarioDuplicado, UsuarioNoDesactivable
+from cuentas.exceptions import EmpleadoNoDisponible, RolUsuarioInvalido, UsuarioDuplicado, UsuarioNoDesactivable
 from cuentas.models import UsuarioEmpleado
-from cuentas.roles import ROLE_ADMIN
+from cuentas.roles import ROLE_ADMIN, SYSTEM_ROLES
 from empleados.models import Empleado
 
 
@@ -36,6 +36,7 @@ class UsuarioService:
     @staticmethod
     @transaction.atomic
     def crear_usuario(*, username, password, empleado, groups, is_active=True, usuario_actor=None):
+        UsuarioService._validar_roles_permitidos(groups)
         UsuarioService._validar_empleado_disponible(empleado)
         UsuarioService._validar_username_disponible(username)
 
@@ -63,6 +64,7 @@ class UsuarioService:
     @staticmethod
     @transaction.atomic
     def actualizar_usuario(*, user, username, empleado, groups, is_active=True, usuario_actor=None):
+        UsuarioService._validar_roles_permitidos(groups)
         UsuarioService._validar_empleado_disponible(empleado, usuario_actual=user)
         UsuarioService._validar_cambio_seguridad(
             user=user,
@@ -130,6 +132,15 @@ class UsuarioService:
     def _validar_username_disponible(username):
         if User.objects.filter(username=username).exists():
             raise UsuarioDuplicado('Ya existe un usuario con ese nombre de usuario.')
+
+    @staticmethod
+    def _validar_roles_permitidos(groups):
+        roles_invalidos = [group.name for group in groups if group.name not in SYSTEM_ROLES]
+        if roles_invalidos:
+            raise RolUsuarioInvalido(
+                'Solo se pueden asignar roles del sistema.',
+                detail={'roles_invalidos': roles_invalidos},
+            )
 
     @staticmethod
     def _validar_cambio_seguridad(*, user, groups, is_active, usuario_actor=None):

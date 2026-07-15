@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group, User
 
 from cuentas.services import UsuarioService
+from cuentas.roles import SYSTEM_ROLES
 from empleados.models import Empleado
 
 
@@ -26,7 +27,7 @@ class UsuarioCreateForm(BootstrapFormMixin, UserCreationForm):
     )
     groups = forms.ModelMultipleChoiceField(
         label='Roles / grupos',
-        queryset=Group.objects.all(),
+        queryset=Group.objects.filter(name__in=SYSTEM_ROLES),
         required=False,
         widget=forms.CheckboxSelectMultiple,
     )
@@ -77,7 +78,7 @@ class UsuarioUpdateForm(BootstrapFormMixin, forms.ModelForm):
     )
     groups = forms.ModelMultipleChoiceField(
         label='Roles / grupos',
-        queryset=Group.objects.all(),
+        queryset=Group.objects.filter(name__in=SYSTEM_ROLES),
         required=False,
         widget=forms.CheckboxSelectMultiple,
     )

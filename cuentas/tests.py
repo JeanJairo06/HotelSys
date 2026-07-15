@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group, User
 from django.test import TestCase
 
 from config.choices import CargoEmpleado, EstadoGeneral
-from cuentas.exceptions import EmpleadoNoDisponible, UsuarioNoDesactivable
+from cuentas.exceptions import EmpleadoNoDisponible, RolUsuarioInvalido, UsuarioNoDesactivable
 from cuentas.models import UsuarioEmpleado
 from cuentas.services import UsuarioService
 from empleados.models import Empleado
@@ -60,6 +60,17 @@ class UsuarioServiceTests(TestCase):
                 password='test12345',
                 empleado=self.empleado,
                 groups=[],
+            )
+
+    def test_crear_usuario_rechaza_rol_no_permitido(self):
+        grupo_invalido = Group.objects.create(name='contabilidad')
+
+        with self.assertRaises(RolUsuarioInvalido):
+            UsuarioService.crear_usuario(
+                username='jean',
+                password='test12345',
+                empleado=self.empleado,
+                groups=[grupo_invalido],
             )
 
     def test_empleados_disponibles_excluye_empleado_con_cuenta_historica(self):
