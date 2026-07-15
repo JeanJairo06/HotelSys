@@ -6,6 +6,7 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from core.exceptions import AppError
 from cuentas.decorators import role_required
+from cuentas.models import UsuarioEmpleado
 from cuentas.roles import ROLE_ADMIN
 from empleados.forms import EmpleadoForm
 from empleados.models import Empleado
@@ -31,6 +32,14 @@ class EmpleadoDetailView(DetailView):
 
     def get_queryset(self):
         return EmpleadoService.detalle_queryset()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['perfil_usuario'] = UsuarioEmpleado.todos.select_related(
+            'usuario',
+            'creado_por',
+        ).filter(empleado=self.object).first()
+        return context
 
 
 @method_decorator(role_required(ROLE_ADMIN), name='dispatch')

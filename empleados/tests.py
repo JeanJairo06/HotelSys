@@ -389,6 +389,40 @@ class EmpleadoViewsTests(TestCase):
         self.assertContains(response, reverse('empleados:deactivate', args=[activo.pk]))
         self.assertContains(response, reverse('empleados:activate', args=[inactivo.pk]))
 
+    def test_detalle_muestra_auditoria_y_usuario_asociado(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(
+            data=self._form_data(email='ana.detalle@example.com'),
+            usuario_actor=self.admin,
+        )
+        user = UsuarioService.crear_usuario(
+            username='ana-detalle',
+            password='test12345',
+            empleado=empleado,
+            groups=[],
+            usuario_actor=self.admin,
+        )
+
+        response = self.client.get(reverse('empleados:detail', args=[empleado.pk]))
+
+        self.assertContains(response, 'Auditoría')
+        self.assertContains(response, self.admin.username)
+        self.assertContains(response, 'Usuario asociado')
+        self.assertContains(response, user.username)
+        self.assertContains(response, reverse('usuarios:detail', args=[user.pk]))
+        self.assertContains(response, reverse('empleados:deactivate', args=[empleado.pk]))
+
+    def test_detalle_empleado_inactivo_muestra_accion_activar(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data(email='ana.detalle.inactiva@example.com'))
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.admin)
+
+        response = self.client.get(reverse('empleados:detail', args=[empleado.pk]))
+
+        self.assertContains(response, 'Inactivo')
+        self.assertContains(response, reverse('empleados:activate', args=[empleado.pk]))
+        self.assertNotContains(response, reverse('empleados:deactivate', args=[empleado.pk]))
+
     def test_desactivar_empleado_desde_view_usa_servicio(self):
         self.client.force_login(self.admin)
         empleado = EmpleadoService.crear_empleado(data=self._form_data())
