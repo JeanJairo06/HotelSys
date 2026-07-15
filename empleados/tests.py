@@ -4,8 +4,10 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from config.choices import CargoEmpleado, EstadoGeneral
+from empleados.exceptions import CargoEmpleadoInvalido, DatosEmpleadoInvalidos, EmpleadoDuplicado
 from empleados.forms import EmpleadoForm
 from empleados.models import Empleado
+from empleados.services import EmpleadoService
 
 
 class EmpleadoModelTests(TestCase):
@@ -118,6 +120,108 @@ class EmpleadoModelTests(TestCase):
             empleado.full_clean()
 
         self.assertIn('telefono', context.exception.message_dict)
+
+
+class EmpleadoServiceTests(TestCase):
+    def _datos_empleado(self, **overrides):
+        data = {
+            'nombres': 'Ana',
+            'apellidos': 'Torres',
+            'cargo': CargoEmpleado.RECEPCIONISTA,
+            'email': 'ana.service@example.com',
+            'telefono': '999888777',
+            'estado': EstadoGeneral.ACTIVO,
+            'fecha_ingreso': date.today(),
+        }
+        data.update(overrides)
+        return data
+
+    def test_crear_empleado_normaliza_y_genera_codigo(self):
+        empleado = EmpleadoService.crear_empleado(
+            data=self._datos_empleado(
+                nombres=' Ana ',
+                apellidos=' Torres ',
+                email='ANA.SERVICE@EXAMPLE.COM',
+                telefono=' 999888777 ',
+            )
+        )
+
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+        self.assertEqual(empleado.nombres, 'Ana')
+        self.assertEqual(empleado.apellidos, 'Torres')
+        self.assertEqual(empleado.email, 'ana.service@example.com')
+        self.assertEqual(empleado.telefono, '999888777')
+
+    def test_actualizar_empleado_conserva_codigo(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado())
+
+        actualizado = EmpleadoService.actualizar_empleado(
+            empleado=empleado,
+            data=self._datos_empleado(
+                codigo='MANUAL',
+                nombres='Ana Maria',
+                email='ana.actualizada@example.com',
+            ),
+        )
+
+        self.assertEqual(actualizado.codigo, 'EMP-0001')
+        self.assertEqual(actualizado.nombres, 'Ana Maria')
+        self.assertEqual(actualizado.email, 'ana.actualizada@example.com')
+
+    def test_crear_empleado_rechaza_email_duplicado(self):
+        EmpleadoService.crear_empleado(data=self._datos_empleado(email='duplicado@example.com'))
+
+        with self.assertRaises(EmpleadoDuplicado):
+            EmpleadoService.crear_empleado(
+                data=self._datos_empleado(
+                    email='DUPLICADO@EXAMPLE.COM',
+                    telefono='999111222',
+                )
+            )
+
+    def test_crear_empleado_rechaza_telefono_duplicado(self):
+        EmpleadoService.crear_empleado(data=self._datos_empleado(telefono='999888777'))
+
+        with self.assertRaises(EmpleadoDuplicado):
+            EmpleadoService.crear_empleado(
+                data=self._datos_empleado(
+                    email='otro@example.com',
+                    telefono='999888777',
+                )
+            )
+
+    def test_crear_empleado_rechaza_fecha_futura(self):
+        with self.assertRaises(DatosEmpleadoInvalidos):
+            EmpleadoService.crear_empleado(
+                data=self._datos_empleado(
+                    fecha_ingreso=date(date.today().year + 1, 1, 1),
+                )
+            )
+
+    def test_crear_empleado_rechaza_cargo_invalido(self):
+        with self.assertRaises(CargoEmpleadoInvalido):
+            EmpleadoService.crear_empleado(data=self._datos_empleado(cargo='CONTABILIDAD'))
+
+    def test_desactivar_empleado_aplica_estado_inactivo_y_soft_delete(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado())
+
+        EmpleadoService.desactivar_empleado(empleado=empleado)
+
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.estado, EstadoGeneral.INACTIVO)
+        self.assertFalse(empleado.activo)
+        self.assertFalse(Empleado.objects.filter(pk=empleado.pk).exists())
+        self.assertTrue(Empleado.todos.filter(pk=empleado.pk).exists())
+
+    def test_activar_empleado_restaura_estado_activo(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado())
+        EmpleadoService.desactivar_empleado(empleado=empleado)
+
+        EmpleadoService.activar_empleado(empleado=empleado)
+
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.estado, EstadoGeneral.ACTIVO)
+        self.assertTrue(empleado.activo)
 
     def test_rechaza_telefono_con_longitud_invalida(self):
         empleado = Empleado(
