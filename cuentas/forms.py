@@ -114,7 +114,7 @@ class UsuarioUpdateForm(BootstrapFormMixin, forms.ModelForm):
         self._apply_bootstrap()
         self.fields['empleado'].widget.attrs.update({'class': 'form-select js-empleado-select'})
 
-    def save(self, commit=True):
+    def save(self, commit=True, usuario_actor=None):
         if not commit:
             return super().save(commit=False)
 
@@ -124,4 +124,5 @@ class UsuarioUpdateForm(BootstrapFormMixin, forms.ModelForm):
             empleado=self.cleaned_data['empleado'],
             groups=self.cleaned_data['groups'],
             is_active=self.cleaned_data['is_active'],
+            usuario_actor=usuario_actor,
         )

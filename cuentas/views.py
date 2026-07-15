@@ -87,7 +87,7 @@ class UsuarioUpdateView(UpdateView):
 
     def form_valid(self, form):
         try:
-            self.object = form.save()
+            self.object = form.save(usuario_actor=self.request.user)
         except AppError as error:
             form.add_error(None, error.message)
             return self.form_invalid(form)

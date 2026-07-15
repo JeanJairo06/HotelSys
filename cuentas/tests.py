@@ -14,13 +14,21 @@ class UsuarioServiceTests(TestCase):
     def setUp(self):
         self.grupo_admin = Group.objects.get(name='admin')
         self.actor = User.objects.create_user(username='lider', password='test123')
-        self.empleado = Empleado.objects.create(
+        self.empleado = self._crear_empleado(
             codigo='EMP-9001',
             nombres='Jean',
             apellidos='Senador',
-            cargo=CargoEmpleado.ADMINISTRADOR,
             email='jean@example.com',
-            estado=EstadoGeneral.ACTIVO,
+        )
+
+    def _crear_empleado(self, *, codigo, nombres, apellidos, email, estado=EstadoGeneral.ACTIVO):
+        return Empleado.objects.create(
+            codigo=codigo,
+            nombres=nombres,
+            apellidos=apellidos,
+            cargo=CargoEmpleado.ADMINISTRADOR,
+            email=email,
+            estado=estado,
             fecha_ingreso=date.today(),
         )
 
@@ -99,3 +107,76 @@ class UsuarioServiceTests(TestCase):
     def test_desactivar_usuario_rechaza_usuario_actual(self):
         with self.assertRaises(UsuarioNoDesactivable):
             UsuarioService.desactivar_usuario(user=self.actor, usuario_actor=self.actor)
+
+    def test_reactivar_usuario_activa_usuario_y_perfil_historico(self):
+        user = UsuarioService.crear_usuario(
+            username='jean',
+            password='test12345',
+            empleado=self.empleado,
+            groups=[],
+        )
+        UsuarioService.desactivar_usuario(user=user, usuario_actor=self.actor)
+
+        UsuarioService.reactivar_usuario(user=user, usuario_actor=self.actor)
+
+        user.refresh_from_db()
+        perfil = UsuarioEmpleado.todos.get(usuario=user)
+        self.assertTrue(user.is_active)
+        self.assertTrue(perfil.activo)
+
+    def test_actualizar_usuario_rechaza_auto_desactivacion(self):
+        self.actor.groups.add(self.grupo_admin)
+        empleado_actor = self._crear_empleado(
+            codigo='EMP-9002',
+            nombres='Lider',
+            apellidos='Admin',
+            email='lider@example.com',
+        )
+        UsuarioEmpleado.objects.create(usuario=self.actor, empleado=empleado_actor)
+
+        with self.assertRaises(UsuarioNoDesactivable):
+            UsuarioService.actualizar_usuario(
+                user=self.actor,
+                username=self.actor.username,
+                empleado=empleado_actor,
+                groups=[self.grupo_admin],
+                is_active=False,
+                usuario_actor=self.actor,
+            )
+
+    def test_actualizar_usuario_rechaza_quitarse_rol_admin(self):
+        self.actor.groups.add(self.grupo_admin)
+        empleado_actor = self._crear_empleado(
+            codigo='EMP-9003',
+            nombres='Lider',
+            apellidos='Admin',
+            email='lider-admin@example.com',
+        )
+        UsuarioEmpleado.objects.create(usuario=self.actor, empleado=empleado_actor)
+
+        with self.assertRaises(UsuarioNoDesactivable):
+            UsuarioService.actualizar_usuario(
+                user=self.actor,
+                username=self.actor.username,
+                empleado=empleado_actor,
+                groups=[],
+                is_active=True,
+                usuario_actor=self.actor,
+            )
+
+    def test_actualizar_usuario_rechaza_dejar_sistema_sin_admins(self):
+        admin_user = UsuarioService.crear_usuario(
+            username='jean',
+            password='test12345',
+            empleado=self.empleado,
+            groups=[self.grupo_admin],
+        )
+
+        with self.assertRaises(UsuarioNoDesactivable):
+            UsuarioService.actualizar_usuario(
+                user=admin_user,
+                username=admin_user.username,
+                empleado=self.empleado,
+                groups=[],
+                is_active=True,
+            )
