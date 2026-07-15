@@ -1,11 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import Group, User
-from django.db.models import Q
 
-from config.choices import EstadoGeneral
-from cuentas.models import UsuarioEmpleado
-from cuentas.roles import ROLE_ADMIN
+from cuentas.services import UsuarioService
 from empleados.models import Empleado
 
 
@@ -49,32 +46,27 @@ class UsuarioCreateForm(BootstrapFormMixin, UserCreationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        queryset = Empleado.objects.none()
         empleado_id = self.data.get(self.add_prefix('empleado')) if self.is_bound else None
-        if empleado_id:
-            queryset = Empleado.objects.filter(
-                pk=empleado_id,
-                estado=EstadoGeneral.ACTIVO,
-                cuenta_usuario__isnull=True,
-            )
-        self.fields['empleado'].queryset = queryset.order_by('apellidos', 'nombres')
+        self.fields['empleado'].queryset = UsuarioService.empleados_disponibles_queryset(
+            empleado_id=empleado_id,
+        )
         self.fields['password1'].label = 'Contraseña'
         self.fields['password2'].label = 'Confirmar contraseña'
         self._apply_bootstrap()
         self.fields['empleado'].widget.attrs.update({'class': 'form-select js-empleado-select'})
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        empleado = self.cleaned_data['empleado']
-        user.first_name = empleado.nombres
-        user.last_name = empleado.apellidos
-        user.email = empleado.email
-        user.is_staff = self.cleaned_data['groups'].filter(name=ROLE_ADMIN).exists()
-        if commit:
-            user.save()
-            self.save_m2m()
-            UsuarioEmpleado.objects.create(usuario=user, empleado=empleado)
-        return user
+    def save(self, commit=True, usuario_actor=None):
+        if not commit:
+            return super().save(commit=False)
+
+        return UsuarioService.crear_usuario(
+            username=self.cleaned_data['username'],
+            password=self.cleaned_data['password1'],
+            empleado=self.cleaned_data['empleado'],
+            groups=self.cleaned_data['groups'],
+            is_active=self.cleaned_data['is_active'],
+            usuario_actor=usuario_actor,
+        )
 
 
 class UsuarioUpdateForm(BootstrapFormMixin, forms.ModelForm):
@@ -111,33 +103,25 @@ class UsuarioUpdateForm(BootstrapFormMixin, forms.ModelForm):
             if perfil:
                 empleado_actual = perfil.empleado
 
-        queryset = Empleado.objects.none()
-        if empleado_actual:
-            queryset = Empleado.objects.filter(pk=empleado_actual.pk)
-            self.fields['empleado'].initial = empleado_actual
         empleado_id = self.data.get(self.add_prefix('empleado')) if self.is_bound else None
-        if empleado_id:
-            available_filter = Q(estado=EstadoGeneral.ACTIVO, cuenta_usuario__isnull=True)
-            if empleado_actual:
-                available_filter |= Q(pk=empleado_actual.pk)
-            queryset = Empleado.objects.filter(available_filter, pk=empleado_id)
+        if empleado_actual:
+            self.fields['empleado'].initial = empleado_actual
 
-        self.fields['empleado'].queryset = queryset.order_by('apellidos', 'nombres')
+        self.fields['empleado'].queryset = UsuarioService.empleados_disponibles_queryset(
+            empleado_actual=empleado_actual,
+            empleado_id=empleado_id,
+        )
         self._apply_bootstrap()
         self.fields['empleado'].widget.attrs.update({'class': 'form-select js-empleado-select'})
 
     def save(self, commit=True):
-        user = super().save(commit=False)
-        empleado = self.cleaned_data['empleado']
-        user.first_name = empleado.nombres
-        user.last_name = empleado.apellidos
-        user.email = empleado.email
-        user.is_staff = self.cleaned_data['groups'].filter(name=ROLE_ADMIN).exists()
-        if commit:
-            user.save()
-            self.save_m2m()
-            UsuarioEmpleado.objects.update_or_create(
-                usuario=user,
-                defaults={'empleado': empleado},
-            )
-        return user
+        if not commit:
+            return super().save(commit=False)
+
+        return UsuarioService.actualizar_usuario(
+            user=self.instance,
+            username=self.cleaned_data['username'],
+            empleado=self.cleaned_data['empleado'],
+            groups=self.cleaned_data['groups'],
+            is_active=self.cleaned_data['is_active'],
+        )
