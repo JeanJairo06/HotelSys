@@ -23,9 +23,9 @@ from api.serializers import (
 )
 
 from api.throttles import AutocompleteRateThrottle, UserApiRateThrottle, WriteRateThrottle
-from config.choices import EstadoGeneral, EstadoHabitacion
+from config.choices import EstadoHabitacion
 from cuentas.roles import ROLE_ADMIN, ROLE_HOUSEKEEPING, ROLE_RECEPCIONISTA
-from empleados.models import Empleado
+from cuentas.services import UsuarioService
 from estancias.models import Estancia
 from estancias.services import registrar_checkin, registrar_checkout
 from habitaciones.models import Habitacion
@@ -72,10 +72,7 @@ class EmpleadosDisponiblesUsuarioAPIView(generics.ListAPIView):
     ordering = ['apellidos', 'nombres']
 
     def get_queryset(self):
-        queryset = Empleado.objects.filter(
-            estado=EstadoGeneral.ACTIVO,
-            cuenta_usuario__isnull=True,
-        )
+        queryset = UsuarioService.empleados_disponibles_queryset()
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(

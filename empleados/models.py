@@ -5,9 +5,10 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from config.choices import CargoEmpleado, EstadoGeneral
+from core.models import ModeloBase
 
 
-class Empleado(models.Model):
+class Empleado(ModeloBase):
     CODIGO_PREFIX = 'EMP-'
 
     codigo = models.CharField(max_length=10, unique=True)

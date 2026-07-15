@@ -222,7 +222,22 @@ Debe agrupar:
 
 ---
 
-# 12. Reglas de Seguridad y Roles
+# 12. Reglas de Empleados
+
+- Los empleados no deben eliminarse fisicamente desde la UI.
+- La baja operativa de un empleado debe manejarse con `estado=INACTIVO` y `activo=False`.
+- La reactivacion de un empleado debe manejarse con `estado=ACTIVO` y `activo=True`.
+- El cambio de estado solo debe realizarse mediante los servicios de activar/desactivar del modulo.
+- El formulario de empleados no debe exponer el campo `estado`.
+- Editar datos laborales o de contacto no debe cambiar el estado del empleado.
+- Si se desactiva un empleado con cuenta de usuario activa, tambien debe desactivarse la cuenta asociada.
+- Reactivar un empleado no debe reactivar automaticamente su cuenta de usuario.
+- La reactivacion de cuentas debe hacerse desde el modulo de usuarios y solo si el empleado esta activo.
+- El detalle de empleado debe mostrar auditoria y estado de la cuenta asociada cuando exista.
+
+---
+
+# 13. Reglas de Seguridad y Roles
 
 ## Roles permitidos
 
@@ -242,7 +257,7 @@ Debe agrupar:
 
 ---
 
-# 13. Reglas Técnicas
+# 14. Reglas Técnicas
 
 - Las validaciones críticas deben implementarse en los modelos usando `clean()`.
 - Los modelos deben ejecutar `full_clean()` antes de guardar cuando corresponda.
@@ -253,7 +268,7 @@ Debe agrupar:
 
 ---
 
-# 14. Reglas de Integridad de Datos
+# 15. Reglas de Integridad de Datos
 
 - No debe existir una habitación con el mismo número dentro del mismo hotel.
 - No debe existir un huésped duplicado con el mismo documento.
@@ -265,7 +280,7 @@ Debe agrupar:
 
 ---
 
-# 15. Criterios de Aceptación Relacionados
+# 16. Criterios de Aceptación Relacionados
 
 El sistema debe cumplir como mínimo:
 
@@ -279,7 +294,7 @@ El sistema debe cumplir como mínimo:
 
 ---
 
-# 16. Responsabilidad del Equipo
+# 17. Responsabilidad del Equipo
 
 Todo desarrollador debe revisar este documento antes de modificar:
 

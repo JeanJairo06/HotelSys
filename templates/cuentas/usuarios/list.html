@@ -56,7 +56,11 @@
                                 <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de usuario">
                                     <a class="btn btn-outline-primary" href="{% url 'usuarios:detail' usuario.pk %}" title="Ver" aria-label="Ver usuario"><i class="bi bi-eye" aria-hidden="true"></i></a>
                                     <a class="btn btn-outline-primary" href="{% url 'usuarios:update' usuario.pk %}" title="Editar" aria-label="Editar usuario"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
-                                    <!--a class="btn btn-outline-danger" href="{% url 'usuarios:delete' usuario.pk %}" title="Eliminar" aria-label="Eliminar usuario"><i class="bi bi-trash" aria-hidden="true"></i></a-->
+                                    {% if usuario.is_active %}
+                                        <a class="btn btn-outline-danger" href="{% url 'usuarios:deactivate' usuario.pk %}" title="Desactivar" aria-label="Desactivar usuario"><i class="bi bi-person-dash" aria-hidden="true"></i></a>
+                                    {% else %}
+                                        <a class="btn btn-outline-success" href="{% url 'usuarios:activate' usuario.pk %}" title="Activar" aria-label="Activar usuario"><i class="bi bi-person-check" aria-hidden="true"></i></a>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

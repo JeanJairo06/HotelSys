@@ -1,10 +1,11 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+from core.models import ModeloBase
 from empleados.models import Empleado
 
 
-class UsuarioEmpleado(models.Model):
+class UsuarioEmpleado(ModeloBase):
     usuario = models.OneToOneField(
         User,
         on_delete=models.CASCADE,

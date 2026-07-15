@@ -1,11 +1,17 @@
 from datetime import date
 
+from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 
 from config.choices import CargoEmpleado, EstadoGeneral
+from cuentas.models import UsuarioEmpleado
+from cuentas.services import UsuarioService
+from empleados.exceptions import CargoEmpleadoInvalido, DatosEmpleadoInvalidos, EmpleadoDuplicado
 from empleados.forms import EmpleadoForm
 from empleados.models import Empleado
+from empleados.services import EmpleadoService
 
 
 class EmpleadoModelTests(TestCase):
@@ -76,6 +82,11 @@ class EmpleadoModelTests(TestCase):
 
         self.assertEqual(empleado.codigo, 'EMP-0001')
 
+    def test_formulario_no_expone_estado(self):
+        form = EmpleadoForm()
+
+        self.assertNotIn('estado', form.fields)
+
     def test_formulario_conserva_codigo_al_editar(self):
         empleado = Empleado.objects.create(
             nombres='Ana',
@@ -118,6 +129,322 @@ class EmpleadoModelTests(TestCase):
             empleado.full_clean()
 
         self.assertIn('telefono', context.exception.message_dict)
+
+
+class EmpleadoServiceTests(TestCase):
+    def setUp(self):
+        self.grupo_admin = Group.objects.get(name='admin')
+        self.actor = User.objects.create_user(username='admin-servicio', password='test123')
+        self.actor.groups.add(self.grupo_admin)
+
+    def _datos_empleado(self, **overrides):
+        data = {
+            'nombres': 'Ana',
+            'apellidos': 'Torres',
+            'cargo': CargoEmpleado.RECEPCIONISTA,
+            'email': 'ana.service@example.com',
+            'telefono': '999888777',
+            'estado': EstadoGeneral.ACTIVO,
+            'fecha_ingreso': date.today(),
+        }
+        data.update(overrides)
+        return data
+
+    def _crear_usuario_empleado(self, empleado):
+        return UsuarioService.crear_usuario(
+            username='usuario-empleado',
+            password='test12345',
+            empleado=empleado,
+            groups=[],
+            usuario_actor=self.actor,
+        )
+
+    def test_crear_empleado_normaliza_y_genera_codigo(self):
+        empleado = EmpleadoService.crear_empleado(
+            data=self._datos_empleado(
+                nombres=' Ana ',
+                apellidos=' Torres ',
+                email='ANA.SERVICE@EXAMPLE.COM',
+                telefono=' 999888777 ',
+            )
+        )
+
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+        self.assertEqual(empleado.nombres, 'Ana')
+        self.assertEqual(empleado.apellidos, 'Torres')
+        self.assertEqual(empleado.email, 'ana.service@example.com')
+        self.assertEqual(empleado.telefono, '999888777')
+
+    def test_actualizar_empleado_conserva_codigo(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado())
+
+        actualizado = EmpleadoService.actualizar_empleado(
+            empleado=empleado,
+            data=self._datos_empleado(
+                codigo='MANUAL',
+                nombres='Ana Maria',
+                email='ana.actualizada@example.com',
+            ),
+        )
+
+        self.assertEqual(actualizado.codigo, 'EMP-0001')
+        self.assertEqual(actualizado.nombres, 'Ana Maria')
+        self.assertEqual(actualizado.email, 'ana.actualizada@example.com')
+
+    def test_crear_empleado_rechaza_email_duplicado(self):
+        EmpleadoService.crear_empleado(data=self._datos_empleado(email='duplicado@example.com'))
+
+        with self.assertRaises(EmpleadoDuplicado):
+            EmpleadoService.crear_empleado(
+                data=self._datos_empleado(
+                    email='DUPLICADO@EXAMPLE.COM',
+                    telefono='999111222',
+                )
+            )
+
+    def test_crear_empleado_rechaza_telefono_duplicado(self):
+        EmpleadoService.crear_empleado(data=self._datos_empleado(telefono='999888777'))
+
+        with self.assertRaises(EmpleadoDuplicado):
+            EmpleadoService.crear_empleado(
+                data=self._datos_empleado(
+                    email='otro@example.com',
+                    telefono='999888777',
+                )
+            )
+
+    def test_crear_empleado_rechaza_fecha_futura(self):
+        with self.assertRaises(DatosEmpleadoInvalidos):
+            EmpleadoService.crear_empleado(
+                data=self._datos_empleado(
+                    fecha_ingreso=date(date.today().year + 1, 1, 1),
+                )
+            )
+
+    def test_crear_empleado_rechaza_cargo_invalido(self):
+        with self.assertRaises(CargoEmpleadoInvalido):
+            EmpleadoService.crear_empleado(data=self._datos_empleado(cargo='CONTABILIDAD'))
+
+    def test_desactivar_empleado_aplica_estado_inactivo_y_soft_delete(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado())
+
+        EmpleadoService.desactivar_empleado(empleado=empleado)
+
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.estado, EstadoGeneral.INACTIVO)
+        self.assertFalse(empleado.activo)
+        self.assertFalse(Empleado.objects.filter(pk=empleado.pk).exists())
+        self.assertTrue(Empleado.todos.filter(pk=empleado.pk).exists())
+
+    def test_desactivar_empleado_desactiva_usuario_asociado(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado(email='ana.usuario@example.com'))
+        user = self._crear_usuario_empleado(empleado)
+
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.actor)
+
+        user.refresh_from_db()
+        self.assertFalse(user.is_active)
+        self.assertFalse(UsuarioEmpleado.objects.filter(usuario=user).exists())
+        self.assertTrue(UsuarioEmpleado.todos.filter(usuario=user, empleado=empleado, activo=False).exists())
+
+    def test_activar_empleado_no_reactiva_usuario_asociado(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado(email='ana.reactivar.usuario@example.com'))
+        user = self._crear_usuario_empleado(empleado)
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.actor)
+
+        EmpleadoService.activar_empleado(empleado=empleado, usuario_actor=self.actor)
+
+        user.refresh_from_db()
+        perfil = UsuarioEmpleado.todos.get(usuario=user, empleado=empleado)
+        self.assertEqual(empleado.estado, EstadoGeneral.ACTIVO)
+        self.assertTrue(empleado.activo)
+        self.assertFalse(user.is_active)
+        self.assertFalse(perfil.activo)
+
+    def test_actualizar_empleado_inactivo_conserva_estado_y_usuario_inactivo(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado(email='ana.editar.inactiva@example.com'))
+        user = self._crear_usuario_empleado(empleado)
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.actor)
+
+        EmpleadoService.actualizar_empleado(
+            empleado=empleado,
+            data=self._datos_empleado(
+                nombres='Ana Editada',
+                email='ana.editar.inactiva@example.com',
+            ),
+            usuario_actor=self.actor,
+        )
+
+        empleado.refresh_from_db()
+        user.refresh_from_db()
+        perfil = UsuarioEmpleado.todos.get(usuario=user, empleado=empleado)
+        self.assertEqual(empleado.nombres, 'Ana Editada')
+        self.assertEqual(empleado.estado, EstadoGeneral.INACTIVO)
+        self.assertFalse(empleado.activo)
+        self.assertFalse(user.is_active)
+        self.assertFalse(perfil.activo)
+
+    def test_activar_empleado_restaura_estado_activo(self):
+        empleado = EmpleadoService.crear_empleado(data=self._datos_empleado())
+        EmpleadoService.desactivar_empleado(empleado=empleado)
+
+        EmpleadoService.activar_empleado(empleado=empleado)
+
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.estado, EstadoGeneral.ACTIVO)
+        self.assertTrue(empleado.activo)
+
+
+class EmpleadoViewsTests(TestCase):
+    def setUp(self):
+        self.grupo_admin = Group.objects.get(name='admin')
+        self.admin = User.objects.create_user(username='admin-empleados', password='test123')
+        self.admin.groups.add(self.grupo_admin)
+
+    def _form_data(self, **overrides):
+        data = {
+            'codigo': '',
+            'nombres': 'Ana',
+            'apellidos': 'Torres',
+            'cargo': CargoEmpleado.RECEPCIONISTA,
+            'email': 'ana.views@example.com',
+            'telefono': '999888777',
+            'estado': EstadoGeneral.ACTIVO,
+            'fecha_ingreso': date.today().isoformat(),
+        }
+        data.update(overrides)
+        return data
+
+    def test_crear_empleado_desde_view_usa_servicio(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.post(reverse('empleados:create'), data=self._form_data())
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado = Empleado.objects.get(email='ana.views@example.com')
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+        self.assertEqual(empleado.creado_por, self.admin)
+
+    def test_actualizar_empleado_desde_view_conserva_codigo(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data())
+
+        response = self.client.post(
+            reverse('empleados:update', args=[empleado.pk]),
+            data=self._form_data(
+                codigo='MANUAL',
+                nombres='Ana Maria',
+                email='ana.views.actualizada@example.com',
+            ),
+        )
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+        self.assertEqual(empleado.nombres, 'Ana Maria')
+        self.assertEqual(empleado.email, 'ana.views.actualizada@example.com')
+
+    def test_actualizar_empleado_desde_view_no_cambia_estado(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data(email='ana.estado.view@example.com'))
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.admin)
+
+        response = self.client.post(
+            reverse('empleados:update', args=[empleado.pk]),
+            data=self._form_data(
+                nombres='Ana Editada',
+                email='ana.estado.view@example.com',
+                estado=EstadoGeneral.ACTIVO,
+            ),
+        )
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.nombres, 'Ana Editada')
+        self.assertEqual(empleado.estado, EstadoGeneral.INACTIVO)
+        self.assertFalse(empleado.activo)
+
+    def test_listado_empleados_usa_busqueda(self):
+        self.client.force_login(self.admin)
+        EmpleadoService.crear_empleado(data=self._form_data(nombres='Ana', email='ana.search@example.com'))
+        EmpleadoService.crear_empleado(data=self._form_data(nombres='Luis', email='luis.search@example.com', telefono='999111222'))
+
+        response = self.client.get(reverse('empleados:list'), {'q': 'Luis'})
+
+        self.assertContains(response, 'Luis')
+        self.assertNotContains(response, 'Ana')
+
+    def test_listado_muestra_accion_segun_estado(self):
+        self.client.force_login(self.admin)
+        activo = EmpleadoService.crear_empleado(data=self._form_data(email='activo.list@example.com'))
+        inactivo = EmpleadoService.crear_empleado(data=self._form_data(
+            nombres='Luis',
+            email='inactivo.list@example.com',
+            telefono='999111222',
+        ))
+        EmpleadoService.desactivar_empleado(empleado=inactivo)
+
+        response = self.client.get(reverse('empleados:list'))
+
+        self.assertContains(response, reverse('empleados:deactivate', args=[activo.pk]))
+        self.assertContains(response, reverse('empleados:activate', args=[inactivo.pk]))
+
+    def test_detalle_muestra_auditoria_y_usuario_asociado(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(
+            data=self._form_data(email='ana.detalle@example.com'),
+            usuario_actor=self.admin,
+        )
+        user = UsuarioService.crear_usuario(
+            username='ana-detalle',
+            password='test12345',
+            empleado=empleado,
+            groups=[],
+            usuario_actor=self.admin,
+        )
+
+        response = self.client.get(reverse('empleados:detail', args=[empleado.pk]))
+
+        self.assertContains(response, 'Auditoría')
+        self.assertContains(response, self.admin.username)
+        self.assertContains(response, 'Usuario asociado')
+        self.assertContains(response, user.username)
+        self.assertContains(response, reverse('usuarios:detail', args=[user.pk]))
+        self.assertContains(response, reverse('empleados:deactivate', args=[empleado.pk]))
+
+    def test_detalle_empleado_inactivo_muestra_accion_activar(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data(email='ana.detalle.inactiva@example.com'))
+        EmpleadoService.desactivar_empleado(empleado=empleado, usuario_actor=self.admin)
+
+        response = self.client.get(reverse('empleados:detail', args=[empleado.pk]))
+
+        self.assertContains(response, 'Inactivo')
+        self.assertContains(response, reverse('empleados:activate', args=[empleado.pk]))
+        self.assertNotContains(response, reverse('empleados:deactivate', args=[empleado.pk]))
+
+    def test_desactivar_empleado_desde_view_usa_servicio(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data())
+
+        response = self.client.post(reverse('empleados:deactivate', args=[empleado.pk]))
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.estado, EstadoGeneral.INACTIVO)
+        self.assertFalse(empleado.activo)
+
+    def test_activar_empleado_desde_view_usa_servicio(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data())
+        EmpleadoService.desactivar_empleado(empleado=empleado)
+
+        response = self.client.post(reverse('empleados:activate', args=[empleado.pk]))
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.estado, EstadoGeneral.ACTIVO)
+        self.assertTrue(empleado.activo)
 
     def test_rechaza_telefono_con_longitud_invalida(self):
         empleado = Empleado(

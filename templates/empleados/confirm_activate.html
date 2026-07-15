@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Activar empleado | HotelSys{% endblock %}
+{% block page_title %}Activar empleado{% endblock %}
+{% block page_subtitle %}Confirma la activación del registro seleccionado.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'empleados:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block content %}
+<div class="error-card">
+    <span class="error-code"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+    <h2 class="h4 mb-3">¿Activar a {{ empleado.nombre_completo }}?</h2>
+    {% if empleado.estado == 1 and empleado.activo %}
+        <p class="text-secondary mb-4">Este empleado ya se encuentra activo.</p>
+        <a class="btn btn-primary" href="{% url 'empleados:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver a empleados</a>
+    {% else %}
+        <p class="text-secondary mb-4">Esta acción restaurará al empleado {{ empleado.codigo }} para futuras operaciones del sistema.</p>
+        <form method="post" class="d-flex gap-2">
+            {% csrf_token %}
+            <a class="btn btn-light" href="{% url 'empleados:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+            <button class="btn btn-success" type="submit"><i class="bi bi-person-check me-2" aria-hidden="true"></i>Activar empleado</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

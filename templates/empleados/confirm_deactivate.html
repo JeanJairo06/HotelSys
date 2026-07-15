@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Desactivar empleado | HotelSys{% endblock %}
+{% block page_title %}Desactivar empleado{% endblock %}
+{% block page_subtitle %}Confirma la desactivación del registro seleccionado.{% endblock %}
+
+{% block page_actions %}
+<a class="btn btn-outline-primary" href="{% url 'empleados:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
+{% endblock %}
+
+{% block content %}
+<div class="error-card">
+    <span class="error-code"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+    <h2 class="h4 mb-3">¿Desactivar a {{ empleado.nombre_completo }}?</h2>
+    {% if empleado.estado != 1 or not empleado.activo %}
+        <p class="text-secondary mb-4">Este empleado ya se encuentra inactivo.</p>
+        <a class="btn btn-primary" href="{% url 'empleados:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver a empleados</a>
+    {% else %}
+        <p class="text-secondary mb-4">Esta acción desactivará al empleado {{ empleado.codigo }} sin borrar su historial.</p>
+        <form method="post" class="d-flex gap-2">
+            {% csrf_token %}
+            <a class="btn btn-light" href="{% url 'empleados:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
+            <button class="btn btn-danger" type="submit"><i class="bi bi-person-dash me-2" aria-hidden="true"></i>Desactivar empleado</button>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}
