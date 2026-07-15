@@ -1,7 +1,9 @@
 from datetime import date
 
+from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 
 from config.choices import CargoEmpleado, EstadoGeneral
 from empleados.exceptions import CargoEmpleadoInvalido, DatosEmpleadoInvalidos, EmpleadoDuplicado
@@ -222,6 +224,66 @@ class EmpleadoServiceTests(TestCase):
         empleado.refresh_from_db()
         self.assertEqual(empleado.estado, EstadoGeneral.ACTIVO)
         self.assertTrue(empleado.activo)
+
+
+class EmpleadoViewsTests(TestCase):
+    def setUp(self):
+        self.grupo_admin = Group.objects.get(name='admin')
+        self.admin = User.objects.create_user(username='admin-empleados', password='test123')
+        self.admin.groups.add(self.grupo_admin)
+
+    def _form_data(self, **overrides):
+        data = {
+            'codigo': '',
+            'nombres': 'Ana',
+            'apellidos': 'Torres',
+            'cargo': CargoEmpleado.RECEPCIONISTA,
+            'email': 'ana.views@example.com',
+            'telefono': '999888777',
+            'estado': EstadoGeneral.ACTIVO,
+            'fecha_ingreso': date.today().isoformat(),
+        }
+        data.update(overrides)
+        return data
+
+    def test_crear_empleado_desde_view_usa_servicio(self):
+        self.client.force_login(self.admin)
+
+        response = self.client.post(reverse('empleados:create'), data=self._form_data())
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado = Empleado.objects.get(email='ana.views@example.com')
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+        self.assertEqual(empleado.creado_por, self.admin)
+
+    def test_actualizar_empleado_desde_view_conserva_codigo(self):
+        self.client.force_login(self.admin)
+        empleado = EmpleadoService.crear_empleado(data=self._form_data())
+
+        response = self.client.post(
+            reverse('empleados:update', args=[empleado.pk]),
+            data=self._form_data(
+                codigo='MANUAL',
+                nombres='Ana Maria',
+                email='ana.views.actualizada@example.com',
+            ),
+        )
+
+        self.assertRedirects(response, reverse('empleados:list'))
+        empleado.refresh_from_db()
+        self.assertEqual(empleado.codigo, 'EMP-0001')
+        self.assertEqual(empleado.nombres, 'Ana Maria')
+        self.assertEqual(empleado.email, 'ana.views.actualizada@example.com')
+
+    def test_listado_empleados_usa_busqueda(self):
+        self.client.force_login(self.admin)
+        EmpleadoService.crear_empleado(data=self._form_data(nombres='Ana', email='ana.search@example.com'))
+        EmpleadoService.crear_empleado(data=self._form_data(nombres='Luis', email='luis.search@example.com', telefono='999111222'))
+
+        response = self.client.get(reverse('empleados:list'), {'q': 'Luis'})
+
+        self.assertContains(response, 'Luis')
+        self.assertNotContains(response, 'Ana')
 
     def test_rechaza_telefono_con_longitud_invalida(self):
         empleado = Empleado(

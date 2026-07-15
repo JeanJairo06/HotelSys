@@ -2,6 +2,7 @@ from datetime import date
 
 from django.db import IntegrityError, transaction
 from django.db.models import Q
+from django.utils.dateparse import parse_date
 
 from config.choices import CargoEmpleado, EstadoGeneral
 from empleados.exceptions import (
@@ -95,7 +96,7 @@ class EmpleadoService:
             'email': data.get('email') or '',
             'telefono': data.get('telefono') or '',
             'estado': data.get('estado', EstadoGeneral.ACTIVO),
-            'fecha_ingreso': data.get('fecha_ingreso'),
+            'fecha_ingreso': EmpleadoService._normalizar_fecha(data.get('fecha_ingreso')),
         }
 
         if empleado and empleado.pk:
@@ -116,6 +117,12 @@ class EmpleadoService:
         EmpleadoService._validar_telefono(datos['telefono'])
         EmpleadoService._validar_email_unico(datos['email'], empleado=empleado)
         EmpleadoService._validar_telefono_unico(datos['telefono'], empleado=empleado)
+
+    @staticmethod
+    def _normalizar_fecha(valor):
+        if isinstance(valor, str):
+            return parse_date(valor)
+        return valor
 
     @staticmethod
     def _validar_cargo(cargo):
