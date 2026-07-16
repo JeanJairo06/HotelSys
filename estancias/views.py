@@ -70,7 +70,7 @@ def realizar_checkin(request, reserva_id):
 def realizar_checkout(request, estancia_id):
     """Finaliza una estancia activa y envia la habitacion a limpieza."""
     estancia = get_object_or_404(
-        Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion'),
+        Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion', 'folio'),
         pk=estancia_id,
     )
 
@@ -86,4 +86,7 @@ def realizar_checkout(request, estancia_id):
             messages.error(request, error.message)
             return redirect('estancias:listar_estancias')
 
-    return render(request, 'estancias/confirmar_checkout.html', {'estancia': estancia})
+    return render(request, 'estancias/confirmar_checkout.html', {
+        'estancia': estancia,
+        'folio': estancia.folio,
+    })
