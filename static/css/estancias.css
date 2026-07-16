@@ -71,6 +71,25 @@
     color: rgba(255, 255, 255, 0.72);
 }
 
+.checkout-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .75rem;
+}
+
+.checkout-summary > div {
+    padding: 1rem;
+    border: 1px solid rgba(23, 32, 51, 0.07);
+    border-radius: 1rem;
+    background: #f8fafc;
+}
+
+.checkout-summary strong {
+    display: block;
+    margin-top: .2rem;
+    font-size: 1.1rem;
+}
+
 .reservation-card {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -85,7 +104,8 @@
 
 @media (max-width: 991.98px) {
     .stay-card,
-    .reservation-card {
+    .reservation-card,
+    .checkout-summary {
         grid-template-columns: 1fr;
         align-items: stretch;
     }
