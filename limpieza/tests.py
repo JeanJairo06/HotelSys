@@ -38,12 +38,27 @@ class HousekeepingServiceTests(TestCase):
             estado=EstadoHabitacion.LIMPIEZA,
         )
 
-    def test_marcar_disponible_solo_permite_habitaciones_en_limpieza(self):
+    def test_marcar_disponible_solo_permite_limpieza_o_mantenimiento(self):
+        self.habitacion.estado = EstadoHabitacion.DISPONIBLE
+        self.habitacion.save(update_fields=['estado'])
+
+        with self.assertRaisesMessage(HousekeepingTransicionInvalida, 'Solo se pueden liberar habitaciones en limpieza o mantenimiento.'):
+            marcar_disponible(self.habitacion)
+
+    @patch('habitaciones.services.publicar_evento_habitacion')
+    def test_marcar_disponible_libera_habitacion_en_mantenimiento_y_publica_evento(self, publicar_evento):
         self.habitacion.estado = EstadoHabitacion.MANTENIMIENTO
         self.habitacion.save(update_fields=['estado'])
 
-        with self.assertRaisesMessage(HousekeepingTransicionInvalida, 'Solo se pueden liberar habitaciones en limpieza.'):
-            marcar_disponible(self.habitacion)
+        marcar_disponible(self.habitacion)
+
+        self.habitacion.refresh_from_db()
+        self.assertEqual(self.habitacion.estado, EstadoHabitacion.DISPONIBLE)
+        publicar_evento.assert_called_once_with(
+            self.habitacion,
+            estado_anterior=EstadoHabitacion.MANTENIMIENTO,
+            evento=EVENTO_HABITACION_DISPONIBLE,
+        )
 
     @patch('habitaciones.services.publicar_evento_habitacion')
     def test_marcar_disponible_libera_habitacion_en_limpieza_y_publica_evento(self, publicar_evento):

@@ -13,7 +13,7 @@ def marcar_mantenimiento(habitacion):
 
 
 class HousekeepingService:
-    """Libera una habitacion solo si housekeeping puede cerrarla correctamente."""
+    """Gestiona habitaciones pendientes de limpieza o mantenimiento."""
 
     @staticmethod
     def marcar_disponible(habitacion):
@@ -38,8 +38,8 @@ class HousekeepingService:
 
     @staticmethod
     def _validar_liberacion_limpieza(habitacion):
-        if habitacion.estado != EstadoHabitacion.LIMPIEZA:
-            raise HousekeepingTransicionInvalida('Solo se pueden liberar habitaciones en limpieza.')
+        if habitacion.estado not in [EstadoHabitacion.LIMPIEZA, EstadoHabitacion.MANTENIMIENTO]:
+            raise HousekeepingTransicionInvalida('Solo se pueden liberar habitaciones en limpieza o mantenimiento.')
 
         if tiene_estancia_activa(habitacion):
             raise HousekeepingTransicionInvalida('No se puede liberar una habitacion con estancia activa.')

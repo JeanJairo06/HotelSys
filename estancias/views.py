@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from config.choices import EstadoEstancia, EstadoReserva
 from core.exceptions import AppError
@@ -15,7 +16,7 @@ from .services import registrar_checkin, registrar_checkout
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
 def listar_estancias(request):
     """Muestra las estancias reales del hotel con filtro por estado operativo."""
-    estancias = Estancia.objects.select_related(
+    estancias_base = Estancia.objects.select_related(
         'reserva',
         'reserva__huesped',
         'habitacion',
@@ -24,26 +25,35 @@ def listar_estancias(request):
     ).order_by('-fecha_checkin')
 
     estado = request.GET.get('estado')
+    estancias = estancias_base
     if estado:
         estancias = estancias.filter(estado=estado)
+    else:
+        estancias = estancias.filter(estado=EstadoEstancia.ACTIVA)
+
+    hoy = timezone.localdate()
+    reservas_checkin = Reserva.objects.select_related('hotel', 'huesped', 'habitacion').filter(
+        estado=EstadoReserva.CONFIRMADA,
+        fecha_entrada__lte=hoy,
+        fecha_salida__gt=hoy,
+    ).order_by('fecha_entrada', 'habitacion__numero')
 
     contexto = {
         'estancias': estancias,
+        'reservas_checkin': reservas_checkin,
         'estados': EstadoEstancia.choices,
-        'total_activas': estancias.filter(estado=EstadoEstancia.ACTIVA).count(),
-        'total_finalizadas': estancias.filter(estado=EstadoEstancia.FINALIZADA).count(),
-        'total_canceladas': estancias.filter(estado=EstadoEstancia.CANCELADA).count(),
+        'total_activas': estancias_base.filter(estado=EstadoEstancia.ACTIVA).count(),
+        'total_finalizadas': estancias_base.filter(estado=EstadoEstancia.FINALIZADA).count(),
+        'total_canceladas': estancias_base.filter(estado=EstadoEstancia.CANCELADA).count(),
+        'estado_actual': estado or EstadoEstancia.ACTIVA,
     }
     return render(request, 'estancias/listar_estancias.html', contexto)
 
 
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
 def listar_reservas_checkin(request):
-    """Lista reservas confirmadas que pueden iniciar el flujo de check-in."""
-    reservas = Reserva.objects.select_related('hotel', 'huesped', 'habitacion').filter(
-        estado=EstadoReserva.CONFIRMADA,
-    ).order_by('fecha_entrada', 'habitacion__numero')
-    return render(request, 'estancias/listar_reservas_checkin.html', {'reservas': reservas})
+    """Mantiene la URL antigua apuntando al tablero unico de estancias."""
+    return redirect('estancias:listar_estancias')
 
 
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
@@ -86,12 +96,12 @@ def realizar_checkin(request, reserva_id):
             return redirect('estancias:listar_estancias')
         except ValidationError as error:
             messages.error(request, error.messages[0])
-            return redirect('estancias:listar_reservas_checkin')
+            return redirect('estancias:listar_estancias')
         except AppError as error:
             messages.error(request, error.message)
-            return redirect('estancias:listar_reservas_checkin')
+            return redirect('estancias:listar_estancias')
 
-    return render(request, 'estancias/confirmar_checkin.html', {'reserva': reserva})
+    return redirect('estancias:listar_estancias')
 
 
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
@@ -114,7 +124,4 @@ def realizar_checkout(request, estancia_id):
             messages.error(request, error.message)
             return redirect('estancias:listar_estancias')
 
-    return render(request, 'estancias/confirmar_checkout.html', {
-        'estancia': estancia,
-        'folio': estancia.folio,
-    })
+    return redirect('estancias:listar_estancias')
