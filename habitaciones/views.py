@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 
 from config.choices import EstadoHabitacion
+from core.exceptions import AppError
 from cuentas.decorators import any_role_required, role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 from hoteles.models import Hotel
@@ -103,6 +104,8 @@ def cambiar_estado_habitacion(request, pk):
                 return redirect('habitaciones:listar_habitaciones')
             except ValidationError as error:
                 messages.error(request, error.messages[0])
+            except AppError as error:
+                messages.error(request, error.message)
     else:
         form = EstadoHabitacionForm(instance=habitacion)
 

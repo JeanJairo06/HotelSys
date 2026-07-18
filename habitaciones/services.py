@@ -1,4 +1,3 @@
-from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from config.choices import EstadoEstancia, EstadoHabitacion
@@ -9,6 +8,8 @@ from core.events import (
     EVENTO_HABITACION_OCUPADA,
     publicar_evento_habitacion,
 )
+
+from .exceptions import TransicionHabitacionInvalida
 
 
 EVENTOS_POR_ESTADO = {
@@ -78,7 +79,7 @@ class HabitacionService:
     @staticmethod
     def _validar_cambio_estado_manual(habitacion, nuevo_estado):
         if HabitacionService.tiene_estancia_activa(habitacion) and nuevo_estado != EstadoHabitacion.OCUPADA:
-            raise ValidationError(
+            raise TransicionHabitacionInvalida(
                 'No se puede cambiar una habitacion con estancia activa a un estado distinto de ocupada.'
             )
 
@@ -87,6 +88,6 @@ class HabitacionService:
             EstadoHabitacion.LIMPIEZA,
             EstadoHabitacion.MANTENIMIENTO,
         ]:
-            raise ValidationError(
+            raise TransicionHabitacionInvalida(
                 'Una habitacion ocupada debe liberarse mediante checkout, no por cambio manual.'
             )

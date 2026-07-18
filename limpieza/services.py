@@ -1,7 +1,7 @@
-from django.core.exceptions import ValidationError
-
 from config.choices import EstadoHabitacion
 from habitaciones.services import publicar_evento_estado_habitacion, tiene_estancia_activa
+
+from .exceptions import HousekeepingTransicionInvalida
 
 
 def marcar_disponible(habitacion):
@@ -39,15 +39,15 @@ class HousekeepingService:
     @staticmethod
     def _validar_liberacion_limpieza(habitacion):
         if habitacion.estado != EstadoHabitacion.LIMPIEZA:
-            raise ValidationError('Solo se pueden liberar habitaciones en limpieza.')
+            raise HousekeepingTransicionInvalida('Solo se pueden liberar habitaciones en limpieza.')
 
         if tiene_estancia_activa(habitacion):
-            raise ValidationError('No se puede liberar una habitacion con estancia activa.')
+            raise HousekeepingTransicionInvalida('No se puede liberar una habitacion con estancia activa.')
 
     @staticmethod
     def _validar_envio_mantenimiento(habitacion):
         if habitacion.estado == EstadoHabitacion.OCUPADA:
-            raise ValidationError('No se puede enviar a mantenimiento una habitacion ocupada.')
+            raise HousekeepingTransicionInvalida('No se puede enviar a mantenimiento una habitacion ocupada.')
 
         if tiene_estancia_activa(habitacion):
-            raise ValidationError('No se puede enviar a mantenimiento una habitacion con estancia activa.')
+            raise HousekeepingTransicionInvalida('No se puede enviar a mantenimiento una habitacion con estancia activa.')

@@ -2,7 +2,6 @@ from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
@@ -13,6 +12,7 @@ from habitaciones.models import Habitacion, TipoHabitacion
 from hoteles.models import Hotel
 from huespedes.models import Huesped
 from limpieza.services import marcar_disponible, marcar_mantenimiento
+from limpieza.exceptions import HousekeepingTransicionInvalida
 from reservas.models import Reserva
 
 
@@ -42,7 +42,7 @@ class HousekeepingServiceTests(TestCase):
         self.habitacion.estado = EstadoHabitacion.MANTENIMIENTO
         self.habitacion.save(update_fields=['estado'])
 
-        with self.assertRaisesMessage(ValidationError, 'Solo se pueden liberar habitaciones en limpieza.'):
+        with self.assertRaisesMessage(HousekeepingTransicionInvalida, 'Solo se pueden liberar habitaciones en limpieza.'):
             marcar_disponible(self.habitacion)
 
     @patch('habitaciones.services.publicar_evento_habitacion')
@@ -62,7 +62,7 @@ class HousekeepingServiceTests(TestCase):
         self.habitacion.estado = EstadoHabitacion.LIMPIEZA
         self.habitacion.save(update_fields=['estado'])
 
-        with self.assertRaisesMessage(ValidationError, 'No se puede liberar una habitacion con estancia activa.'):
+        with self.assertRaisesMessage(HousekeepingTransicionInvalida, 'No se puede liberar una habitacion con estancia activa.'):
             marcar_disponible(self.habitacion)
 
         estancia.refresh_from_db()
