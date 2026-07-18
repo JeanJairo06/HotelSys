@@ -1,11 +1,12 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from config.choices import EstadoEstancia, TipoCargo
+from core.models import ModeloBase
 from habitaciones.models import Habitacion
 from reservas.models import Reserva
 
 
-class Estancia(models.Model):
+class Estancia(ModeloBase):
     reserva = models.OneToOneField(
         Reserva,
         on_delete=models.PROTECT,
