@@ -102,32 +102,32 @@ class RegistrarPagoView(View):
 
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
-class FacturaCreateView(CreateView):
-    model = Factura
-    form_class = FacturaEmisionForm
-    template_name = 'facturacion/factura_form.html'
+class FacturaCreateView(View):
+    def post(self, request, folio_id):
+        folio = get_object_or_404(Folio, pk=folio_id)
+        huesped = folio.estancia.reserva.huesped
 
-    def get_success_url(self):
-        return reverse_lazy('facturacion:folio_detail', kwargs={'pk': self.kwargs['folio_id']})
+        if huesped.tipo_doc == 'RUC':
+            ruc_dni = huesped.num_doc
+            razon_social = huesped.razon_social
+        else:
+            ruc_dni = huesped.num_doc
+            razon_social = f"{huesped.nombres} {huesped.apellidos}".strip()
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['folio'] = get_object_or_404(Folio, pk=self.kwargs['folio_id'])
-        return context
+        try:
+            FolioService.emitir_comprobante_y_cerrar(
+                folio_id=folio_id,
+                ruc_dni=ruc_dni,
+                razon_social=razon_social,
+                usuario=request.user
+            )
+            messages.success(request, f'El Folio #{folio_id} ha sido cerrado formalmente.')
+        except ReglaNegocioViolada as e:
+            messages.error(request, str(e))
+        except Exception:
+            messages.error(request, 'Ocurrió un error interno inesperado al intentar cerrar el folio.')
 
-    def form_valid(self, form):
-        folio = get_object_or_404(Folio, pk=self.kwargs['folio_id'])
-        
-        factura = form.save(commit=False)
-        factura.folio = folio
-        factura.monto_subtotal = folio.subtotal
-        factura.monto_igv = folio.igv
-        factura.monto_total = folio.total
-        factura.creado_por = self.request.user
-        factura.save()
-
-        messages.success(self.request, f'Comprobante emitido correctamente para el Folio #{folio.id}.')
-        return super().form_valid(form)
+        return redirect('facturacion:folio_detail', pk=folio_id)
 
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')

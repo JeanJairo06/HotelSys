@@ -4,7 +4,10 @@ from django.db.models import Sum
 from config.choices import EstadoEstancia, EstadoFolio, TipoCargo
 from estancias.models import Estancia, CargoEstancia
 from .models import Folio, Pago, Factura
-from .exceptions import FolioCerradoError, EstanciaFinalizadaError, PagoInvalidoError
+from .exceptions import FolioCerradoError, EstanciaFinalizadaError, PagoInvalidoError, TarifaNoDisponibleError
+from datetime import date
+from habitaciones.models import Tarifa
+from datetime import timedelta
 
 class FolioService:
     @staticmethod
@@ -44,6 +47,42 @@ class FolioService:
         
         FolioService.recalcular_totales(folio)
         return cargo
+    
+    @staticmethod
+    def validar_sin_deuda(estancia_id: int) -> bool:
+        try:
+            folio = Folio.objects.get(estancia_id=estancia_id)
+            if folio.saldo_pendiente > Decimal('0.00'):
+                from .exceptions import CheckoutBloqueadoError
+                raise CheckoutBloqueadoError(f"No se puede realizar el check-out. El folio presenta un saldo pendiente de S/ {folio.saldo_pendiente}")
+            return True
+        except Folio.DoesNotExist:
+            return True
+    
+    @staticmethod
+    @transaction.atomic
+    def emitir_comprobante_y_cerrar(folio_id: int, ruc_dni: str, razon_social: str, usuario=None) -> Factura:
+        folio = Folio.objects.get(pk=folio_id)
+        
+        if folio.saldo_pendiente > Decimal('0.00'):
+            from .exceptions import CheckoutBloqueadoError
+            raise CheckoutBloqueadoError("No se puede facturar un folio con saldo pendiente.")
+
+        # Creamos la factura
+        factura = Factura.objects.create(
+            folio=folio,
+            ruc_dni=ruc_dni,
+            razon_social=razon_social,
+            monto_subtotal=folio.subtotal,
+            monto_igv=folio.igv,
+            monto_total=folio.total,
+            creado_por=usuario
+        )
+
+        folio.estado = EstadoFolio.CERRADO
+        folio.save()
+
+        return factura
 
 
 class PagoService:
@@ -70,8 +109,30 @@ class PagoService:
             creado_por=usuario,
         )
         
-        if folio.saldo_pendiente == Decimal('0.00'):
-            folio.estado = EstadoFolio.CERRADO
-            folio.save()
-            
         return pago
+
+class TarifaService:
+    @staticmethod
+    def calcular_precio_estancia(tipo_habitacion, fecha_entrada: date, fecha_salida: date) -> Decimal:
+        if fecha_entrada >= fecha_salida:
+            raise PagoInvalidoError("La fecha de entrada debe ser anterior a la de salida.")
+
+        total_estancia = Decimal('0.00')
+        fecha_actual = fecha_entrada
+
+        while fecha_actual < fecha_salida:
+            tarifa_especial = Tarifa.objects.filter(
+                activo=True,
+                tipo_habitacion=tipo_habitacion,
+                fecha_inicio__lte=fecha_actual,
+                fecha_fin__gte=fecha_actual
+            ).first()
+
+            if tarifa_especial:
+                total_estancia += Decimal(str(tarifa_especial.precio_noche))
+            else:
+                total_estancia += Decimal(str(tipo_habitacion.precio_base))
+            
+            fecha_actual += timedelta(days=1)
+
+        return total_estancia.quantize(Decimal('0.01'))
