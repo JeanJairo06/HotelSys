@@ -1,4 +1,4 @@
-# Empleados
+git# Empleados
 
 Este documento describe el modulo de empleados de HotelSys: modelo, reglas de negocio, Service Layer, flujo web, relacion con usuarios, auditoria y verificacion.
 
