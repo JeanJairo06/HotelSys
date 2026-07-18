@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Reporte MINCETUR {{ codigo_reporte }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 13mm 12mm 16mm;
+            @bottom-left { content: "HotelSys - Reporte operativo"; font: 7pt Arial, sans-serif; }
+            @bottom-right { content: "Pagina " counter(page) " de " counter(pages); font: 7pt Arial, sans-serif; }
+        }
+        * { box-sizing: border-box; }
+        body { color: #171717; font: 9pt Arial, sans-serif; line-height: 1.35; }
+        h1, h2, h3, p { margin-top: 0; }
+        .document-header { display: table; width: 100%; border: 1.2px solid #111; }
+        .document-header > div { display: table-cell; padding: 3mm; vertical-align: middle; }
+        .document-brand { width: 25%; border-right: 1px solid #111; font-weight: 700; }
+        .document-title { width: 50%; text-align: center; }
+        .document-title h1 { margin-bottom: 1mm; font-size: 14pt; }
+        .document-title p { margin: 0; font-size: 7.5pt; font-weight: 700; }
+        .document-code { width: 25%; border-left: 1px solid #111; font-size: 7.5pt; }
+        .document-code strong { display: block; margin-bottom: 1mm; }
+        .section-title { margin: 5mm 0 2mm; padding: 1.6mm 2mm; border: 1px solid #111; background: #ededed; font-size: 8.5pt; text-transform: uppercase; }
+        .info-grid, .metric-grid { display: table; width: 100%; border-collapse: collapse; }
+        .info-grid > div, .metric-grid > div { display: table-cell; padding: 1.2mm; vertical-align: top; }
+        .field, .metric { min-height: 13mm; padding: 2mm; border: 1px solid #111; }
+        .field-label, .metric-label { display: block; font-size: 7pt; font-weight: 700; text-transform: uppercase; }
+        .field-value { display: block; margin-top: 1mm; }
+        .metric-value { display: block; margin-top: 2mm; font-size: 13pt; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { padding: 1.5mm; border: 1px solid #111; overflow-wrap: anywhere; }
+        th { background: #ededed; font-size: 7pt; text-align: center; text-transform: uppercase; }
+        td { font-size: 7.5pt; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .note { margin-top: 2mm; font-size: 7pt; }
+        .page-break { break-before: page; }
+        .signature-grid { display: table; width: 100%; margin-top: 18mm; }
+        .signature-grid > div { display: table-cell; width: 50%; padding: 0 12mm; text-align: center; }
+        .signature-line { padding-top: 2mm; border-top: 1px solid #111; font-size: 7pt; }
+    </style>
+</head>
+<body>
+    <header class="document-header">
+        <div class="document-brand">SISTEMA DE GESTION HOTELERA<br>HOTELSYS</div>
+        <div class="document-title">
+            <h1>REPORTE OPERATIVO Y ANALITICO</h1>
+            <p>OCUPACION, RESERVAS, INGRESOS Y HUESPEDES</p>
+        </div>
+        <div class="document-code">
+            <strong>REPORTE N. {{ codigo_reporte }}</strong>
+            Generado: {{ fecha_generacion|date:"d/m/Y H:i" }}<br>
+            Responsable: {{ usuario_generador }}
+        </div>
+    </header>
+
+    <h2 class="section-title">1. Informacion del establecimiento</h2>
+    <div class="info-grid">
+        <div><div class="field"><span class="field-label">Nombre comercial</span><span class="field-value">{{ hotel.nombre }}</span></div></div>
+        <div><div class="field"><span class="field-label">RUC</span><span class="field-value">{{ hotel.ruc }}</span></div></div>
+    </div>
+    <div class="info-grid">
+        <div><div class="field"><span class="field-label">Direccion</span><span class="field-value">{{ hotel.direccion }}</span></div></div>
+        <div><div class="field"><span class="field-label">Telefono</span><span class="field-value">{{ hotel.telefono }}</span></div></div>
+    </div>
+
+    <h2 class="section-title">2. Periodo evaluado</h2>
+    <div class="info-grid">
+        <div><div class="field"><span class="field-label">Fecha desde</span><span class="field-value">{{ fecha_desde|date:"d/m/Y" }}</span></div></div>
+        <div><div class="field"><span class="field-label">Fecha hasta</span><span class="field-value">{{ fecha_hasta|date:"d/m/Y" }}</span></div></div>
+        <div><div class="field"><span class="field-label">Dias evaluados</span><span class="field-value">{{ reportes.periodo.dias }}</span></div></div>
+    </div>
+
+    <h2 class="section-title">3. Resumen general</h2>
+    <div class="metric-grid">
+        <div><div class="metric"><span class="metric-label">Ingresos confirmados</span><span class="metric-value">S/ {{ reportes.ingresos.total|floatformat:2 }}</span></div></div>
+        <div><div class="metric"><span class="metric-label">Ocupacion promedio</span><span class="metric-value">{{ reportes.ocupacion.porcentaje_periodo|floatformat:2 }}%</span></div></div>
+        <div><div class="metric"><span class="metric-label">Reservas registradas</span><span class="metric-value">{{ reportes.reservas.total }}</span></div></div>
+    </div>
+    <div class="metric-grid">
+        <div><div class="metric"><span class="metric-label">Huespedes del periodo</span><span class="metric-value">{{ reportes.huespedes.total }}</span></div></div>
+        <div><div class="metric"><span class="metric-label">Habitaciones ocupadas</span><span class="metric-value">{{ reportes.ocupacion.habitaciones.ocupadas }}/{{ reportes.ocupacion.habitaciones.total }}</span></div></div>
+        <div><div class="metric"><span class="metric-label">Promedio por estancia</span><span class="metric-value">S/ {{ reportes.ingresos.promedio_estancia|floatformat:2 }}</span></div></div>
+    </div>
+
+    <h2 class="section-title">4. Estado actual de habitaciones</h2>
+    <table>
+        <thead><tr><th>Disponibles</th><th>Ocupadas</th><th>Limpieza</th><th>Mantenimiento</th><th>Ocupacion actual</th></tr></thead>
+        <tbody><tr class="text-center"><td>{{ reportes.ocupacion.habitaciones.disponibles }}</td><td>{{ reportes.ocupacion.habitaciones.ocupadas }}</td><td>{{ reportes.ocupacion.habitaciones.limpieza }}</td><td>{{ reportes.ocupacion.habitaciones.mantenimiento }}</td><td>{{ reportes.ocupacion.porcentaje_actual|floatformat:2 }}%</td></tr></tbody>
+    </table>
+
+    <h2 class="section-title">5. Ocupacion por tipo de habitacion</h2>
+    <table>
+        <thead><tr><th>Tipo</th><th>Ocupadas</th><th>Total</th><th>Ocupacion</th></tr></thead>
+        <tbody>
+            {% for item in reportes.ocupacion.por_tipo %}
+                <tr><td>{{ item.nombre }}</td><td class="text-center">{{ item.ocupadas }}</td><td class="text-center">{{ item.total }}</td><td class="text-center">{{ item.porcentaje|floatformat:2 }}%</td></tr>
+            {% empty %}
+                <tr><td colspan="4" class="text-center">No existen registros para el periodo seleccionado.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <section class="page-break">
+        <h2 class="section-title">6. Reporte de reservas</h2>
+        <p><strong>Reservas activas:</strong> {{ reportes.reservas.activas }}</p>
+        <table>
+            <thead><tr><th>Estado</th><th>Cantidad</th><th>Participacion</th></tr></thead>
+            <tbody>
+                {% for item in reportes.reservas.por_estado %}
+                    <tr><td>{{ item.nombre }}</td><td class="text-center">{{ item.total }}</td><td class="text-center">{{ item.porcentaje|floatformat:2 }}%</td></tr>
+                {% empty %}
+                    <tr><td colspan="3" class="text-center">No existen reservas para el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2 class="section-title">7. Reporte financiero</h2>
+        <table>
+            <thead><tr><th>Subtotal</th><th>IGV</th><th>Cargos adicionales</th><th>Total confirmado</th></tr></thead>
+            <tbody><tr class="text-right"><td>S/ {{ reportes.ingresos.subtotal|floatformat:2 }}</td><td>S/ {{ reportes.ingresos.igv|floatformat:2 }}</td><td>S/ {{ reportes.ingresos.cargos_adicionales|floatformat:2 }}</td><td>S/ {{ reportes.ingresos.total|floatformat:2 }}</td></tr></tbody>
+        </table>
+        <p class="note">Los ingresos se calculan exclusivamente con folios pagados o cerrados. Las reservas pendientes no se consideran ingreso recibido.</p>
+
+        <h2 class="section-title">8. Ingresos por tipo de habitacion</h2>
+        <table>
+            <thead><tr><th>Tipo de habitacion</th><th>Folios pagados</th><th>Ingreso total</th></tr></thead>
+            <tbody>
+                {% for item in reportes.ingresos.por_tipo_habitacion %}
+                    <tr><td>{{ item.nombre }}</td><td class="text-center">{{ item.folios }}</td><td class="text-right">S/ {{ item.total|floatformat:2 }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="3" class="text-center">No existen ingresos confirmados para el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2 class="section-title">9. Cargos adicionales</h2>
+        <table>
+            <thead><tr><th>Tipo</th><th>Cantidad</th><th>Total</th></tr></thead>
+            <tbody>
+                {% for item in reportes.ingresos.por_cargos %}
+                    <tr><td>{{ item.nombre }}</td><td class="text-center">{{ item.cantidad }}</td><td class="text-right">S/ {{ item.total|floatformat:2 }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="3" class="text-center">No existen cargos adicionales para el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="page-break">
+        <h2 class="section-title">10. Huespedes frecuentes</h2>
+        <table>
+            <thead><tr><th>Huesped</th><th>Reservas</th><th>Noches</th></tr></thead>
+            <tbody>
+                {% for item in reportes.huespedes.frecuentes %}
+                    <tr><td>{{ item.huesped.nombre_completo }}</td><td class="text-center">{{ item.reservas }}</td><td class="text-center">{{ item.noches }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="3" class="text-center">No existen huespedes con reservas en el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2 class="section-title">11. Nacionalidades registradas</h2>
+        <table>
+            <thead><tr><th>Nacionalidad</th><th>Cantidad</th></tr></thead>
+            <tbody>
+                {% for item in reportes.huespedes.nacionalidades %}
+                    <tr><td>{{ item.nacionalidad }}</td><td class="text-center">{{ item.total }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="2" class="text-center">No existen nacionalidades para el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="signature-grid">
+            <div><div class="signature-line">Responsable que genera el reporte</div></div>
+            <div><div class="signature-line">Administrador del establecimiento</div></div>
+        </div>
+    </section>
+</body>
+</html>

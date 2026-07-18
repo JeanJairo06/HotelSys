@@ -11,36 +11,50 @@
 {% block page_subtitle %}Consulta administrativa de ocupacion, reservas, ingresos y huespedes del hotel.{% endblock %}
 
 {% block page_actions %}
-<form method="get" class="report-filter">
-    <label class="visually-hidden" for="desde">Desde</label>
+<form method="get" class="report-filter" id="report-filter-form" data-submit-lock>
+    <label class="visually-hidden" for="fecha_desde">Desde</label>
     <input
-        id="desde"
+        id="fecha_desde"
         class="form-control"
         type="date"
-        name="desde"
+        name="fecha_desde"
         value="{{ reportes.periodo.desde|date:'Y-m-d' }}"
+        required
     >
 
-    <label class="visually-hidden" for="hasta">Hasta</label>
+    <label class="visually-hidden" for="fecha_hasta">Hasta</label>
     <input
-        id="hasta"
+        id="fecha_hasta"
         class="form-control"
         type="date"
-        name="hasta"
+        name="fecha_hasta"
         value="{{ reportes.periodo.hasta|date:'Y-m-d' }}"
+        required
     >
 
-    <button class="btn btn-primary" type="submit">
-        <i class="bi bi-funnel me-2" aria-hidden="true"></i>Filtrar
-    </button>
+    <div class="report-filter-actions">
+        <button class="btn btn-primary" type="submit">
+            <i class="bi bi-funnel me-2" aria-hidden="true"></i>Filtrar
+        </button>
+        <button
+            class="btn btn-primary report-pdf-button"
+            type="button"
+            data-report-pdf
+            data-pdf-url="{% url 'reporte_pdf' %}"
+        >
+            <i class="bi bi-file-earmark-pdf me-2" aria-hidden="true"></i>Descargar PDF
+        </button>
+    </div>
 </form>
 {% endblock %}
 
 {% block content %}
 {% if rango_error %}
-    <div class="alert alert-warning" role="alert">
+    <div id="report-range-error" class="alert alert-warning" role="alert" aria-live="polite">
         <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>{{ rango_error }}
     </div>
+{% else %}
+    <div id="report-range-error" class="alert alert-warning d-none" role="alert" aria-live="polite"></div>
 {% endif %}
 
 <section class="report-summary" aria-label="Resumen general del reporte">
@@ -48,11 +62,12 @@
         <span class="report-kicker">Periodo del reporte</span>
         <h2>{{ reportes.periodo.desde|date:'d/m/Y' }} - {{ reportes.periodo.hasta|date:'d/m/Y' }}</h2>
         <p>{{ reportes.periodo.dias }} dias evaluados con informacion historica del sistema hotelero.</p>
+        <span class="report-data-note"><i class="bi bi-shield-check" aria-hidden="true"></i>Ingresos calculados con folios pagados o cerrados.</span>
     </div>
 
     <div class="report-summary-grid">
         <div>
-            <span>Ingresos totales</span>
+            <span>Ingresos confirmados</span>
             <strong>S/ {{ reportes.ingresos.total|floatformat:2 }}</strong>
         </div>
         <div>
@@ -223,7 +238,7 @@
                 <thead>
                     <tr>
                         <th>Tipo de habitacion</th>
-                        <th>Reservas</th>
+                        <th>Folios pagados</th>
                         <th>Ingreso</th>
                     </tr>
                 </thead>
@@ -231,7 +246,7 @@
                     {% for item in reportes.ingresos.por_tipo_habitacion %}
                         <tr>
                             <td>{{ item.nombre }}</td>
-                            <td>{{ item.reservas }}</td>
+                            <td>{{ item.folios }}</td>
                             <td>S/ {{ item.total|floatformat:2 }}</td>
                         </tr>
                     {% empty %}
@@ -338,4 +353,8 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/reportes.js' %}"></script>
 {% endblock %}
