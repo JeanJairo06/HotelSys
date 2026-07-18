@@ -73,6 +73,18 @@ class EstanciasAPITests(TestCase):
         self.assertEqual(response.data['code'], 'CHECKOUT_BLOQUEADO')
         self.assertEqual(response.data['message'], 'No se puede hacer checkout. Saldo pendiente: S/ 141.60.')
 
+    def test_detalle_estancia_api_incluye_folio(self):
+        estancia = self._crear_estancia_con_folio_pendiente()
+
+        response = self.client.get(f'/api/v1/estancias/{estancia.id}/')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['folio_id'], estancia.folio.id)
+        self.assertEqual(response.data['folio_estado'], 'ABIERTO')
+        self.assertEqual(response.data['folio_total'], '141.60')
+        self.assertEqual(response.data['folio_pagado'], '0.00')
+        self.assertEqual(response.data['folio_saldo'], '141.60')
+
 
 class HousekeepingAPITests(TestCase):
     def setUp(self):
