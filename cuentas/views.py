@@ -1,9 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView, LogoutView
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from core.exceptions import AppError
@@ -11,6 +12,12 @@ from cuentas.decorators import role_required
 from cuentas.forms import UsuarioCreateForm, UsuarioUpdateForm
 from cuentas.models import UsuarioEmpleado
 from cuentas.roles import ROLE_ADMIN
+from cuentas.security import LoginAttemptRateLimiter
+from cuentas.session_policy import get_session_policy
+from cuentas.session_state import (
+    get_session_expires_at,
+    refresh_session_activity,
+)
 from cuentas.services import UsuarioService
 
 
@@ -18,12 +25,23 @@ class CuentaLoginView(LoginView):
     template_name = 'cuentas/login.html'
     redirect_authenticated_user = True
 
+    def post(self, request, *args, **kwargs):
+        self.login_rate_limiter = LoginAttemptRateLimiter(request)
+        if self.login_rate_limiter.allow_attempt():
+            return super().post(request, *args, **kwargs)
+
+        form = self.get_form()
+        form.add_error(None, form.error_messages['invalid_login'])
+        return self.form_invalid(form)
+
     def get_success_url(self):
         return self.get_redirect_url() or reverse_lazy('home')
 
     def form_valid(self, form):
+        self.login_rate_limiter.reset()
+        response = super().form_valid(form)
         messages.success(self.request, 'Inicio de sesión correcto.')
-        return super().form_valid(form)
+        return response
 
     def form_invalid(self, form):
         messages.error(self.request, 'Usuario o contraseña inválidos.')
@@ -38,6 +56,24 @@ class CuentaLogoutView(LogoutView):
         response = super().post(request, *args, **kwargs)
         messages.info(request, 'Sesión cerrada correctamente.')
         return response
+
+
+class SessionActivityView(View):
+    http_method_names = ['post', 'options']
+
+    def post(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse(
+                {
+                    'detail': 'La sesión ha expirado.',
+                    'code': 'session_expired',
+                },
+                status=401,
+            )
+
+        policy = get_session_policy(request.user)
+        refresh_session_activity(request)
+        return JsonResponse({'expires_at': get_session_expires_at(request, policy)})
 
 
 @method_decorator(role_required(ROLE_ADMIN), name='dispatch')
