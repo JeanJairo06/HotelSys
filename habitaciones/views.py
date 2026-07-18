@@ -10,7 +10,7 @@ from hoteles.models import Hotel
 
 from .forms import EstadoHabitacionForm, HabitacionForm, TipoHabitacionForm
 from .models import Habitacion, TipoHabitacion
-from .services import cambiar_estado_manual
+from .services import cambiar_estado_manual, guardar_tipo_habitacion_desde_formulario
 
 
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
@@ -133,7 +133,7 @@ def crear_tipo_habitacion(request):
     if request.method == 'POST':
         form = TipoHabitacionForm(request.POST)
         if form.is_valid():
-            form.save()
+            guardar_tipo_habitacion_desde_formulario(form)
             messages.success(request, 'Tipo de habitacion registrado correctamente.')
             return redirect('habitaciones:listar_tipos_habitacion')
     else:
@@ -154,7 +154,7 @@ def editar_tipo_habitacion(request, pk):
     if request.method == 'POST':
         form = TipoHabitacionForm(request.POST, instance=tipo_habitacion)
         if form.is_valid():
-            form.save()
+            guardar_tipo_habitacion_desde_formulario(form)
             messages.success(request, 'Tipo de habitacion actualizado correctamente.')
             return redirect('habitaciones:listar_tipos_habitacion')
     else:

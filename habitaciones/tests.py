@@ -3,7 +3,25 @@ from django.core.exceptions import ValidationError
 from datetime import date
 
 from hoteles.models import Hotel
+from habitaciones.forms import TipoHabitacionForm
 from habitaciones.models import TipoHabitacion, Tarifa
+from habitaciones.services import guardar_tipo_habitacion_desde_formulario
+
+
+class TipoHabitacionServiceTests(TestCase):
+    def test_guardar_tipo_habitacion_desde_formulario(self):
+        form = TipoHabitacionForm(data={
+            'nombre': 'Simple',
+            'capacidad': 1,
+            'precio_base': '120.00',
+            'amenidades': [],
+        })
+
+        self.assertTrue(form.is_valid())
+        tipo = guardar_tipo_habitacion_desde_formulario(form)
+
+        self.assertEqual(TipoHabitacion.objects.count(), 1)
+        self.assertEqual(tipo.nombre, 'Simple')
 
 
 class TarifaModelTests(TestCase):

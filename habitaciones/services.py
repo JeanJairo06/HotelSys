@@ -32,6 +32,16 @@ def publicar_evento_estado_habitacion(habitacion, estado_anterior):
     return HabitacionService.publicar_evento_estado(habitacion, estado_anterior)
 
 
+def guardar_tipo_habitacion_desde_formulario(form):
+    return TipoHabitacionService.guardar_desde_formulario(form)
+
+
+class TipoHabitacionService:
+    @staticmethod
+    def guardar_desde_formulario(form):
+        return form.save()
+
+
 class HabitacionService:
     """
     Centraliza reglas operativas de habitaciones.
