@@ -87,6 +87,9 @@ def realizar_checkin(request, reserva_id):
         except ValidationError as error:
             messages.error(request, error.messages[0])
             return redirect('estancias:listar_reservas_checkin')
+        except AppError as error:
+            messages.error(request, error.message)
+            return redirect('estancias:listar_reservas_checkin')
 
     return render(request, 'estancias/confirmar_checkin.html', {'reserva': reserva})
 

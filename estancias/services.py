@@ -1,10 +1,17 @@
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
 from config.choices import EstadoEstancia, EstadoFolio, EstadoHabitacion, EstadoReserva
+from habitaciones.exceptions import HabitacionNoDisponible
 from habitaciones.services import publicar_evento_estado_habitacion, tiene_estancia_activa
 
+from .exceptions import (
+    CheckinNoPermitido,
+    CheckinYaRealizado,
+    CheckoutNoPermitido,
+    CheckoutYaRealizado,
+    EstanciaActivaExistente,
+)
 from .models import Estancia
 
 
@@ -85,29 +92,29 @@ class EstanciaService:
     @staticmethod
     def _validar_checkin(reserva):
         if hasattr(reserva, 'estancia'):
-            raise ValidationError('La reserva ya tiene una estancia registrada.')
+            raise CheckinYaRealizado('La reserva ya tiene una estancia registrada.')
 
         if reserva.estado != EstadoReserva.CONFIRMADA:
-            raise ValidationError('Solo se puede realizar check-in de reservas confirmadas.')
+            raise CheckinNoPermitido('Solo se puede realizar check-in de reservas confirmadas.')
 
         hoy = timezone.localdate()
         if not (reserva.fecha_entrada <= hoy < reserva.fecha_salida):
-            raise ValidationError('El check-in solo se puede realizar dentro del rango de fechas de la reserva.')
+            raise CheckinNoPermitido('El check-in solo se puede realizar dentro del rango de fechas de la reserva.')
 
         if reserva.habitacion.estado != EstadoHabitacion.DISPONIBLE:
-            raise ValidationError('La habitacion no esta disponible para check-in.')
+            raise HabitacionNoDisponible('La habitacion no esta disponible para check-in.')
 
         if tiene_estancia_activa(reserva.habitacion):
-            raise ValidationError('La habitacion ya tiene una estancia activa.')
+            raise EstanciaActivaExistente('La habitacion ya tiene una estancia activa.')
 
     @staticmethod
     def _validar_checkout(estancia):
         if estancia.estado != EstadoEstancia.ACTIVA:
-            raise ValidationError('Solo se puede finalizar una estancia activa.')
+            raise CheckoutYaRealizado('Solo se puede finalizar una estancia activa.')
 
         folio = getattr(estancia, 'folio', None)
         if not folio:
-            raise ValidationError('No se puede hacer checkout porque la estancia no tiene folio.')
+            raise CheckoutNoPermitido('No se puede hacer checkout porque la estancia no tiene folio.')
 
         from facturacion.exceptions import CheckoutBloqueadoError
         from facturacion.services import FolioService
