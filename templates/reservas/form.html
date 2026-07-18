@@ -122,6 +122,14 @@
         <div class="col-md-6">
             <label class="form-label" for="{{ form.precio_total.id_for_label }}">{{ form.precio_total.label }}</label>
             {{ form.precio_total }}
+            <div class="tariff-summary mt-2" id="resumen-tarifa" hidden aria-live="polite">
+                <div class="tariff-summary-icon" aria-hidden="true"><i class="bi bi-tag"></i></div>
+                <div>
+                    <p class="tariff-summary-title mb-1" id="resumen-tarifa-titulo"></p>
+                    <p class="tariff-summary-base mb-2" id="resumen-tarifa-base"></p>
+                    <ul class="tariff-summary-detail mb-0" id="resumen-tarifa-detalle"></ul>
+                </div>
+            </div>
             {% for error in form.precio_total.errors %}
                 <div class="invalid-feedback d-block">{{ error }}</div>
             {% endfor %}
@@ -150,6 +158,10 @@
         const salida = document.getElementById('{{ form.fecha_salida.id_for_label }}');
         const numAdultos = document.getElementById('{{ form.num_adultos.id_for_label }}');
         const total = document.getElementById('{{ form.precio_total.id_for_label }}');
+        const resumenTarifa = document.getElementById('resumen-tarifa');
+        const resumenTarifaTitulo = document.getElementById('resumen-tarifa-titulo');
+        const resumenTarifaBase = document.getElementById('resumen-tarifa-base');
+        const resumenTarifaDetalle = document.getElementById('resumen-tarifa-detalle');
         const capacidades = {
             {% for t in form.fields.tipo_habitacion.queryset %}
                 "{{ t.id }}": {{ t.capacidad }},
@@ -351,6 +363,69 @@
             return dias > 0 ? dias : 0;
         }
 
+        function formatearMonto(monto) {
+            return new Intl.NumberFormat('es-PE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(monto);
+        }
+
+        function formatearFecha(fecha) {
+            const partes = fecha.split('-');
+            return partes[2] + '/' + partes[1] + '/' + partes[0];
+        }
+
+        function actualizarResumenTarifa(precioBase, noches, detalleNoches) {
+            if (!precioBase || !noches) {
+                resumenTarifa.hidden = true;
+                return;
+            }
+
+            const hayTarifa = detalleNoches.some(function (detalle) {
+                return detalle.tarifa;
+            });
+            resumenTarifa.hidden = false;
+            resumenTarifaTitulo.textContent = hayTarifa
+                ? 'El total incluye una tarifa vigente.'
+                : 'El total se calcula con el precio base.';
+            resumenTarifaBase.textContent = 'Precio base: S/ ' + formatearMonto(precioBase) + ' por noche';
+            resumenTarifaDetalle.innerHTML = '';
+
+            const detallesAgrupados = {};
+            detalleNoches.forEach(function (detalle) {
+                const tarifa = detalle.tarifa;
+                const clave = tarifa
+                    ? 'tarifa-' + tarifa.nombre + '-' + tarifa.precio + '-' + tarifa.fechaInicio + '-' + tarifa.fechaFin
+                    : 'base-' + detalle.precio;
+                if (!detallesAgrupados[clave]) {
+                    detallesAgrupados[clave] = {
+                        tarifa: tarifa,
+                        precio: detalle.precio,
+                        noches: 0,
+                    };
+                }
+                detallesAgrupados[clave].noches += 1;
+            });
+
+            Object.keys(detallesAgrupados).forEach(function (clave) {
+                const detalle = detallesAgrupados[clave];
+                const linea = document.createElement('li');
+                const etiquetaNoches = detalle.noches === 1 ? 'noche' : 'noches';
+
+                if (detalle.tarifa) {
+                    linea.textContent = detalle.tarifa.nombre + ': S/ '
+                        + formatearMonto(detalle.precio) + ' por noche · '
+                        + detalle.noches + ' ' + etiquetaNoches + ' · Vigente del '
+                        + formatearFecha(detalle.tarifa.fechaInicio) + ' al '
+                        + formatearFecha(detalle.tarifa.fechaFin);
+                } else {
+                    linea.textContent = 'Precio base: S/ ' + formatearMonto(detalle.precio)
+                        + ' por noche · ' + detalle.noches + ' ' + etiquetaNoches;
+                }
+                resumenTarifaDetalle.appendChild(linea);
+            });
+        }
+
         function refrescarHabitaciones() {
 
             const listo =
@@ -415,16 +490,19 @@
 
             if (!value) {
                 total.value = '0';
+                actualizarResumenTarifa(0, 0, []);
                 return;
             }
 
             if (!precioBase || !noches) {
                 total.value = '';
+                actualizarResumenTarifa(0, 0, []);
                 return;
             }
 
             const tarifas = item.tarifas || [];
             let acumulado = 0;
+            const detalleNoches = [];
             let fecha = new Date(entrada.value + 'T00:00:00');
 
             for (let i = 0; i < noches; i += 1) {
@@ -432,11 +510,14 @@
                 const tarifa = tarifas.find(function (item) {
                     return item.fechaInicio <= fechaNoche && fechaNoche <= item.fechaFin;
                 });
-                acumulado += tarifa ? Number(tarifa.precio) : precioBase;
+                const precioNoche = tarifa ? Number(tarifa.precio) : precioBase;
+                acumulado += precioNoche;
+                detalleNoches.push({ tarifa: tarifa, precio: precioNoche });
                 fecha.setDate(fecha.getDate() + 1);
             }
 
             total.value = acumulado.toFixed(2);
+            actualizarResumenTarifa(precioBase, noches, detalleNoches);
         }
 
         tipo.addEventListener('change', actualizarCantidadHuespedes);

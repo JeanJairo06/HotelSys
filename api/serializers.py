@@ -78,6 +78,7 @@ class HabitacionReservaAutocompleteSerializer(serializers.ModelSerializer):
     def get_tarifas(self, obj):
         return [
             {
+                'nombre': tarifa.nombre,
                 'fechaInicio': tarifa.fecha_inicio.isoformat(),
                 'fechaFin': tarifa.fecha_fin.isoformat(),
                 'precio': str(tarifa.precio_noche),
