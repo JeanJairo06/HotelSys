@@ -39,11 +39,11 @@ class EstadoReserva(models.TextChoices):
 
 
 class OrigenReserva(models.TextChoices):
-    WEB = 'WEB', 'Web'
+    #WEB = 'WEB', 'Web'
     TELEFONO = 'TELEFONO', 'Teléfono'
     RECEPCION = 'RECEPCION', 'Recepción'
-    AGENCIA = 'AGENCIA', 'Agencia'
-    OTRO = 'OTRO', 'Otro'
+    #AGENCIA = 'AGENCIA', 'Agencia'
+    #OTRO = 'OTRO', 'Otro'
 
 
 class EstadoEstancia(models.TextChoices):
