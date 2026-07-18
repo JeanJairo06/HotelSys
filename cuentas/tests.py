@@ -1,7 +1,7 @@
 from datetime import date
 
 from django.contrib.auth.models import Group, User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from config.choices import CargoEmpleado, EstadoGeneral
@@ -234,6 +234,59 @@ class UsuarioServiceTests(TestCase):
                 groups=[],
                 is_active=True,
             )
+
+
+@override_settings(
+    STORAGES={
+        'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+        'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+    },
+)
+class CuentaLoginViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='recepcion', password='testpass123')
+
+    def test_login_muestra_control_accesible_para_ver_contrasena(self):
+        response = self.client.get(reverse('login'))
+
+        self.assertContains(response, 'src="/static/js/auth.js"')
+        self.assertContains(response, 'data-password-toggle')
+        self.assertContains(response, 'aria-controls="id_password"')
+        self.assertContains(response, 'aria-pressed="false"')
+        self.assertContains(response, 'aria-label="Mostrar contraseña"')
+        self.assertNotContains(response, 'novalidate')
+
+    def test_login_invalido_anuncia_y_asocia_el_error_con_los_campos(self):
+        response = self.client.post(
+            reverse('login'),
+            {'username': self.user.username, 'password': 'contrasena-incorrecta'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="login-errors"')
+        self.assertContains(response, 'role="alert"')
+        self.assertContains(response, 'aria-invalid="true"', count=2)
+        self.assertContains(response, 'aria-describedby="login-errors"', count=2)
+        self.assertContains(response, 'is-invalid', count=2)
+
+    def test_login_asocia_los_errores_requeridos_con_sus_campos(self):
+        response = self.client.post(reverse('login'), {})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="username-errors"')
+        self.assertContains(response, 'id="password-errors"')
+        self.assertContains(response, 'aria-describedby="username-errors"')
+        self.assertContains(response, 'aria-describedby="password-errors"')
+        self.assertContains(response, 'aria-invalid="true"', count=2)
+
+    def test_login_valido_crea_la_sesion(self):
+        response = self.client.post(
+            reverse('login'),
+            {'username': self.user.username, 'password': 'testpass123'},
+        )
+
+        self.assertRedirects(response, reverse('home'), fetch_redirect_response=False)
+        self.assertIn('_auth_user_id', self.client.session)
 
 
 class UsuarioViewsTests(TestCase):
