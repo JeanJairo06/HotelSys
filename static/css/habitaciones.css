@@ -156,16 +156,48 @@
 }
 
 .room-grid,
+.room-floor-grid,
 .room-type-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1rem;
 }
 
+.room-board {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.room-floor {
+    display: grid;
+    gap: .75rem;
+}
+
+.room-floor-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 .2rem;
+}
+
+.room-floor-header span {
+    color: var(--app-primary-dark);
+    font-size: .95rem;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.room-floor-header small {
+    color: var(--app-muted);
+    font-weight: 700;
+}
+
 .room-card,
 .room-type-card {
     display: grid;
-    gap: 1rem;
+    gap: .85rem;
     padding: 1rem;
 }
 
@@ -193,6 +225,14 @@
     line-height: 1;
 }
 
+.room-type {
+    display: block;
+    margin-top: .15rem;
+    color: var(--app-muted);
+    font-size: .86rem;
+    font-weight: 700;
+}
+
 .room-meta,
 .room-type-meta {
     display: flex;
@@ -218,115 +258,13 @@
     color: var(--app-muted);
 }
 
-.ops-actions {
+.ops-actions,
+.room-card-footer {
     display: flex;
     flex-wrap: wrap;
-    gap: .6rem;
-}
-
-.room-action {
-    border: 0;
-    font-weight: 800;
-}
-
-.room-action-edit {
-    width: 2rem;
-    height: 2rem;
-    display: inline-flex;
     align-items: center;
-    justify-content: center;
-    padding: 0;
-    border-radius: .7rem;
-    background: rgba(255, 255, 255, 0.9);
-    color: var(--app-primary-dark);
-    box-shadow: inset 0 0 0 1px rgba(13, 63, 69, 0.16);
-}
-
-.room-action-edit:hover {
-    background: #ffffff;
-    color: var(--app-primary-dark);
-}
-
-.room-action-disponible {
-    background: #ffffff;
-    color: #198754;
-    box-shadow: inset 0 0 0 1px rgba(25, 135, 84, 0.38);
-}
-
-.room-action-ocupada {
-    background: #ffffff;
-    color: var(--app-primary);
-    box-shadow: inset 0 0 0 1px rgba(19, 93, 102, 0.38);
-}
-
-.room-action-limpieza {
-    background: #ffffff;
-    color: #9a6b0f;
-    box-shadow: inset 0 0 0 1px rgba(214, 168, 79, 0.46);
-}
-
-.room-action-mantenimiento {
-    background: #ffffff;
-    color: #dc3545;
-    box-shadow: inset 0 0 0 1px rgba(220, 53, 69, 0.38);
-}
-
-.room-action:hover {
-    filter: brightness(0.94);
-}
-
-.room-state-form {
-    display: inline-flex;
-    flex: 0 0 auto;
-    gap: .35rem;
-    margin: 0;
-}
-
-.room-state-button {
-    width: 2rem;
-    height: 2rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(23, 32, 51, 0.08);
-    border-radius: .65rem;
-    background: rgba(255, 255, 255, 0.72);
-    color: var(--app-muted);
-    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
-}
-
-.room-state-button:hover,
-.room-state-button.active {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(23, 32, 51, 0.1);
-}
-
-.room-state-button.state-disponible.active,
-.room-state-button.state-disponible:hover {
-    border-color: #198754;
-    background: #198754;
-    color: #ffffff;
-}
-
-.room-state-button.state-ocupada.active,
-.room-state-button.state-ocupada:hover {
-    border-color: var(--app-primary);
-    background: var(--app-primary);
-    color: #ffffff;
-}
-
-.room-state-button.state-limpieza.active,
-.room-state-button.state-limpieza:hover {
-    border-color: var(--app-accent);
-    background: var(--app-accent);
-    color: #1b2430;
-}
-
-.room-state-button.state-mantenimiento.active,
-.room-state-button.state-mantenimiento:hover {
-    border-color: #dc3545;
-    background: #dc3545;
-    color: #ffffff;
+    justify-content: space-between;
+    gap: .5rem;
 }
 
 .flow-actions {
@@ -443,6 +381,7 @@
 
 @media (max-width: 1199.98px) {
     .room-grid,
+    .room-floor-grid,
     .room-type-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
@@ -450,6 +389,7 @@
 
 @media (max-width: 767.98px) {
     .room-grid,
+    .room-floor-grid,
     .room-type-grid {
         grid-template-columns: 1fr;
     }
