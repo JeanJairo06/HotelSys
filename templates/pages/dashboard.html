@@ -20,9 +20,6 @@
         name="fecha"
         value="{{ reporte.fecha|date:'Y-m-d' }}"
     >
-    <button class="btn btn-primary" type="submit" aria-label="Consultar fecha" title="Consultar fecha">
-        <i class="bi bi-calendar2-check me-2" aria-hidden="true"></i>
-    </button>
 </form>
 {% endblock %}
 
@@ -35,6 +32,7 @@
 
 {{ websocket_hoteles_ids|json_script:"dashboard-websocket-hoteles" }}
 <div
+    class="dashboard-shell"
     data-room-realtime
     data-hotels-script-id="dashboard-websocket-hoteles"
     data-websocket-url-template="{{ websocket_url_template }}"
@@ -54,15 +52,15 @@
 
         <div class="dashboard-hero-stats">
             <div>
-                <span>Ocupacion real</span>
+                <span><i class="bi bi-door-open" aria-hidden="true"></i>Ocupacion real</span>
                 <strong data-occupancy-count>{{ reporte.ocupacion.ocupadas }}</strong>
             </div>
             <div>
-                <span>Disponibles</span>
+                <span><i class="bi bi-check2-circle" aria-hidden="true"></i>Disponibles</span>
                 <strong>{{ reporte.habitaciones.disponibles }}</strong>
             </div>
             <div>
-                <span>Reservas activas</span>
+                <span><i class="bi bi-calendar2-check" aria-hidden="true"></i>Reservas activas</span>
                 <strong>{{ reporte.reservas.en_fecha }}</strong>
             </div>
         </div>
@@ -86,7 +84,7 @@
         </div>
 
         <div class="dashboard-hero-income">
-            <span>Ingresos confirmados</span>
+            <span><i class="bi bi-wallet2" aria-hidden="true"></i>Ingresos confirmados</span>
             <strong>S/ {{ reporte.ingresos.confirmados|floatformat:2 }}</strong>
             <small>folios pagados o cerrados; no incluye reservas impagas</small>
         </div>
@@ -161,19 +159,31 @@
 
         <div class="dashboard-room-status">
             <div class="room-status-card status-available">
-                <span>Disponibles</span>
+                <div class="room-status-top">
+                    <span class="room-status-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
+                    <span>Disponibles</span>
+                </div>
                 <strong data-room-state-count="DISPONIBLE">{{ reporte.habitaciones.disponibles }}</strong>
             </div>
             <div class="room-status-card status-busy">
-                <span>Ocupadas</span>
+                <div class="room-status-top">
+                    <span class="room-status-icon"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+                    <span>Ocupadas</span>
+                </div>
                 <strong data-room-state-count="OCUPADA">{{ reporte.habitaciones.ocupadas }}</strong>
             </div>
             <div class="room-status-card status-cleaning">
-                <span>Limpieza</span>
+                <div class="room-status-top">
+                    <span class="room-status-icon"><i class="bi bi-stars" aria-hidden="true"></i></span>
+                    <span>Limpieza</span>
+                </div>
                 <strong data-room-state-count="LIMPIEZA">{{ reporte.habitaciones.limpieza }}</strong>
             </div>
             <div class="room-status-card status-maintenance">
-                <span>Mantenimiento</span>
+                <div class="room-status-top">
+                    <span class="room-status-icon"><i class="bi bi-tools" aria-hidden="true"></i></span>
+                    <span>Mantenimiento</span>
+                </div>
                 <strong data-room-state-count="MANTENIMIENTO">{{ reporte.habitaciones.mantenimiento }}</strong>
             </div>
         </div>
@@ -210,31 +220,31 @@
 
         <div class="dashboard-reservation-grid">
             <div>
-                <span>Total</span>
+                <span><i class="bi bi-collection" aria-hidden="true"></i>Total</span>
                 <strong>{{ reporte.reservas.total }}</strong>
             </div>
             <div>
-                <span>Finalizadas</span>
+                <span><i class="bi bi-flag" aria-hidden="true"></i>Finalizadas</span>
                 <strong>{{ reporte.reservas.finalizadas }}</strong>
             </div>
             <div>
-                <span>Confirmadas</span>
+                <span><i class="bi bi-calendar2-check" aria-hidden="true"></i>Confirmadas</span>
                 <strong>{{ reporte.reservas.confirmadas }}</strong>
             </div>
             <div>
-                <span>Check-in</span>
+                <span><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Check-in</span>
                 <strong>{{ reporte.reservas.checkin }}</strong>
             </div>
         </div>
 
         <div class="dashboard-command-highlight">
-            <span>Housekeeping</span>
+            <span><i class="bi bi-stars" aria-hidden="true"></i>Housekeeping</span>
             <strong>{{ reporte.habitaciones.limpieza }}</strong>
             <small>habitaciones pendientes de limpieza</small>
         </div>
 
         <div class="dashboard-command-highlight dashboard-command-soft">
-            <span>Cargos registrados</span>
+            <span><i class="bi bi-receipt" aria-hidden="true"></i>Cargos registrados</span>
             <strong>S/ {{ reporte.ingresos.cargos_totales|floatformat:2 }}</strong>
             <small>cargos acumulados en estancias</small>
         </div>
