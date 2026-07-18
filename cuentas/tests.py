@@ -7,9 +7,95 @@ from django.urls import reverse
 
 from config.choices import CargoEmpleado, EstadoGeneral
 from cuentas.exceptions import EmpleadoNoDisponible, RolUsuarioInvalido, UsuarioDuplicado, UsuarioNoDesactivable
-from cuentas.models import UsuarioEmpleado
+from cuentas.models import AuditoriaSesion, MotivoExpiracionSesion, UsuarioEmpleado
+from cuentas.session_audit import registrar_expiracion_sesion
+from cuentas.session_policy import get_session_policy
 from cuentas.services import UsuarioService
 from empleados.models import Empleado
+
+
+SESSION_ROLE_POLICIES = {
+    'admin': {'idle_timeout': 900, 'absolute_timeout': 28800},
+    'recepcionista': {'idle_timeout': 1200, 'absolute_timeout': 43200},
+    'housekeeping': {'idle_timeout': 900, 'absolute_timeout': 28800},
+    'default': {'idle_timeout': 900, 'absolute_timeout': 28800},
+}
+
+
+@override_settings(SESSION_ROLE_POLICIES=SESSION_ROLE_POLICIES)
+class SessionPolicyTests(TestCase):
+    def setUp(self):
+        self.admin_group = Group.objects.get(name='admin')
+        self.recepcion_group = Group.objects.get(name='recepcionista')
+        self.housekeeping_group = Group.objects.get(name='housekeeping')
+
+    def test_aplica_politica_de_recepcionista(self):
+        user = User.objects.create_user(username='recepcion', password='testpass123')
+        user.groups.add(self.recepcion_group)
+
+        policy = get_session_policy(user)
+
+        self.assertEqual(policy.idle_timeout, 1200)
+        self.assertEqual(policy.absolute_timeout, 43200)
+        self.assertEqual(policy.roles, ('recepcionista',))
+
+    def test_aplica_politica_de_housekeeping(self):
+        user = User.objects.create_user(username='limpieza', password='testpass123')
+        user.groups.add(self.housekeeping_group)
+
+        policy = get_session_policy(user)
+
+        self.assertEqual(policy.idle_timeout, 900)
+        self.assertEqual(policy.absolute_timeout, 28800)
+        self.assertEqual(policy.roles, ('housekeeping',))
+
+    def test_recalcula_la_politica_cuando_cambia_el_rol(self):
+        user = User.objects.create_user(username='multirole', password='testpass123')
+        user.groups.add(self.recepcion_group)
+
+        self.assertEqual(get_session_policy(user).idle_timeout, 1200)
+
+        user.groups.add(self.admin_group)
+        policy = get_session_policy(user)
+
+        self.assertEqual(policy.idle_timeout, 900)
+        self.assertEqual(policy.absolute_timeout, 28800)
+        self.assertEqual(policy.roles, ('admin', 'recepcionista'))
+
+    def test_superusuario_usa_politica_de_admin(self):
+        user = User.objects.create_superuser(username='root', email='root@example.com', password='testpass123')
+
+        policy = get_session_policy(user)
+
+        self.assertEqual(policy.idle_timeout, 900)
+        self.assertEqual(policy.absolute_timeout, 28800)
+        self.assertEqual(policy.roles, ('admin',))
+
+    def test_usuario_sin_rol_usa_politica_predeterminada(self):
+        user = User.objects.create_user(username='sin-rol', password='testpass123')
+
+        policy = get_session_policy(user)
+
+        self.assertEqual(policy.idle_timeout, 900)
+        self.assertEqual(policy.absolute_timeout, 28800)
+        self.assertEqual(policy.roles, ())
+
+    def test_registra_auditoria_sin_parametros_de_la_ruta(self):
+        user = User.objects.create_user(username='admin', password='testpass123')
+        user.groups.add(self.admin_group)
+
+        audit = registrar_expiracion_sesion(
+            user=user,
+            policy=get_session_policy(user),
+            motivo=MotivoExpiracionSesion.INACTIVIDAD,
+            ruta='/reservas/?huesped_id=42&session_key=secret',
+        )
+
+        self.assertEqual(AuditoriaSesion.objects.count(), 1)
+        self.assertEqual(audit.usuario, user)
+        self.assertEqual(audit.roles_efectivos, 'admin')
+        self.assertEqual(audit.motivo, MotivoExpiracionSesion.INACTIVIDAD)
+        self.assertEqual(audit.ruta, '/reservas/')
 
 
 class UsuarioServiceTests(TestCase):

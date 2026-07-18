@@ -124,6 +124,28 @@ CACHES = {
 LOGIN_RATE_LIMIT_ATTEMPTS = config('LOGIN_RATE_LIMIT_ATTEMPTS', cast=int, default=5)
 LOGIN_RATE_LIMIT_WINDOW = config('LOGIN_RATE_LIMIT_WINDOW', cast=int, default=900)
 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', cast=int, default=43200)
+SESSION_SAVE_EVERY_REQUEST = False
+SESSION_ROLE_POLICIES = {
+    'admin': {
+        'idle_timeout': config('SESSION_IDLE_TIMEOUT_ADMIN', cast=int, default=900),
+        'absolute_timeout': config('SESSION_ABSOLUTE_TIMEOUT_ADMIN', cast=int, default=28800),
+    },
+    'recepcionista': {
+        'idle_timeout': config('SESSION_IDLE_TIMEOUT_RECEPCIONISTA', cast=int, default=1200),
+        'absolute_timeout': config('SESSION_ABSOLUTE_TIMEOUT_RECEPCIONISTA', cast=int, default=43200),
+    },
+    'housekeeping': {
+        'idle_timeout': config('SESSION_IDLE_TIMEOUT_HOUSEKEEPING', cast=int, default=900),
+        'absolute_timeout': config('SESSION_ABSOLUTE_TIMEOUT_HOUSEKEEPING', cast=int, default=28800),
+    },
+    'default': {
+        'idle_timeout': config('SESSION_IDLE_TIMEOUT_DEFAULT', cast=int, default=900),
+        'absolute_timeout': config('SESSION_ABSOLUTE_TIMEOUT_DEFAULT', cast=int, default=28800),
+    },
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
