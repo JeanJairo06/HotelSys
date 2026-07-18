@@ -1,6 +1,7 @@
 from datetime import date, timedelta
 
 from django.contrib.auth.models import Group, User
+from django.conf import settings
 from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
@@ -252,6 +253,41 @@ class SessionExpirationTests(TestCase):
             self.client.session[SESSION_LAST_ACTIVITY_AT],
             int(previous_activity.timestamp()),
         )
+
+    def test_login_excluido_no_renueva_la_actividad(self):
+        self.authenticate()
+        now = timezone.now()
+        previous_activity = now - timedelta(seconds=30)
+        self.set_session_timestamps(
+            started_at=now - timedelta(seconds=60),
+            last_activity_at=previous_activity,
+        )
+
+        response = self.client.get(reverse('login'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            self.client.session[SESSION_LAST_ACTIVITY_AT],
+            int(previous_activity.timestamp()),
+        )
+
+    def test_dos_clientes_renuevan_la_misma_sesion_sin_alterar_su_inicio(self):
+        self.authenticate()
+        now = timezone.now()
+        started_at = now - timedelta(seconds=60)
+        self.set_session_timestamps(
+            started_at=started_at,
+            last_activity_at=now - timedelta(seconds=30),
+        )
+        second_client = Client()
+        second_client.cookies[settings.SESSION_COOKIE_NAME] = self.client.cookies[settings.SESSION_COOKIE_NAME].value
+
+        first_response = self.client.post(reverse('session_activity'), HTTP_ACCEPT='application/json')
+        second_response = second_client.post(reverse('session_activity'), HTTP_ACCEPT='application/json')
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 200)
+        self.assertEqual(self.client.session[SESSION_STARTED_AT], int(started_at.timestamp()))
 
     def test_sesion_sin_marcas_se_invalida_como_heredada(self):
         self.client.force_login(self.user)

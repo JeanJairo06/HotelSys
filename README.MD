@@ -195,6 +195,50 @@ docker compose exec web python manage.py createsuperuser
 
 ---
 
+## Seguridad de Sesión
+
+Las sesiones se cierran al cerrar el navegador y se controlan en backend por inactividad y duración absoluta según el rol. La pantalla muestra un aviso dos minutos antes de expirar y sincroniza su estado entre pestañas.
+
+| Rol | Inactividad | Máximo absoluto |
+|---|---:|---:|
+| Admin | 15 min | 8 h |
+| Recepcionista | 20 min | 12 h |
+| Housekeeping | 15 min | 8 h |
+
+Los eventos de expiración se registran sin almacenar identificadores de sesión, credenciales ni parámetros de URL.
+
+### Despliegue Seguro
+
+En producción deben configurarse HTTPS y cookies seguras:
+
+```env
+DEBUG=False
+SECURE_SSL_REDIRECT=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+SECURE_HSTS_SECONDS=31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+SECURE_REFERRER_POLICY=same-origin
+```
+
+Si TLS termina en un proxy inverso confiable, añadir `USE_X_FORWARDED_PROTO=True`. No habilitar esa variable si el proxy no elimina cabeceras `X-Forwarded-Proto` enviadas por clientes.
+
+Antes de desplegar, ejecutar:
+
+```bash
+docker compose exec web python manage.py check --deploy
+docker compose exec web python manage.py test
+```
+
+Verificación manual entre pestañas:
+
+1. Iniciar sesión y abrir dos pestañas del sistema.
+2. Esperar el aviso o reducir temporalmente el timeout en desarrollo.
+3. Presionar “Continuar sesión” en una pestaña y confirmar que la otra oculta el aviso.
+4. Dejar expirar la sesión y confirmar que ambas pestañas vuelven al login.
+
+---
+
 # Flujo Operacional del Sistema
 
 ```text
