@@ -1,11 +1,13 @@
-from django.test import TestCase
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
+
+from django.test import TestCase
 from django.utils import timezone
 
 from config.choices import TipoCargo
 from estancias.models import CargoEstancia, Estancia
 from facturacion.models import Folio
+from facturacion.services import FolioService
 from habitaciones.models import Habitacion, TipoHabitacion
 from hoteles.models import Hotel
 from huespedes.models import Huesped
@@ -39,12 +41,13 @@ class FolioModelTests(TestCase):
             apellidos='Torres',
             fecha_nacimiento=date(1991, 5, 20),
         )
+        hoy = timezone.localdate()
         reserva = Reserva.objects.create(
             hotel=hotel,
             huesped=huesped,
             habitacion=habitacion,
-            fecha_entrada=date(2026, 6, 1),
-            fecha_salida=date(2026, 6, 3),
+            fecha_entrada=hoy,
+            fecha_salida=hoy + timedelta(days=2),
             precio_total=Decimal('300.00'),
         )
         estancia = Estancia.objects.create(
@@ -61,8 +64,8 @@ class FolioModelTests(TestCase):
         )
         folio = Folio.objects.create(estancia=estancia)
 
-        total = folio.calcular_totales()
+        FolioService.recalcular_totales(folio)
 
         self.assertEqual(folio.subtotal, Decimal('350.00'))
-        self.assertEqual(folio.igv, Decimal('63.0000'))
-        self.assertEqual(total, Decimal('413.0000'))
+        self.assertEqual(folio.igv, Decimal('63.00'))
+        self.assertEqual(folio.total, Decimal('413.00'))

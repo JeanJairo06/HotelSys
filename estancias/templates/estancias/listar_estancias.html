@@ -54,6 +54,8 @@
                     <span class="status-badge status-{{ estancia.estado|lower }}">{{ estancia.get_estado_display }}</span>
                 </div>
                 <div class="text-lg-end d-flex gap-2 justify-content-lg-end flex-wrap">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'estancias:detalle_estancia' estancia.pk %}"><i class="bi bi-eye me-1" aria-hidden="true"></i>Detalle</a>
+
                     {% if estancia.folio %}
                         <a class="btn btn-sm btn-outline-success" href="{% url 'facturacion:folio_detail' estancia.folio.pk %}"><i class="bi bi-receipt-cutoff me-1" aria-hidden="true"></i>Ver cuenta</a>
                     {% else %}

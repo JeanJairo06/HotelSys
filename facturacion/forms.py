@@ -2,7 +2,7 @@ from django import forms
 from .models import Factura
 from habitaciones.models import Tarifa
 from estancias.models import CargoEstancia
-from config.choices import TipoCargo
+from config.choices import TipoCargo, EstadoFolio
 
 class FacturaEmisionForm(forms.ModelForm):
     class Meta:
@@ -13,7 +13,7 @@ class FacturaEmisionForm(forms.ModelForm):
 class TarifaForm(forms.ModelForm):
     class Meta:
         model = Tarifa
-        fields = ['tipo_habitacion', 'nombre','precio_noche', 'fecha_inicio', 'fecha_fin']
+        fields = ['tipo_habitacion', 'nombre', 'precio_noche', 'fecha_inicio', 'fecha_fin']
         labels = {
             'nombre': 'Nombre de la Temporada / Tarifa',
             'precio_noche': 'Precio (S/)',
@@ -22,8 +22,8 @@ class TarifaForm(forms.ModelForm):
             'tipo_habitacion': forms.Select(attrs={'class': 'form-select'}),
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Fin de semana / Temporada Alta'}),
             'precio_noche': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'fecha_inicio': forms.DateInput(format='%Y-%m-%d',attrs={'class': 'form-control', 'type': 'date'}),
-            'fecha_fin': forms.DateInput(format='%Y-%m-%d',attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_inicio': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'fecha_fin': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     def clean(self):
@@ -43,15 +43,16 @@ class CargoEstanciaForm(forms.ModelForm):
     )
     class Meta:
         model = CargoEstancia
-        fields = ['tipo','concepto','monto']
-        labels ={
+        fields = ['tipo', 'concepto', 'monto']
+        labels = {
             'concepto': 'Descripción del Consumo',
             'monto': 'Monto Comercial (S/)',
         }
         widgets = {
             'concepto': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Desayuno Buffet / Lavandería '}),
-            'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0'}),
+            'monto': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0.01'}),
         }
+
     def __init__(self, *args, **kwargs):
         self.folio = kwargs.pop('folio', None)
         super().__init__(*args, **kwargs)
@@ -61,6 +62,6 @@ class CargoEstanciaForm(forms.ModelForm):
         
     def clean(self):
         cleaned_data = super().clean()
-        if self.folio and self.folio.estado == 'PAGADO':
-            raise forms.ValidationError("Acción inválida: No se pueden agregar consumos a una cuenta ya liquidada.")
+        if self.folio and self.folio.estado != EstadoFolio.ABIERTO:
+            raise forms.ValidationError("Acción inválida: No se pueden agregar consumos a una cuenta ya liquidada o cerrada.")
         return cleaned_data

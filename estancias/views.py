@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 
 from config.choices import EstadoEstancia, EstadoReserva
+from core.exceptions import AppError
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 from reservas.models import Reserva
@@ -46,6 +47,31 @@ def listar_reservas_checkin(request):
 
 
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
+def detalle_estancia(request, estancia_id):
+    """Muestra la informacion operativa de una estancia y su folio asociado."""
+    estancia = get_object_or_404(
+        Estancia.objects.select_related(
+            'reserva',
+            'reserva__hotel',
+            'reserva__huesped',
+            'habitacion',
+            'habitacion__hotel',
+            'habitacion__tipo',
+            'folio',
+        ).prefetch_related('cargos', 'folio__pagos'),
+        pk=estancia_id,
+    )
+
+    folio = getattr(estancia, 'folio', None)
+    return render(request, 'estancias/detalle_estancia.html', {
+        'estancia': estancia,
+        'folio': folio,
+        'cargos': estancia.cargos.all(),
+        'pagos': folio.pagos.filter(activo=True) if folio else [],
+    })
+
+
+@any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
 def realizar_checkin(request, reserva_id):
     """Confirma el ingreso de un huesped y crea la estancia asociada."""
     reserva = get_object_or_404(
@@ -69,7 +95,7 @@ def realizar_checkin(request, reserva_id):
 def realizar_checkout(request, estancia_id):
     """Finaliza una estancia activa y envia la habitacion a limpieza."""
     estancia = get_object_or_404(
-        Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion'),
+        Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion', 'folio'),
         pk=estancia_id,
     )
 
@@ -81,5 +107,11 @@ def realizar_checkout(request, estancia_id):
         except ValidationError as error:
             messages.error(request, error.messages[0])
             return redirect('estancias:listar_estancias')
+        except AppError as error:
+            messages.error(request, error.message)
+            return redirect('estancias:listar_estancias')
 
-    return render(request, 'estancias/confirmar_checkout.html', {'estancia': estancia})
+    return render(request, 'estancias/confirmar_checkout.html', {
+        'estancia': estancia,
+        'folio': estancia.folio,
+    })
