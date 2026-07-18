@@ -16,3 +16,7 @@ class PagoInvalidoError(ReglaNegocioViolada):
 class CheckoutBloqueadoError(ReglaNegocioViolada):
     code = 'CHECKOUT_BLOQUEADO'
     default_message = 'No se puede realizar el check-out porque el folio presenta un saldo pendiente.'
+
+class TarifaNoDisponibleError(ReglaNegocioViolada):
+    code = 'TARIFA_NO_DISPONIBLE'
+    default_message = 'No se encontró una tarifa vigente o disponible para el tipo de habitación en las fechas seleccionadas.'
