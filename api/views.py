@@ -258,7 +258,7 @@ class EstanciaDetailAPIView(generics.RetrieveAPIView):
     allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
 
     def get_queryset(self):
-        return Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion', 'habitacion__hotel')
+        return Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion', 'habitacion__hotel', 'folio')
 
 
 @extend_schema(

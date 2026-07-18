@@ -195,6 +195,11 @@ class EstanciaSerializer(serializers.ModelSerializer):
     habitacion_numero = serializers.CharField(source='habitacion.numero', read_only=True)
     hotel_nombre = serializers.CharField(source='habitacion.hotel.nombre', read_only=True)
     estado_display = serializers.CharField(source='get_estado_display', read_only=True)
+    folio_id = serializers.IntegerField(source='folio.id', read_only=True)
+    folio_estado = serializers.CharField(source='folio.estado', read_only=True)
+    folio_total = serializers.DecimalField(source='folio.total', max_digits=10, decimal_places=2, read_only=True)
+    folio_pagado = serializers.DecimalField(source='folio.total_pagado', max_digits=10, decimal_places=2, read_only=True)
+    folio_saldo = serializers.DecimalField(source='folio.saldo_pendiente', max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = Estancia
@@ -211,4 +216,9 @@ class EstanciaSerializer(serializers.ModelSerializer):
             'precio_final',
             'estado',
             'estado_display',
+            'folio_id',
+            'folio_estado',
+            'folio_total',
+            'folio_pagado',
+            'folio_saldo',
         ]
