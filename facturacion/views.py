@@ -4,11 +4,11 @@ from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, DeleteView, View
 from django.shortcuts import redirect, get_object_or_404
 from decimal import Decimal
-
+from django.core.cache import cache
 from config.choices import EstadoFolio
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
-
+import uuid
 from .forms import FacturaEmisionForm, TarifaForm, CargoEstanciaForm
 from .models import Factura, Folio, Pago
 from habitaciones.models import Tarifa
@@ -41,6 +41,8 @@ class FolioDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['cargo_form'] = CargoEstanciaForm()
         context['pagos'] = self.object.pagos.filter(activo=True)
+
+        context['idempotency_key'] = uuid.uuid4().hex
         return context
 
 
@@ -81,7 +83,14 @@ class RegistrarPagoView(View):
         folio = get_object_or_404(Folio, pk=folio_id)
         monto_str = request.POST.get('monto')
         metodo_pago = request.POST.get('metodo_pago')
-
+        idempotency_key = request.POST.get('idempotency_key')
+        if idempotency_key:
+            cache_key = f"pago_idemp_{idempotency_key}"
+            if cache.get(cache_key):
+                messages.warning(request, 'Detectamos un envío duplicado. El pago ya fue procesado con éxito.')
+                return redirect('facturacion:folio_detail', pk=folio_id)
+            
+            cache.set(cache_key, "procesando", timeout=120)
         try:
             monto = Decimal(monto_str)
             PagoService.registrar_pago_parcial(
@@ -92,10 +101,13 @@ class RegistrarPagoView(View):
             )
             messages.success(request, f'¡Pago de S/ {monto} registrado correctamente!')
         except ReglaNegocioViolada as e:
+            if idempotency_key: cache.delete(cache_key)
             messages.error(request, str(e))
         except (ValueError, TypeError, KeyError):
+            if idempotency_key: cache.delete(cache_key)
             messages.error(request, 'El monto ingresado no posee un formato numérico válido.')
         except Exception:
+            if idempotency_key: cache.delete(cache_key)
             messages.error(request, 'Error interno del servidor al procesar el pago.')
 
         return redirect('facturacion:folio_detail', pk=folio_id)
