@@ -11,6 +11,7 @@ from cuentas.decorators import role_required
 from cuentas.forms import UsuarioCreateForm, UsuarioUpdateForm
 from cuentas.models import UsuarioEmpleado
 from cuentas.roles import ROLE_ADMIN
+from cuentas.security import LoginAttemptRateLimiter
 from cuentas.services import UsuarioService
 
 
@@ -18,10 +19,20 @@ class CuentaLoginView(LoginView):
     template_name = 'cuentas/login.html'
     redirect_authenticated_user = True
 
+    def post(self, request, *args, **kwargs):
+        self.login_rate_limiter = LoginAttemptRateLimiter(request)
+        if self.login_rate_limiter.allow_attempt():
+            return super().post(request, *args, **kwargs)
+
+        form = self.get_form()
+        form.add_error(None, form.error_messages['invalid_login'])
+        return self.form_invalid(form)
+
     def get_success_url(self):
         return self.get_redirect_url() or reverse_lazy('home')
 
     def form_valid(self, form):
+        self.login_rate_limiter.reset()
         messages.success(self.request, 'Inicio de sesión correcto.')
         return super().form_valid(form)
 

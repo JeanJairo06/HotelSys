@@ -1,6 +1,7 @@
 from datetime import date
 
 from django.contrib.auth.models import Group, User
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
@@ -241,10 +242,26 @@ class UsuarioServiceTests(TestCase):
         'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
         'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
     },
+    CACHES={
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'cuentas-login-tests',
+        },
+    },
+    LOGIN_RATE_LIMIT_ATTEMPTS=3,
+    LOGIN_RATE_LIMIT_WINDOW=60,
 )
 class CuentaLoginViewTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(username='recepcion', password='testpass123')
+
+    def post_login(self, username, password, ip_address='198.51.100.10'):
+        return self.client.post(
+            reverse('login'),
+            {'username': username, 'password': password},
+            REMOTE_ADDR=ip_address,
+        )
 
     def test_login_muestra_control_accesible_para_ver_contrasena(self):
         response = self.client.get(reverse('login'))
@@ -280,13 +297,52 @@ class CuentaLoginViewTests(TestCase):
         self.assertContains(response, 'aria-invalid="true"', count=2)
 
     def test_login_valido_crea_la_sesion(self):
-        response = self.client.post(
-            reverse('login'),
-            {'username': self.user.username, 'password': 'testpass123'},
-        )
+        response = self.post_login(self.user.username, 'testpass123')
 
         self.assertRedirects(response, reverse('home'), fetch_redirect_response=False)
         self.assertIn('_auth_user_id', self.client.session)
+
+    def test_bloquea_intentos_excesivos_con_la_misma_respuesta_generica(self):
+        for _ in range(3):
+            response = self.post_login(self.user.username, 'contrasena-incorrecta')
+            self.assertEqual(response.status_code, 200)
+
+        response = self.post_login(self.user.username, 'testpass123')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Usuario o contraseña inválidos.')
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_limite_por_usuario_aplica_desde_otra_ip(self):
+        for _ in range(3):
+            self.post_login(self.user.username, 'contrasena-incorrecta', '198.51.100.10')
+
+        response = self.post_login(self.user.username, 'testpass123', '203.0.113.10')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_limite_por_ip_aplica_con_usuarios_distintos(self):
+        for username in ('usuario-1', 'usuario-2', 'usuario-3'):
+            self.post_login(username, 'contrasena-incorrecta')
+
+        response = self.post_login(self.user.username, 'testpass123')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_inicio_exitoso_reinicia_los_contadores(self):
+        self.post_login(self.user.username, 'contrasena-incorrecta')
+        response = self.post_login(self.user.username, 'testpass123')
+
+        self.assertRedirects(response, reverse('home'), fetch_redirect_response=False)
+        self.client.logout()
+
+        self.post_login(self.user.username, 'contrasena-incorrecta')
+        self.post_login(self.user.username, 'contrasena-incorrecta')
+        response = self.post_login(self.user.username, 'testpass123')
+
+        self.assertRedirects(response, reverse('home'), fetch_redirect_response=False)
 
 
 class UsuarioViewsTests(TestCase):

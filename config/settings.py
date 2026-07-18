@@ -110,6 +110,20 @@ CHANNEL_LAYERS = {
     },
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://{}:{}/1'.format(
+            config('REDIS_HOST', default='localhost'),
+            config('REDIS_PORT', cast=int, default=6379),
+        ),
+        'KEY_PREFIX': 'hotelsys',
+    },
+}
+
+LOGIN_RATE_LIMIT_ATTEMPTS = config('LOGIN_RATE_LIMIT_ATTEMPTS', cast=int, default=5)
+LOGIN_RATE_LIMIT_WINDOW = config('LOGIN_RATE_LIMIT_WINDOW', cast=int, default=900)
+
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
