@@ -4,6 +4,15 @@
     gap: .65rem;
 }
 
+.report-filter-actions {
+    display: flex;
+    gap: .65rem;
+}
+
+.report-filter .btn {
+    white-space: nowrap;
+}
+
 .report-filter .form-control {
     min-width: 10.5rem;
     border-color: rgba(23, 32, 51, 0.14);
@@ -287,6 +296,11 @@
         flex-direction: column;
     }
 
+    .report-filter-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
     .report-filter,
     .report-filter .btn,
     .report-filter .form-control {
@@ -310,5 +324,11 @@
 
     .report-definition-list dd {
         text-align: left;
+    }
+}
+
+@media (max-width: 479.98px) {
+    .report-filter-actions {
+        grid-template-columns: 1fr;
     }
 }

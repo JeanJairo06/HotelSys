@@ -19,7 +19,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from config.views import home
 from cuentas.views import CuentaLoginView, CuentaLogoutView
-from reportes.views import DashboardView, ReporteOcupacionAPIView, ReportesView
+from reportes.views import DashboardView, ReporteOcupacionAPIView, ReportePDFView, ReportesView
 
 urlpatterns = [
     path('', home, name='home'),
@@ -42,6 +42,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/reportes/ocupacion/', ReporteOcupacionAPIView.as_view(), name='api_reporte_ocupacion'),
     path('facturacion/', include('facturacion.urls')),
+    path('reportes/pdf/', ReportePDFView.as_view(), name='reporte_pdf'),
     path('reportes/', ReportesView.as_view(), name='reportes'),
 ]
 

@@ -11,9 +11,10 @@ from config.choices import (
     EstadoFolio,
     EstadoHabitacion,
     EstadoReserva,
+    TipoCargo,
 )
-from estancias.models import Estancia
-from facturacion.models import Folio
+from estancias.models import CargoEstancia, Estancia
+from facturacion.models import Factura, Folio
 from habitaciones.models import Habitacion, TipoHabitacion
 from hoteles.models import Hotel
 from huespedes.models import Huesped
@@ -57,6 +58,7 @@ class ReporteDashboardServiceTests(TestCase):
                 nombres=f'Huesped {indice}',
                 apellidos='Prueba',
                 fecha_nacimiento=date(1990, 1, indice),
+                nacionalidad='Peruana',
             )
             for indice in range(1, 4)
         ]
@@ -80,6 +82,20 @@ class ReporteDashboardServiceTests(TestCase):
             igv=Decimal('18.00'),
             total=Decimal('118.00'),
             estado=EstadoFolio.PAGADO,
+        )
+        self.cargo = CargoEstancia.objects.create(
+            estancia=self.estancia_activa,
+            concepto='Minibar',
+            monto=Decimal('20.00'),
+            tipo=TipoCargo.MINIBAR,
+        )
+        self.factura = Factura.objects.create(
+            folio=self.folio_pagado,
+            ruc_dni='20123456789',
+            razon_social='HotelSys Prueba',
+            monto_subtotal=Decimal('100.00'),
+            monto_igv=Decimal('18.00'),
+            monto_total=Decimal('118.00'),
         )
 
         self.reserva_salida = self._crear_reserva(
@@ -131,11 +147,21 @@ class ReporteDashboardServiceTests(TestCase):
         })
 
     def test_reporte_por_tipo_suma_folios_confirmados(self):
-        reporte = ReporteService.obtener_analiticos(self.hoy, self.hoy)
+        reporte = ReporteService.obtener_analiticos(
+            self.hoy,
+            self.hoy,
+            hotel=self.hotel,
+        )
 
         self.assertEqual(reporte['ingresos']['criterio'], 'FOLIOS_PAGADOS_O_CERRADOS')
         self.assertEqual(reporte['ingresos']['total'], 118.0)
         self.assertEqual(reporte['ingresos']['por_tipo_habitacion'][0]['folios'], 1)
+        self.assertEqual(reporte['ingresos']['folios_confirmados'], 1)
+        self.assertEqual(reporte['ingresos']['facturas_emitidas'], 1)
+        self.assertEqual(reporte['ingresos']['estancias_evaluadas'], 1)
+        self.assertEqual(reporte['ingresos']['cargos_adicionales'], 20.0)
+        self.assertEqual(reporte['establecimiento']['numero_pisos'], 1)
+        self.assertEqual(reporte['tipos_habitacion'][0]['capacidad'], 2)
 
 
 class ReporteDashboardViewTests(ReporteDashboardServiceTests):
@@ -168,6 +194,66 @@ class ReporteDashboardViewTests(ReporteDashboardServiceTests):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['ocupacion']['criterio'], 'ESTANCIAS_REALES')
         self.assertEqual(response.json()['ingresos']['confirmados'], 118.0)
+
+    def test_pagina_reportes_muestra_boton_pdf_y_conserva_fechas(self):
+        response = self.client.get(
+            reverse('reportes'),
+            {
+                'fecha_desde': self.hoy.isoformat(),
+                'fecha_hasta': self.hoy.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse('reporte_pdf'))
+        self.assertContains(response, 'Descargar PDF')
+        self.assertContains(response, 'name="fecha_desde"')
+        self.assertContains(response, 'name="fecha_hasta"')
+
+    def test_reporte_pdf_se_descarga_con_el_periodo_filtrado(self):
+        response = self.client.get(
+            reverse('reporte_pdf'),
+            {
+                'fecha_desde': self.hoy.isoformat(),
+                'fecha_hasta': self.hoy.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/pdf')
+        self.assertIn('attachment;', response['Content-Disposition'])
+        self.assertTrue(response.content.startswith(b'%PDF'))
+        self.assertGreater(len(response.content), 5000)
+
+    def test_reporte_pdf_rechaza_rango_invalido_sin_exponer_error_tecnico(self):
+        response = self.client.get(
+            reverse('reporte_pdf'),
+            {
+                'fecha_desde': self.hoy.isoformat(),
+                'fecha_hasta': (self.hoy - timedelta(days=1)).isoformat(),
+            },
+            HTTP_ACCEPT='application/pdf',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()['message'],
+            'La fecha inicial no puede ser mayor que la fecha final.',
+        )
+
+    def test_reporte_pdf_requiere_autenticacion(self):
+        self.client.logout()
+
+        response = self.client.get(
+            reverse('reporte_pdf'),
+            {
+                'fecha_desde': self.hoy.isoformat(),
+                'fecha_hasta': self.hoy.isoformat(),
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response.url)
 
     def test_plano_muestra_detalle_del_huesped_actual(self):
         response = self.client.get(reverse('habitaciones:listar_habitaciones'))

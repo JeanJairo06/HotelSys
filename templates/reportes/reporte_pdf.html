@@ -1,0 +1,514 @@
+{% load static %}
+{% static 'img/Minsa.png' as logo_estatico %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Operativo y Analítico HotelSys</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 9mm 9mm 15mm;
+
+            @bottom-left {
+                content: "HotelSys - Reporte Operativo y Analítico";
+                font-family: Arial, sans-serif;
+                font-size: 6.5pt;
+                color: #333;
+            }
+
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 6.5pt;
+                color: #333;
+            }
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            color: #000;
+            background: #fff;
+            font-family: "Times New Roman", serif;
+            font-size: 7.5pt;
+            line-height: 1.25;
+        }
+
+        .document-page {
+            break-after: page;
+        }
+
+        .document-page:last-child {
+            break-after: auto;
+        }
+
+        .document-header {
+            width: 100%;
+            margin-bottom: 3mm;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .document-header td {
+            border: 0;
+            padding: 0 2mm;
+            vertical-align: top;
+        }
+
+        .document-header td:first-child { padding-left: 0; }
+        .document-header td:last-child { padding-right: 0; }
+
+        .institutional-logo {
+            width: 45mm;
+            max-height: 16mm;
+            object-fit: contain;
+        }
+
+        .document-title {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .document-title strong {
+            display: block;
+            margin: 1mm 0;
+            font-size: 12pt;
+        }
+
+        .document-title span {
+            display: block;
+            font-size: 8pt;
+        }
+
+        .document-code {
+            border: 1.2px solid #000;
+            padding: 2mm;
+            font-family: Arial, sans-serif;
+            font-size: 6.4pt;
+            line-height: 1.4;
+        }
+
+        .section-title {
+            margin: 3mm 0 1.5mm;
+            padding: 1.2mm 2mm;
+            border: 1.2px solid #000;
+            background: #efefef;
+            font-family: Arial, sans-serif;
+            font-size: 7.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .box {
+            border: 1.2px solid #000;
+            padding: 2mm;
+        }
+
+        table.data-table,
+        table.info-table,
+        table.metrics-table,
+        table.status-table,
+        table.finance-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .data-table {
+            margin-top: 1mm;
+        }
+
+        .data-table th,
+        .data-table td {
+            border: 1px solid #000;
+            padding: 1.35mm 1.5mm;
+            vertical-align: middle;
+            overflow-wrap: anywhere;
+        }
+
+        .data-table th {
+            background: #e9e9e9;
+            font-family: Arial, sans-serif;
+            font-size: 6.4pt;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .data-table tr {
+            break-inside: avoid;
+        }
+
+        .info-table td {
+            width: 50%;
+            padding: 1mm 1.5mm;
+            vertical-align: middle;
+        }
+
+        .field-label {
+            display: inline-block;
+            width: 31mm;
+            font-family: Arial, sans-serif;
+            font-size: 6.5pt;
+            font-weight: 700;
+            vertical-align: middle;
+        }
+
+        .field-value {
+            display: inline-block;
+            width: calc(100% - 33mm);
+            min-height: 5.5mm;
+            padding: 1.1mm 1.4mm;
+            border: 1px solid #000;
+            vertical-align: middle;
+        }
+
+        .metrics-table td {
+            width: 33.333%;
+            padding: 1mm;
+            vertical-align: top;
+        }
+
+        .metric {
+            min-height: 18mm;
+            padding: 2mm;
+            border: 1px solid #000;
+        }
+
+        .metric-label,
+        .status-name {
+            font-family: Arial, sans-serif;
+            font-size: 6.4pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .metric-value,
+        .status-value {
+            margin-top: 2mm;
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            font-weight: 700;
+        }
+
+        .status-table td {
+            width: 20%;
+            padding: 1mm;
+            vertical-align: top;
+        }
+
+        .status-card {
+            min-height: 16mm;
+            padding: 2mm;
+            border: 1px solid #000;
+        }
+
+        .bar {
+            width: 100%;
+            height: 3.5mm;
+            border: 1px solid #000;
+            background: #fff;
+        }
+
+        .bar span {
+            display: block;
+            height: 100%;
+            background: #777;
+        }
+
+        .finance-table td {
+            width: 50%;
+            padding: 1mm;
+            vertical-align: top;
+        }
+
+        .summary-row {
+            display: table;
+            width: 100%;
+            padding: 1.4mm 0;
+            border-bottom: 1px solid #000;
+        }
+
+        .summary-row span {
+            display: table-cell;
+        }
+
+        .summary-row span:last-child {
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .note {
+            margin-top: 1.5mm;
+            font-size: 6.4pt;
+        }
+
+        .empty {
+            padding: 3mm !important;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .text-left { text-align: left; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .nowrap { white-space: nowrap; }
+
+        .observation {
+            min-height: 25mm;
+            font-size: 7pt;
+            line-height: 1.4;
+        }
+
+        .signature-table {
+            width: 100%;
+            margin-top: 16mm;
+            border-collapse: collapse;
+        }
+
+        .signature-table td {
+            width: 50%;
+            padding: 0 14mm;
+            text-align: center;
+        }
+
+        .signature-line {
+            padding-top: 1.5mm;
+            border-top: 1px solid #000;
+            font-size: 6.5pt;
+        }
+    </style>
+</head>
+<body>
+    <section class="document-page">
+        <table class="document-header">
+            <tr>
+                <td style="width: 28%;">
+                    <img class="institutional-logo" src="{{ logo_uri|default:logo_estatico }}" alt="Imagen institucional">
+                </td>
+                <td style="width: 52%;" class="document-title">
+                    <span>SISTEMA DE GESTIÓN HOTELERA</span>
+                    <strong>REPORTE OPERATIVO Y ANALÍTICO</strong>
+                    <span>OCUPACIÓN, RESERVAS, INGRESOS Y HUÉSPEDES</span>
+                </td>
+                <td style="width: 20%;">
+                    <div class="document-code">
+                        <b>REPORTE N.º</b><br>{{ codigo_reporte }}<br><br>
+                        <b>GENERADO</b><br>{{ fecha_generacion|date:"d/m/Y H:i" }}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div class="section-title">1. Información del establecimiento</div>
+        <div class="box">
+            <table class="info-table">
+                <tr>
+                    <td><span class="field-label">Nombre comercial</span><span class="field-value">{{ hotel.nombre }}</span></td>
+                    <td><span class="field-label">RUC</span><span class="field-value">{{ hotel.ruc }}</span></td>
+                </tr>
+                <tr>
+                    <td><span class="field-label">Dirección</span><span class="field-value">{{ hotel.direccion }}</span></td>
+                    <td><span class="field-label">Teléfono</span><span class="field-value">{{ hotel.telefono }}</span></td>
+                </tr>
+                <tr>
+                    <td><span class="field-label">Categoría</span><span class="field-value">{{ hotel.estrellas }} estrella{{ hotel.estrellas|pluralize }}</span></td>
+                    <td><span class="field-label">Habitaciones</span><span class="field-value">{{ reporte.establecimiento.total_habitaciones }}</span></td>
+                </tr>
+                <tr>
+                    <td><span class="field-label">Número de pisos</span><span class="field-value">{{ reporte.establecimiento.numero_pisos }}</span></td>
+                    <td><span class="field-label">Generado por</span><span class="field-value">{{ usuario_generador }}</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-title">2. Periodo evaluado</div>
+        <div class="box">
+            <table class="info-table">
+                <tr>
+                    <td><span class="field-label">Fecha desde</span><span class="field-value">{{ fecha_desde|date:"d/m/Y" }}</span></td>
+                    <td><span class="field-label">Fecha hasta</span><span class="field-value">{{ fecha_hasta|date:"d/m/Y" }}</span></td>
+                </tr>
+                <tr>
+                    <td><span class="field-label">Días evaluados</span><span class="field-value">{{ reporte.periodo.dias }}</span></td>
+                    <td><span class="field-label">Fecha de emisión</span><span class="field-value">{{ fecha_generacion|date:"d/m/Y H:i" }}</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-title">3. Resumen general</div>
+        <table class="metrics-table">
+            <tr>
+                <td><div class="metric"><div class="metric-label">Ingresos confirmados</div><div class="metric-value">S/ {{ reporte.ingresos.total|floatformat:2 }}</div></div></td>
+                <td><div class="metric"><div class="metric-label">Ocupación promedio</div><div class="metric-value">{{ reporte.ocupacion.porcentaje_periodo|floatformat:2 }}%</div></div></td>
+                <td><div class="metric"><div class="metric-label">Reservas registradas</div><div class="metric-value">{{ reporte.reservas.total }}</div></div></td>
+            </tr>
+            <tr>
+                <td><div class="metric"><div class="metric-label">Huéspedes registrados</div><div class="metric-value">{{ reporte.huespedes.total }}</div></div></td>
+                <td><div class="metric"><div class="metric-label">Habitaciones ocupadas</div><div class="metric-value">{{ reporte.ocupacion.habitaciones.ocupadas }}/{{ reporte.ocupacion.habitaciones.total }}</div></div></td>
+                <td><div class="metric"><div class="metric-label">Promedio por estancia</div><div class="metric-value">S/ {{ reporte.ingresos.promedio_estancia|floatformat:2 }}</div></div></td>
+            </tr>
+        </table>
+
+        <div class="section-title">4. Estado actual de habitaciones</div>
+        <div class="box">
+            <table class="status-table">
+                <tr>
+                    <td><div class="status-card"><div class="status-name">Disponibles</div><div class="status-value">{{ reporte.ocupacion.habitaciones.disponibles }}</div></div></td>
+                    <td><div class="status-card"><div class="status-name">Ocupadas</div><div class="status-value">{{ reporte.ocupacion.habitaciones.ocupadas }}</div></div></td>
+                    <td><div class="status-card"><div class="status-name">Limpieza</div><div class="status-value">{{ reporte.ocupacion.habitaciones.limpieza }}</div></div></td>
+                    <td><div class="status-card"><div class="status-name">Mantenimiento</div><div class="status-value">{{ reporte.ocupacion.habitaciones.mantenimiento }}</div></div></td>
+                    <td><div class="status-card"><div class="status-name">Ocupación actual</div><div class="status-value">{{ reporte.ocupacion.porcentaje_actual|floatformat:0 }}%</div></div></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section-title">5. Ocupación por tipo de habitación</div>
+        <table class="data-table">
+            <thead><tr><th style="width: 28%;">Tipo</th><th style="width: 12%;">Ocupadas</th><th style="width: 12%;">Total</th><th style="width: 15%;">Ocupación</th><th style="width: 33%;">Representación</th></tr></thead>
+            <tbody>
+                {% for item in reporte.ocupacion.por_tipo %}
+                    <tr>
+                        <td>{{ item.nombre }}</td><td class="text-center">{{ item.ocupadas }}</td><td class="text-center">{{ item.total }}</td><td class="text-center">{{ item.porcentaje|floatformat:2 }}%</td>
+                        <td><div class="bar"><span style="width: {{ item.porcentaje|floatformat:0 }}%;"></span></div></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5" class="empty">No existen registros para el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="document-page">
+        <table class="document-header">
+            <tr>
+                <td style="width: 28%;"><img class="institutional-logo" src="{{ logo_uri|default:logo_estatico }}" alt="Imagen institucional"></td>
+                <td style="width: 52%;" class="document-title"><span>HOTELSYS</span><strong>RESERVAS Y FINANZAS</strong><span>{{ fecha_desde|date:"d/m/Y" }} - {{ fecha_hasta|date:"d/m/Y" }}</span></td>
+                <td style="width: 20%;"><div class="document-code"><b>REPORTE N.º</b><br>{{ codigo_reporte }}</div></td>
+            </tr>
+        </table>
+
+        <div class="section-title">6. Reporte de reservas</div>
+        <div class="box">
+            <div class="summary-row"><span>Reservas activas</span><span>{{ reporte.reservas.activas }}</span></div>
+            <table class="data-table">
+                <thead><tr><th>Estado</th><th style="width: 18%;">Cantidad</th><th style="width: 20%;">Participación</th><th style="width: 28%;">Representación</th></tr></thead>
+                <tbody>
+                    {% for item in reporte.reservas.por_estado %}
+                        <tr><td>{{ item.nombre }}</td><td class="text-center">{{ item.total }}</td><td class="text-center">{{ item.porcentaje|floatformat:2 }}%</td><td><div class="bar"><span style="width: {{ item.porcentaje|floatformat:0 }}%;"></span></div></td></tr>
+                    {% empty %}
+                        <tr><td colspan="4" class="empty">No existen registros para el periodo seleccionado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-title">7. Reporte financiero</div>
+        <table class="finance-table">
+            <tr>
+                <td><div class="box">
+                    <div class="summary-row"><span>Subtotal</span><span>S/ {{ reporte.ingresos.subtotal|floatformat:2 }}</span></div>
+                    <div class="summary-row"><span>IGV</span><span>S/ {{ reporte.ingresos.igv|floatformat:2 }}</span></div>
+                    <div class="summary-row"><span>Cargos adicionales</span><span>S/ {{ reporte.ingresos.cargos_adicionales|floatformat:2 }}</span></div>
+                    <div class="summary-row"><span>Total confirmado</span><span>S/ {{ reporte.ingresos.total|floatformat:2 }}</span></div>
+                </div></td>
+                <td><div class="box">
+                    <div class="summary-row"><span>Folios pagados o cerrados</span><span>{{ reporte.ingresos.folios_confirmados }}</span></div>
+                    <div class="summary-row"><span>Promedio por estancia</span><span>S/ {{ reporte.ingresos.promedio_estancia|floatformat:2 }}</span></div>
+                    <div class="summary-row"><span>Facturas emitidas</span><span>{{ reporte.ingresos.facturas_emitidas }}</span></div>
+                    <div class="summary-row"><span>Estancias evaluadas</span><span>{{ reporte.ingresos.estancias_evaluadas }}</span></div>
+                </div></td>
+            </tr>
+        </table>
+        <div class="note">Los ingresos se calculan únicamente a partir de folios pagados o cerrados. Las reservas impagas no se contabilizan como ingresos recibidos.</div>
+
+        <div class="section-title">8. Ingresos por tipo de habitación</div>
+        <table class="data-table">
+            <thead><tr><th>Tipo de habitación</th><th style="width: 20%;">Folios pagados</th><th style="width: 22%;">Ingreso total</th><th style="width: 20%;">Participación</th></tr></thead>
+            <tbody>
+                {% for item in reporte.ingresos.por_tipo_habitacion %}
+                    <tr><td>{{ item.nombre }}</td><td class="text-center">{{ item.folios }}</td><td class="text-right nowrap">S/ {{ item.total|floatformat:2 }}</td><td class="text-center">{{ item.porcentaje|floatformat:2 }}%</td></tr>
+                {% empty %}
+                    <tr><td colspan="4" class="empty">No existen ingresos confirmados para el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-title">9. Cargos adicionales</div>
+        <table class="data-table">
+            <thead><tr><th>Concepto o tipo</th><th style="width: 18%;">Cantidad</th><th style="width: 23%;">Total monetario</th><th style="width: 20%;">Participación</th></tr></thead>
+            <tbody>
+                {% for item in reporte.ingresos.por_cargos %}
+                    <tr><td>{{ item.nombre }}</td><td class="text-center">{{ item.cantidad }}</td><td class="text-right nowrap">S/ {{ item.total|floatformat:2 }}</td><td class="text-center">{{ item.porcentaje|floatformat:2 }}%</td></tr>
+                {% empty %}
+                    <tr><td colspan="4" class="empty">No existen cargos adicionales para el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="document-page">
+        <table class="document-header">
+            <tr>
+                <td style="width: 28%;"><img class="institutional-logo" src="{{ logo_uri|default:logo_estatico }}" alt="Imagen institucional"></td>
+                <td style="width: 52%;" class="document-title"><span>HOTELSYS</span><strong>ANÁLISIS DE HUÉSPEDES</strong><span>Frecuencia, noches y nacionalidades</span></td>
+                <td style="width: 20%;"><div class="document-code"><b>REPORTE N.º</b><br>{{ codigo_reporte }}</div></td>
+            </tr>
+        </table>
+
+        <div class="section-title">10. Huéspedes frecuentes</div>
+        <div class="box">
+            <div class="summary-row"><span>Promedio general de noches</span><span>{{ reporte.huespedes.promedio_noches|floatformat:2 }}</span></div>
+            <table class="data-table">
+                <thead><tr><th>Huésped</th><th style="width: 15%;">Reservas</th><th style="width: 15%;">Noches</th><th style="width: 23%;">Nacionalidad</th></tr></thead>
+                <tbody>
+                    {% for item in reporte.huespedes.frecuentes %}
+                        <tr><td>{{ item.huesped.nombre_completo }}</td><td class="text-center">{{ item.reservas }}</td><td class="text-center">{{ item.noches }}</td><td class="text-center">{{ item.huesped.nacionalidad|default:"No registrada" }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="4" class="empty">No existen registros para el periodo seleccionado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section-title">11. Nacionalidades principales</div>
+        <table class="data-table">
+            <thead><tr><th>Nacionalidad</th><th style="width: 25%;">Cantidad de huéspedes</th><th style="width: 25%;">Participación</th></tr></thead>
+            <tbody>
+                {% for item in reporte.huespedes.nacionalidades %}
+                    <tr><td>{{ item.nacionalidad }}</td><td class="text-center">{{ item.total }}</td><td class="text-center">{{ item.porcentaje|floatformat:2 }}%</td></tr>
+                {% empty %}
+                    <tr><td colspan="3" class="empty">No existen nacionalidades registradas para el periodo seleccionado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-title">12. Distribución de habitaciones por tipo</div>
+        <table class="data-table">
+            <thead><tr><th>Tipo</th><th style="width: 14%;">Capacidad</th><th style="width: 20%;">Precio base</th><th style="width: 20%;">Habitaciones</th><th style="width: 15%;">Ocupadas</th></tr></thead>
+            <tbody>
+                {% for item in reporte.tipos_habitacion %}
+                    <tr><td>{{ item.nombre }}</td><td class="text-center">{{ item.capacidad }}</td><td class="text-right nowrap">S/ {{ item.precio_base|floatformat:2 }}</td><td class="text-center">{{ item.total_habitaciones }}</td><td class="text-center">{{ item.ocupadas }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="5" class="empty">No existen tipos de habitación registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-title">13. Observaciones generales</div>
+        <div class="box observation">
+            El presente reporte se genera a partir de la información registrada en HotelSys durante el periodo seleccionado. Los resultados dependen de la calidad y actualización de los datos almacenados en habitaciones, reservas, estancias, folios, facturas, cargos y huéspedes.
+        </div>
+
+        <table class="signature-table">
+            <tr>
+                <td><div class="signature-line">Responsable que genera el reporte</div></td>
+                <td><div class="signature-line">Administrador del establecimiento</div></td>
+            </tr>
+        </table>
+    </section>
+</body>
+</html>

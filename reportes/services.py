@@ -14,8 +14,9 @@ from config.choices import (
     TipoCargo,
 )
 from estancias.models import CargoEstancia, Estancia
-from facturacion.models import Folio
+from facturacion.models import Factura, Folio
 from habitaciones.models import Habitacion, TipoHabitacion
+from hoteles.models import Hotel
 from huespedes.models import Huesped
 from reservas.models import Reserva
 
@@ -90,9 +91,9 @@ class ReporteService:
     ESTADOS_INGRESO_CONFIRMADO = [EstadoFolio.PAGADO, EstadoFolio.CERRADO]
 
     @classmethod
-    def _estancias_en_fecha(cls, fecha):
+    def _estancias_en_fecha(cls, fecha, hotel=None):
         inicio, fin = _local_day_bounds(fecha)
-        return Estancia.objects.select_related(
+        estancias = Estancia.objects.select_related(
             'reserva',
             'reserva__huesped',
             'habitacion',
@@ -105,11 +106,18 @@ class ReporteService:
         ).exclude(
             estado=EstadoEstancia.CANCELADA,
         )
+        if hotel is not None:
+            estancias = estancias.filter(habitacion__hotel=hotel)
+        return estancias
 
     @classmethod
-    def calcular_ocupacion(cls, fecha):
-        total_habitaciones = Habitacion.objects.count()
-        estancias = cls._estancias_en_fecha(fecha)
+    def calcular_ocupacion(cls, fecha, hotel=None):
+        habitaciones = Habitacion.objects.all()
+        if hotel is not None:
+            habitaciones = habitaciones.filter(hotel=hotel)
+
+        total_habitaciones = habitaciones.count()
+        estancias = cls._estancias_en_fecha(fecha, hotel=hotel)
         habitaciones_ocupadas = estancias.values('habitacion_id').distinct().count()
 
         ocupadas_por_tipo = dict(
@@ -117,9 +125,13 @@ class ReporteService:
             .annotate(total=Count('habitacion_id', distinct=True))
             .values_list('habitacion__tipo_id', 'total')
         )
+        filtro_hotel = Q(habitaciones__hotel=hotel) if hotel is not None else Q()
         tipos = TipoHabitacion.objects.annotate(
-            total_habitaciones=Count('habitaciones'),
-        ).order_by('nombre')
+            total_habitaciones=Count('habitaciones', filter=filtro_hotel),
+        )
+        if hotel is not None:
+            tipos = tipos.filter(total_habitaciones__gt=0)
+        tipos = tipos.order_by('nombre')
 
         return {
             'criterio': 'ESTANCIAS_REALES',
@@ -143,16 +155,23 @@ class ReporteService:
         }
 
     @classmethod
-    def calcular_serie_ocupacion(cls, desde, hasta):
+    def calcular_serie_ocupacion(cls, desde, hasta, hotel=None):
         fechas = list(_date_range(desde, hasta))
-        total_habitaciones = Habitacion.objects.count()
+        habitaciones = Habitacion.objects.all()
+        if hotel is not None:
+            habitaciones = habitaciones.filter(hotel=hotel)
+        total_habitaciones = habitaciones.count()
         inicio, _ = _local_day_bounds(desde)
         _, fin = _local_day_bounds(hasta)
-        estancias = list(
+        estancias_query = (
             Estancia.objects.filter(fecha_checkin__lt=fin)
             .filter(Q(fecha_checkout__gt=inicio) | Q(fecha_checkout__isnull=True))
             .exclude(estado=EstadoEstancia.CANCELADA)
-            .values('habitacion_id', 'fecha_checkin', 'fecha_checkout')
+        )
+        if hotel is not None:
+            estancias_query = estancias_query.filter(habitacion__hotel=hotel)
+        estancias = list(
+            estancias_query.values('habitacion_id', 'fecha_checkin', 'fecha_checkout')
         )
 
         diaria = []
@@ -312,10 +331,24 @@ class ReporteService:
         }
 
     @classmethod
-    def obtener_analiticos(cls, desde, hasta):
-        fechas = list(_date_range(desde, hasta))
-        total_dias = len(fechas)
-        habitaciones_por_estado = Habitacion.objects.aggregate(
+    def obtener_hotel_principal(cls):
+        """
+        Devuelve el establecimiento operativo del proyecto.
+
+        El modelo de empleados actual no incluye una relacion con Hotel. Para
+        evitar que el endpoint acepte un hotel manipulable por URL, Reportes
+        trabaja con el establecimiento principal configurado en la base.
+        """
+        return Hotel.objects.order_by('id').first()
+
+    @classmethod
+    def obtener_analiticos(cls, desde, hasta, hotel=None):
+        total_dias = (hasta - desde).days + 1
+        habitaciones = Habitacion.objects.all()
+        if hotel is not None:
+            habitaciones = habitaciones.filter(hotel=hotel)
+
+        habitaciones_por_estado = habitaciones.aggregate(
             total=Count('id'),
             disponibles=Count('id', filter=Q(estado=EstadoHabitacion.DISPONIBLE)),
             ocupadas=Count('id', filter=Q(estado=EstadoHabitacion.OCUPADA)),
@@ -323,12 +356,14 @@ class ReporteService:
             mantenimiento=Count('id', filter=Q(estado=EstadoHabitacion.MANTENIMIENTO)),
         )
         total_habitaciones = habitaciones_por_estado['total'] or 0
-        serie_ocupacion = cls.calcular_serie_ocupacion(desde, hasta)
-        ocupacion_fin = cls.calcular_ocupacion(hasta)
+        serie_ocupacion = cls.calcular_serie_ocupacion(desde, hasta, hotel=hotel)
+        ocupacion_fin = cls.calcular_ocupacion(hasta, hotel=hotel)
 
         reservas_rango = Reserva.objects.select_related(
             'huesped', 'habitacion', 'habitacion__tipo',
         ).filter(fecha_entrada__range=(desde, hasta))
+        if hotel is not None:
+            reservas_rango = reservas_rango.filter(hotel=hotel)
         reservas_validas_rango = reservas_rango.exclude(estado=EstadoReserva.CANCELADA)
         reservas_estado = _build_distribution(reservas_rango, 'estado', EstadoReserva.choices)
         reservas_origen = _build_distribution(reservas_rango, 'origen', OrigenReserva.choices)
@@ -340,11 +375,25 @@ class ReporteService:
             estancia__fecha_checkin__date__range=(desde, hasta),
             estado__in=cls.ESTADOS_INGRESO_CONFIRMADO,
         )
+        if hotel is not None:
+            folios_rango = folios_rango.filter(estancia__habitacion__hotel=hotel)
         ingresos_folios = folios_rango.aggregate(
             subtotal=Sum('subtotal'), igv=Sum('igv'), total=Sum('total'),
         )
         cargos_rango = CargoEstancia.objects.filter(fecha__date__range=(desde, hasta))
+        if hotel is not None:
+            cargos_rango = cargos_rango.filter(estancia__habitacion__hotel=hotel)
         total_cargos = cargos_rango.aggregate(total=Sum('monto'))['total'] or Decimal('0.00')
+
+        estancias_rango = Estancia.objects.filter(
+            fecha_checkin__date__range=(desde, hasta),
+        ).exclude(estado=EstadoEstancia.CANCELADA)
+        if hotel is not None:
+            estancias_rango = estancias_rango.filter(habitacion__hotel=hotel)
+        facturas_rango = Factura.objects.filter(
+            folio__in=folios_rango,
+            fecha_emision__date__range=(desde, hasta),
+        )
 
         ingresos_por_tipo = folios_rango.values(
             'estancia__habitacion__tipo__nombre',
@@ -365,9 +414,7 @@ class ReporteService:
             ingresos_diarios[fecha] += total
             ingresos_mensuales[fecha.strftime('%Y-%m')] += total
 
-        reservas_huespedes = Reserva.objects.select_related('huesped').exclude(
-            estado=EstadoReserva.CANCELADA,
-        )
+        reservas_huespedes = reservas_validas_rango.select_related('huesped')
         huesped_stats = {}
         total_noches = 0
         for reserva in reservas_huespedes:
@@ -385,17 +432,62 @@ class ReporteService:
             key=lambda item: (item['reservas'], item['noches']),
             reverse=True,
         )[:5]
-        nacionalidades = Huesped.objects.exclude(
+        huespedes_periodo = Huesped.objects.filter(
+            id__in=reservas_huespedes.values_list('huesped_id', flat=True),
+        ).distinct()
+        nacionalidades_query = huespedes_periodo.exclude(
             Q(nacionalidad__isnull=True) | Q(nacionalidad=''),
         ).values('nacionalidad').annotate(total=Count('id')).order_by('-total')[:6]
+        nacionalidades = list(nacionalidades_query)
+        total_nacionalidades = sum(item['total'] for item in nacionalidades)
+        for item in nacionalidades:
+            item['porcentaje'] = _safe_percentage(item['total'], total_nacionalidades)
 
         total_folios = ingresos_folios['total'] or Decimal('0.00')
         subtotal_folios = ingresos_folios['subtotal'] or Decimal('0.00')
         igv_folios = ingresos_folios['igv'] or Decimal('0.00')
         total_folios_confirmados = folios_rango.count()
 
+        ingresos_por_tipo_lista = [
+            {
+                'nombre': item['estancia__habitacion__tipo__nombre'] or 'Sin tipo',
+                'total': _decimal_to_float(item['total']),
+                'folios': item['folios'],
+                'reservas': item['folios'],
+                'porcentaje': _safe_percentage(item['total'] or 0, total_folios),
+            }
+            for item in ingresos_por_tipo
+        ]
+        cargos_por_tipo_lista = [
+            {
+                'tipo': item['tipo'],
+                'nombre': labels_cargos.get(item['tipo'], item['tipo']),
+                'total': _decimal_to_float(item['total']),
+                'cantidad': item['cantidad'],
+                'porcentaje': _safe_percentage(item['total'] or 0, total_cargos),
+            }
+            for item in cargos_por_tipo
+        ]
+
+        ocupacion_por_tipo = {
+            item['id']: item['ocupadas']
+            for item in ocupacion_fin['por_tipo']
+        }
+        filtro_hotel = Q(habitaciones__hotel=hotel) if hotel is not None else Q()
+        tipos_habitacion = TipoHabitacion.objects.annotate(
+            total_habitaciones=Count('habitaciones', filter=filtro_hotel),
+        )
+        if hotel is not None:
+            tipos_habitacion = tipos_habitacion.filter(total_habitaciones__gt=0)
+        tipos_habitacion = tipos_habitacion.order_by('nombre')
+
         return {
             'periodo': {'desde': desde, 'hasta': hasta, 'dias': total_dias},
+            'establecimiento': {
+                'hotel': hotel,
+                'total_habitaciones': total_habitaciones,
+                'numero_pisos': habitaciones.values('piso').distinct().count(),
+            },
             'ocupacion': {
                 'criterio': serie_ocupacion['criterio'],
                 'porcentaje_periodo': _safe_percentage(
@@ -428,29 +520,16 @@ class ReporteService:
                 'subtotal': _decimal_to_float(subtotal_folios),
                 'igv': _decimal_to_float(igv_folios),
                 'cargos_adicionales': _decimal_to_float(total_cargos),
+                'folios_confirmados': total_folios_confirmados,
+                'facturas_emitidas': facturas_rango.count(),
+                'estancias_evaluadas': estancias_rango.count(),
                 'promedio_estancia': _decimal_to_float(
                     total_folios / total_folios_confirmados
                     if total_folios_confirmados
                     else Decimal('0.00')
                 ),
-                'por_tipo_habitacion': [
-                    {
-                        'nombre': item['estancia__habitacion__tipo__nombre'] or 'Sin tipo',
-                        'total': _decimal_to_float(item['total']),
-                        'folios': item['folios'],
-                        'reservas': item['folios'],
-                    }
-                    for item in ingresos_por_tipo
-                ],
-                'por_cargos': [
-                    {
-                        'tipo': item['tipo'],
-                        'nombre': labels_cargos.get(item['tipo'], item['tipo']),
-                        'total': _decimal_to_float(item['total']),
-                        'cantidad': item['cantidad'],
-                    }
-                    for item in cargos_por_tipo
-                ],
+                'por_tipo_habitacion': ingresos_por_tipo_lista,
+                'por_cargos': cargos_por_tipo_lista,
                 'diarios': [
                     {'fecha': fecha, 'total': _decimal_to_float(total)}
                     for fecha, total in sorted(ingresos_diarios.items())[-14:]
@@ -461,12 +540,22 @@ class ReporteService:
                 ],
             },
             'huespedes': {
-                'total': Huesped.objects.count(),
+                'total': huespedes_periodo.count(),
                 'con_reservas': len(huesped_stats),
                 'frecuentes': huespedes_frecuentes,
-                'nacionalidades': list(nacionalidades),
+                'nacionalidades': nacionalidades,
                 'promedio_noches': round(total_noches / len(huesped_stats), 2) if huesped_stats else 0,
             },
+            'tipos_habitacion': [
+                {
+                    'nombre': tipo.nombre,
+                    'capacidad': tipo.capacidad,
+                    'precio_base': _decimal_to_float(tipo.precio_base),
+                    'total_habitaciones': tipo.total_habitaciones,
+                    'ocupadas': ocupacion_por_tipo.get(tipo.id, 0),
+                }
+                for tipo in tipos_habitacion
+            ],
         }
 
 

@@ -1,9 +1,19 @@
+import logging
 from datetime import timedelta
+from pathlib import Path
+from urllib.parse import urlencode
 
+from django.contrib import messages
 from django.conf import settings
+from django.contrib.staticfiles import finders
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect
+from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.generic import TemplateView
 from rest_framework import status
 from rest_framework.authentication import SessionAuthentication
@@ -16,6 +26,9 @@ from api.permissions import HasAnyRole
 from cuentas.decorators import any_role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_HOUSEKEEPING, ROLE_RECEPCIONISTA
 from reportes.services import DashboardService, ReporteService
+
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_fecha_reporte(fecha_texto):
@@ -36,6 +49,24 @@ def _parse_rango_reportes(desde_texto, hasta_texto):
     if desde > hasta:
         return None, None, 'La fecha inicial no puede ser mayor que la fecha final.'
     return desde, hasta, None
+
+
+def _parse_rango_pdf(desde_texto, hasta_texto):
+    if not desde_texto or not hasta_texto:
+        return None, None, 'Debes seleccionar la fecha inicial y la fecha final.'
+    return _parse_rango_reportes(desde_texto, hasta_texto)
+
+
+def _respuesta_error_pdf(request, mensaje, desde_texto='', hasta_texto=''):
+    if 'application/pdf' in request.headers.get('Accept', ''):
+        return JsonResponse({'error': True, 'message': mensaje}, status=400)
+
+    messages.error(request, mensaje)
+    parametros = urlencode({
+        'fecha_desde': desde_texto,
+        'fecha_hasta': hasta_texto,
+    })
+    return redirect(f"{reverse('reportes')}?{parametros}")
 
 
 def _websocket_context(hoteles_ids):
@@ -86,16 +117,102 @@ class ReportesView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         desde, hasta, error = _parse_rango_reportes(
-            self.request.GET.get('desde'),
-            self.request.GET.get('hasta'),
+            self.request.GET.get('fecha_desde') or self.request.GET.get('desde'),
+            self.request.GET.get('fecha_hasta') or self.request.GET.get('hasta'),
         )
         if error:
             hasta = timezone.localdate()
             desde = hasta - timedelta(days=29)
             context['rango_error'] = error
 
-        context['reportes'] = ReporteService.obtener_analiticos(desde, hasta)
+        hotel = ReporteService.obtener_hotel_principal()
+        context['hotel_reporte'] = hotel
+        context['reportes'] = ReporteService.obtener_analiticos(
+            desde,
+            hasta,
+            hotel=hotel,
+        )
         return context
+
+
+@method_decorator(
+    any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA),
+    name='dispatch',
+)
+class ReportePDFView(View):
+    template_name = 'reportes/reporte_pdf.html'
+
+    def get(self, request):
+        desde_texto = request.GET.get('fecha_desde', '')
+        hasta_texto = request.GET.get('fecha_hasta', '')
+        desde, hasta, error = _parse_rango_pdf(desde_texto, hasta_texto)
+        if error:
+            return _respuesta_error_pdf(
+                request,
+                error,
+                desde_texto,
+                hasta_texto,
+            )
+
+        hotel = ReporteService.obtener_hotel_principal()
+        if hotel is None:
+            return _respuesta_error_pdf(
+                request,
+                'No existe un establecimiento registrado para generar el reporte.',
+                desde_texto,
+                hasta_texto,
+            )
+
+        logo_path = finders.find('img/Minsa.png')
+        if not logo_path:
+            logger.error('No se encontro el recurso estatico img/Minsa.png.')
+            return _respuesta_error_pdf(
+                request,
+                'No fue posible cargar la imagen institucional del reporte.',
+                desde_texto,
+                hasta_texto,
+            )
+
+        fecha_generacion = timezone.localtime()
+        reporte = ReporteService.obtener_analiticos(
+            desde,
+            hasta,
+            hotel=hotel,
+        )
+        usuario_nombre = request.user.get_full_name().strip() or request.user.username
+        contexto = {
+            'hotel': hotel,
+            'reporte': reporte,
+            'fecha_desde': desde,
+            'fecha_hasta': hasta,
+            'fecha_generacion': fecha_generacion,
+            'usuario_generador': usuario_nombre,
+            'codigo_reporte': f'HS-{fecha_generacion:%Y%m%d-%H%M%S}',
+            'logo_uri': Path(logo_path).resolve().as_uri(),
+        }
+
+        try:
+            from weasyprint import HTML
+
+            html = render_to_string(self.template_name, contexto, request=request)
+            pdf = HTML(
+                string=html,
+                base_url=settings.BASE_DIR.as_uri(),
+            ).write_pdf()
+        except Exception:
+            logger.exception('No fue posible generar el PDF de reportes.')
+            return _respuesta_error_pdf(
+                request,
+                'No fue posible generar el PDF. Intenta nuevamente.',
+                desde_texto,
+                hasta_texto,
+            )
+
+        nombre = f'reporte_hotelsys_{desde.isoformat()}_{hasta.isoformat()}.pdf'
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{nombre}"'
+        response['Content-Length'] = len(pdf)
+        return response
 
 
 class ReporteOcupacionAPIView(APIView):
