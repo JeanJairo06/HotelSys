@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.db.models import Count, Max, Min, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -177,11 +178,22 @@ def cambiar_estado_habitacion(request, pk):
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
 def listar_tipos_habitacion(request):
     """Lista las categorias de habitacion usadas por el modulo operativo."""
-    tipos_habitacion = TipoHabitacion.objects.all()
+    tipos_habitacion = TipoHabitacion.objects.annotate(
+        habitaciones_count=Count('habitaciones')
+    )
+    resumen_tipos = tipos_habitacion.aggregate(
+        total=Count('id'),
+        capacidad_total=Sum('capacidad'),
+        precio_min=Min('precio_base'),
+        precio_max=Max('precio_base'),
+    )
     return render(
         request,
         'habitaciones/listar_tipos_habitacion.html',
-        {'tipos_habitacion': tipos_habitacion},
+        {
+            'tipos_habitacion': tipos_habitacion,
+            'resumen_tipos': resumen_tipos,
+        },
     )
 
 

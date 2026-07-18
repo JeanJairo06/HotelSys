@@ -227,6 +227,37 @@
     gap: .8rem;
 }
 
+.room-type-grid {
+    align-items: stretch;
+}
+
+.room-type-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .45rem;
+    align-items: center;
+    padding: .15rem 0 .25rem;
+}
+
+.room-type-summary span {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    min-height: 1.85rem;
+    padding: .28rem .65rem;
+    border: 1px solid rgba(23, 32, 51, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.74);
+    color: var(--app-muted);
+    font-size: .82rem;
+    font-weight: 750;
+}
+
+.room-type-summary strong {
+    color: var(--app-primary-dark);
+    font-weight: 900;
+}
+
 .room-board {
     display: grid;
     gap: 1rem;
@@ -353,6 +384,34 @@
     padding: .8rem;
 }
 
+.room-type-card {
+    position: relative;
+    overflow: hidden;
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    min-height: 0;
+    padding: 1rem;
+    border-color: rgba(13, 63, 69, 0.1);
+    background: #ffffff;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+
+.room-type-card::after {
+    content: "";
+    position: absolute;
+    inset: auto 1rem 0 1rem;
+    height: .25rem;
+    border-radius: 999px 999px 0 0;
+    background: rgba(13, 63, 69, 0.45);
+    opacity: .55;
+}
+
+.room-type-card:hover {
+    transform: translateY(-1px);
+    border-color: rgba(13, 63, 69, 0.22);
+    box-shadow: 0 16px 34px rgba(23, 32, 51, 0.07);
+}
+
 .room-card {
     position: relative;
     min-height: 7.4rem;
@@ -381,6 +440,91 @@
     padding-right: 2.15rem;
 }
 
+.room-type-card-header {
+    align-items: center;
+    min-height: 3rem;
+    padding-right: 0;
+}
+
+.room-type-title {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-width: 0;
+}
+
+.room-type-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: .95rem;
+    background: #edf6f7;
+    color: var(--app-primary);
+    font-size: 1.05rem;
+}
+
+.room-type-title h2 {
+    margin: 0;
+    color: var(--app-primary-dark);
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.room-type-title small {
+    color: var(--app-muted);
+    font-size: .76rem;
+    font-weight: 750;
+}
+
+.room-type-edit {
+    width: 2.15rem;
+    height: 2.15rem;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(13, 63, 69, 0.14);
+    border-radius: .8rem;
+    background: #ffffff;
+    color: var(--app-primary);
+    text-decoration: none;
+}
+
+.room-type-edit:hover {
+    background: #edf6f7;
+    color: var(--app-primary-dark);
+}
+
+.room-type-price {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: .75rem;
+    min-height: 4.35rem;
+    padding: .75rem .85rem;
+    border: 1px solid rgba(13, 63, 69, 0.09);
+    border-radius: 1rem;
+    background: #fafbfc;
+}
+
+.room-type-price small {
+    color: var(--app-muted);
+    font-size: .72rem;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.room-type-price strong {
+    color: var(--app-primary-dark);
+    font-size: 1.22rem;
+    font-weight: 950;
+    line-height: 1;
+}
+
 .room-number {
     display: block;
     font-size: 1.4rem;
@@ -400,6 +544,8 @@
 .room-type-meta {
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
+    align-content: flex-start;
     gap: .4rem;
     color: var(--app-muted);
     font-size: .84rem;
@@ -413,6 +559,25 @@
     padding: .32rem .5rem;
     border-radius: .7rem;
     background: #f8fafc;
+}
+
+.room-type-meta span {
+    flex: 0 0 auto;
+    min-height: 2rem;
+    max-height: 2rem;
+    background: #ffffff;
+    border: 1px solid rgba(23, 32, 51, 0.06);
+    color: #536173;
+    font-weight: 750;
+}
+
+.room-type-meta i {
+    color: var(--app-primary);
+}
+
+.room-type-meta .room-type-capacity {
+    background: #edf6f7;
+    color: var(--app-primary-dark);
 }
 
 .ops-empty {
