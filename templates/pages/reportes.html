@@ -52,7 +52,7 @@
 
     <div class="report-summary-grid">
         <div>
-            <span>Ingresos totales</span>
+            <span>Ingresos confirmados</span>
             <strong>S/ {{ reportes.ingresos.total|floatformat:2 }}</strong>
         </div>
         <div>
@@ -223,7 +223,7 @@
                 <thead>
                     <tr>
                         <th>Tipo de habitacion</th>
-                        <th>Reservas</th>
+                        <th>Folios pagados</th>
                         <th>Ingreso</th>
                     </tr>
                 </thead>
@@ -231,7 +231,7 @@
                     {% for item in reportes.ingresos.por_tipo_habitacion %}
                         <tr>
                             <td>{{ item.nombre }}</td>
-                            <td>{{ item.reservas }}</td>
+                            <td>{{ item.folios }}</td>
                             <td>S/ {{ item.total|floatformat:2 }}</td>
                         </tr>
                     {% empty %}

@@ -387,15 +387,15 @@
 }
 
 .status-busy {
-    background: linear-gradient(135deg, #135d66, #21a6b3);
+    background: linear-gradient(135deg, #b02a37, #dc3545);
 }
 
 .status-cleaning {
-    background: linear-gradient(135deg, #c48a1f, #ffd166);
+    background: linear-gradient(135deg, #c99700, #ffc107);
 }
 
 .status-maintenance {
-    background: linear-gradient(135deg, #b4233a, #ef476f);
+    background: linear-gradient(135deg, #495057, #6c757d);
 }
 
 .dashboard-room-types,
@@ -477,6 +477,190 @@
     margin-top: .25rem;
     color: var(--app-primary-dark);
     font-weight: 850;
+}
+
+.realtime-status {
+    width: fit-content;
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    min-height: 2rem;
+    margin-bottom: .75rem;
+    padding: .35rem .7rem;
+    border: 1px solid rgba(108, 117, 125, .18);
+    border-radius: 999px;
+    background: #ffffff;
+    color: #6c757d;
+    font-size: .78rem;
+    font-weight: 800;
+    box-shadow: 0 10px 26px rgba(23, 32, 51, .05);
+}
+
+.realtime-status-dot {
+    width: .55rem;
+    height: .55rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.realtime-status[data-status="connected"] {
+    color: #198754;
+}
+
+.realtime-status[data-status="connecting"] {
+    color: #b17b00;
+}
+
+.realtime-status[data-status="error"] {
+    color: #dc3545;
+}
+
+.dashboard-daily-panel,
+.dashboard-trend-panel {
+    margin-top: 1rem;
+}
+
+.dashboard-daily-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.dashboard-daily-column {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid rgba(23, 32, 51, .07);
+    border-radius: 1rem;
+    background: #f8fafc;
+}
+
+.dashboard-daily-column > header {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    padding: .9rem;
+    border-bottom: 1px solid rgba(23, 32, 51, .07);
+    background: #ffffff;
+}
+
+.dashboard-daily-column h3 {
+    margin: 0;
+    color: var(--app-ink);
+    font-size: .98rem;
+    font-weight: 850;
+}
+
+.dashboard-daily-column header small,
+.dashboard-daily-list small {
+    display: block;
+    color: var(--app-muted);
+    font-size: .76rem;
+    font-weight: 700;
+}
+
+.daily-icon {
+    width: 2.15rem;
+    height: 2.15rem;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: .72rem;
+    color: #ffffff;
+}
+
+.daily-arrivals .daily-icon {
+    background: #0d6efd;
+}
+
+.daily-hosted .daily-icon {
+    background: #198754;
+}
+
+.daily-departures .daily-icon {
+    background: #6c757d;
+}
+
+.dashboard-daily-list {
+    display: grid;
+    gap: .55rem;
+    max-height: 22rem;
+    padding: .7rem;
+    overflow-y: auto;
+}
+
+.dashboard-daily-list article {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .75rem;
+    border: 1px solid rgba(23, 32, 51, .06);
+    border-radius: .85rem;
+    background: #ffffff;
+}
+
+.dashboard-daily-list strong {
+    color: var(--app-ink);
+    font-size: .86rem;
+    font-weight: 800;
+}
+
+.daily-actions {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: .35rem;
+}
+
+.daily-empty {
+    margin: 0;
+    padding: 1rem;
+    color: var(--app-muted);
+    font-size: .84rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.dashboard-occupancy-trend {
+    min-height: 12rem;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    align-items: end;
+    gap: .75rem;
+}
+
+.occupancy-trend-item {
+    display: grid;
+    grid-template-rows: auto 8rem auto;
+    gap: .4rem;
+    text-align: center;
+}
+
+.occupancy-trend-item strong {
+    color: var(--app-primary-dark);
+    font-size: .78rem;
+}
+
+.occupancy-trend-item small {
+    color: var(--app-muted);
+    font-weight: 750;
+}
+
+.occupancy-trend-bar {
+    height: 8rem;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    border-radius: .75rem .75rem .35rem .35rem;
+    background: #edf2f4;
+}
+
+.occupancy-trend-bar span {
+    width: 100%;
+    height: var(--occupancy-value);
+    min-height: .2rem;
+    border-radius: inherit;
+    background: linear-gradient(180deg, #21a6b3, #135d66);
+    transition: height .2s ease;
 }
 
 .dashboard-reservation-grid strong {
@@ -563,6 +747,10 @@
     .dashboard-room-status {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .dashboard-daily-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 767.98px) {
@@ -617,6 +805,23 @@
     }
 
     .dashboard-reservation {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dashboard-occupancy-trend {
+        gap: .35rem;
+    }
+
+    .occupancy-trend-item {
+        grid-template-rows: auto 6rem auto;
+    }
+
+    .occupancy-trend-bar {
+        height: 6rem;
+    }
+
+    .dashboard-daily-list article {
         align-items: flex-start;
         flex-direction: column;
     }

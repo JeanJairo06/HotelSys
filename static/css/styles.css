@@ -613,3 +613,12 @@ body.sidebar-collapsed .app-footer {
         display: block;
     }
 }
+.is-submitting {
+    cursor: progress;
+}
+
+.is-submitting button,
+.is-submitting input,
+.is-submitting select {
+    pointer-events: none;
+}

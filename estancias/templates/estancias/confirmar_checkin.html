@@ -37,7 +37,7 @@
     </div>
     <div class="bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
         <a class="btn btn-light" href="{% url 'estancias:listar_reservas_checkin' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
-        <form method="post">
+        <form method="post" data-submit-lock data-confirm="Confirma el check-in y la ocupacion de la habitacion asignada.">
             {% csrf_token %}
             <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg me-2" aria-hidden="true"></i>Confirmar check-in</button>
         </form>

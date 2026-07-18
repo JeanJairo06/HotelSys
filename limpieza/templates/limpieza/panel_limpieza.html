@@ -51,11 +51,11 @@
                                 <span class="status-badge status-limpieza">{{ habitacion.get_estado_display }}</span>
                             </div>
                             <div class="housekeeping-actions">
-                                <form method="post" action="{% url 'limpieza:marcar_habitacion_disponible' habitacion.pk %}">
+                                <form method="post" action="{% url 'limpieza:marcar_habitacion_disponible' habitacion.pk %}" data-submit-lock data-confirm="Confirma que la habitacion {{ habitacion.numero }} esta lista y disponible.">
                                     {% csrf_token %}
                                     <button class="btn btn-sm room-action room-action-disponible" type="submit"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Disponible</button>
                                 </form>
-                                <form method="post" action="{% url 'limpieza:marcar_habitacion_mantenimiento' habitacion.pk %}">
+                                <form method="post" action="{% url 'limpieza:marcar_habitacion_mantenimiento' habitacion.pk %}" data-submit-lock data-confirm="Confirma el envio de la habitacion {{ habitacion.numero }} a mantenimiento.">
                                     {% csrf_token %}
                                     <button class="btn btn-sm room-action room-action-mantenimiento" type="submit"><i class="bi bi-tools me-1" aria-hidden="true"></i>Mantenimiento</button>
                                 </form>
@@ -82,7 +82,7 @@
                                 <span class="status-badge status-mantenimiento">{{ habitacion.get_estado_display }}</span>
                             </div>
                             <div class="housekeeping-actions">
-                                <form method="post" action="{% url 'limpieza:marcar_habitacion_disponible' habitacion.pk %}">
+                                <form method="post" action="{% url 'limpieza:marcar_habitacion_disponible' habitacion.pk %}" data-submit-lock data-confirm="Confirma que la habitacion {{ habitacion.numero }} vuelve a estar disponible.">
                                     {% csrf_token %}
                                     <button class="btn btn-sm room-action room-action-disponible" type="submit"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Disponible</button>
                                 </form>

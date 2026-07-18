@@ -1,7 +1,8 @@
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
+from django.utils import timezone
 
 from config.choices import EstadoReserva, OrigenReserva
 from habitaciones.models import Habitacion, Tarifa, TipoHabitacion
@@ -82,20 +83,23 @@ class CalculoPrecioReservaTests(TestCase):
         self.assertEqual(total, Decimal('800.00'))
 
     def test_form_asigna_total_calculado_con_tarifa(self):
+        hoy = timezone.localdate()
+        fecha_entrada = hoy + timedelta(days=5)
+        fecha_salida = hoy + timedelta(days=7)
         Tarifa.objects.create(
             tipo_habitacion=self.tipo,
             nombre='Temporada alta',
             precio_noche=Decimal('250.00'),
-            fecha_inicio=date(2026, 7, 1),
-            fecha_fin=date(2026, 7, 31),
+            fecha_inicio=hoy + timedelta(days=1),
+            fecha_fin=hoy + timedelta(days=31),
         )
         form = ReservaForm(data={
             'hotel': self.hotel.id,
             'huesped': self.huesped.id,
             'tipo_habitacion': self.tipo.id,
             'habitacion': self.habitacion.id,
-            'fecha_entrada': '2026-07-10',
-            'fecha_salida': '2026-07-12',
+            'fecha_entrada': fecha_entrada.isoformat(),
+            'fecha_salida': fecha_salida.isoformat(),
             'num_adultos': 2,
             'origen': OrigenReserva.RECEPCION,
             'estado': EstadoReserva.PENDIENTE,

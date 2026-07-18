@@ -1,5 +1,5 @@
 from django.test import TestCase
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from django.utils import timezone
 
@@ -39,12 +39,13 @@ class FolioModelTests(TestCase):
             apellidos='Torres',
             fecha_nacimiento=date(1991, 5, 20),
         )
+        hoy = timezone.localdate()
         reserva = Reserva.objects.create(
             hotel=hotel,
             huesped=huesped,
             habitacion=habitacion,
-            fecha_entrada=date(2026, 6, 1),
-            fecha_salida=date(2026, 6, 3),
+            fecha_entrada=hoy,
+            fecha_salida=hoy + timedelta(days=2),
             precio_total=Decimal('300.00'),
         )
         estancia = Estancia.objects.create(

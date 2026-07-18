@@ -48,13 +48,28 @@
         border: 1px solid #9ec5fe;
         font-weight: 600;
     }
+    .reservation-slot.estado-confirmada {
+        background: #d1e7dd;
+        color: #0f5132;
+        border-color: #a3cfbb;
+    }
+    .reservation-slot.estado-pendiente {
+        background: #fff3cd;
+        color: #664d03;
+        border-color: #ffecb5;
+    }
+    .reservation-slot.estado-checkin {
+        background: #cfe2ff;
+        color: #084298;
+        border-color: #9ec5fe;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body p-4">
-        <form method="get" class="row g-2 align-items-end">
+        <form method="get" class="row g-2 align-items-end" data-submit-lock>
             <div class="col-md-3">
                 <label class="form-label" for="tipo">Tipo</label>
                 <select class="form-select" id="tipo" name="tipo">
@@ -104,7 +119,7 @@
                             {% for celda in fila.celdas %}
                                 <td>
                                     {% if celda.reserva %}
-                                        <a class="reservation-slot is-booked text-decoration-none" href="{% url 'reservas:detail' celda.reserva.pk %}" title="Reserva #{{ celda.reserva.id }}">
+                                        <a class="reservation-slot is-booked estado-{{ celda.reserva.estado|lower }} text-decoration-none" href="{% url 'reservas:detail' celda.reserva.pk %}" title="Reserva #{{ celda.reserva.id }} - {{ celda.reserva.get_estado_display }}">
                                             #{{ celda.reserva.id }} {{ celda.reserva.huesped.nombre_completo }}
                                         </a>
                                     {% else %}

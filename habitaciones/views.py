@@ -1,10 +1,13 @@
 from django.contrib import messages
+from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404, redirect, render
 
-from config.choices import EstadoHabitacion
+from config.choices import EstadoEstancia, EstadoHabitacion
 from cuentas.decorators import any_role_required, role_required
 from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
+from estancias.models import Estancia
 from hoteles.models import Hotel
 
 from .forms import EstadoHabitacionForm, HabitacionForm, TipoHabitacionForm
@@ -15,7 +18,20 @@ from .services import cambiar_estado_manual
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
 def listar_habitaciones(request):
     """Muestra el panel operativo de habitaciones con filtros y contadores por estado."""
-    habitaciones_base = Habitacion.objects.select_related('hotel', 'tipo').order_by('piso', 'numero')
+    estancias_activas = Estancia.objects.filter(
+        estado=EstadoEstancia.ACTIVA,
+        fecha_checkout__isnull=True,
+    ).select_related(
+        'reserva',
+        'reserva__huesped',
+        'folio',
+    )
+    habitaciones_base = Habitacion.objects.select_related(
+        'hotel',
+        'tipo',
+    ).prefetch_related(
+        Prefetch('estancias', queryset=estancias_activas, to_attr='estancias_activas'),
+    ).order_by('hotel__nombre', 'piso', 'numero')
     habitaciones = habitaciones_base
 
     hotel_id = request.GET.get('hotel')
@@ -42,6 +58,14 @@ def listar_habitaciones(request):
         'total_ocupadas': habitaciones_base.filter(estado=EstadoHabitacion.OCUPADA).count(),
         'total_limpieza': habitaciones_base.filter(estado=EstadoHabitacion.LIMPIEZA).count(),
         'total_mantenimiento': habitaciones_base.filter(estado=EstadoHabitacion.MANTENIMIENTO).count(),
+        'websocket_url_template': getattr(
+            settings,
+            'ROOM_PLAN_WEBSOCKET_URL_TEMPLATE',
+            '',
+        ),
+        'websocket_hoteles_ids': list(
+            habitaciones_base.order_by().values_list('hotel_id', flat=True).distinct()
+        ),
     }
     return render(request, 'habitaciones/listar_habitaciones.html', contexto)
 

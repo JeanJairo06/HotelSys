@@ -19,7 +19,18 @@
 {% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">{% endblock %}
 
 {% block content %}
-<div class="ops-page">
+{{ websocket_hoteles_ids|json_script:"plano-websocket-hoteles" }}
+<div
+    class="ops-page"
+    data-room-realtime
+    data-hotels-script-id="plano-websocket-hoteles"
+    data-websocket-url-template="{{ websocket_url_template }}"
+    data-total-rooms="{{ total_disponibles|add:total_ocupadas|add:total_limpieza|add:total_mantenimiento }}"
+>
+    <div class="realtime-status" data-realtime-status data-status="idle" role="status" aria-live="polite">
+        <span class="realtime-status-dot" aria-hidden="true"></span>
+        <span data-realtime-status-text>Actualizacion en tiempo real pendiente</span>
+    </div>
     <section class="ops-filter-card">
         <div class="ops-compact-bar mb-3">
             <div class="ops-status-summary" aria-label="Resumen de estados">
@@ -30,8 +41,17 @@
             </div>
             <a class="btn btn-sm btn-light" href="{% url 'habitaciones:listar_habitaciones' %}"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpiar filtros</a>
         </div>
-        <form method="get" class="row g-3 align-items-end">
+        <form method="get" class="row g-3 align-items-end" data-submit-lock>
             <div class="col-md-3">
+                <label class="form-label" for="hotel">Hotel</label>
+                <select class="form-select" id="hotel" name="hotel" data-auto-submit>
+                    <option value="">Todos</option>
+                    {% for hotel in hoteles %}
+                        <option value="{{ hotel.id }}" {% if request.GET.hotel == hotel.id|stringformat:'s' %}selected{% endif %}>{{ hotel.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label" for="tipo">Tipo</label>
                 <select class="form-select" id="tipo" name="tipo" data-auto-submit>
                     <option value="">Todos</option>
@@ -58,7 +78,7 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-5">
+            <div class="col-md-3">
                 <label class="form-label" for="buscar_habitacion">Buscar en resultado</label>
                 <input class="form-control" id="buscar_habitacion" type="search" placeholder="Numero, tipo o estado" data-room-search>
             </div>
@@ -67,7 +87,24 @@
 
     <section class="room-grid">
         {% for habitacion in habitaciones %}
-            <article class="room-card room-card-{{ habitacion.estado|lower }}" data-room-card>
+            {% with estancia=habitacion.estancias_activas.0 %}
+            <article
+                class="room-card room-card-{{ habitacion.estado|lower }}"
+                data-room-card
+                data-room-id="{{ habitacion.id }}"
+                data-room-state="{{ habitacion.estado }}"
+                data-room-number="{{ habitacion.numero }}"
+                data-room-floor="{{ habitacion.piso }}"
+                data-room-type="{{ habitacion.tipo.nombre }}"
+                data-room-capacity="{{ habitacion.tipo.capacidad }}"
+                data-room-hotel="{{ habitacion.hotel.nombre }}"
+                data-room-guest="{% if estancia %}{{ estancia.reserva.huesped.nombre_completo }}{% endif %}"
+                data-room-reservation="{% if estancia %}#{{ estancia.reserva.id }}{% endif %}"
+                data-room-stay="{% if estancia %}#{{ estancia.id }}{% endif %}"
+                data-room-checkin="{% if estancia %}{{ estancia.fecha_checkin|date:'d/m/Y H:i' }}{% endif %}"
+                data-room-reservation-url="{% if estancia %}{% url 'reservas:detail' estancia.reserva.pk %}{% endif %}"
+                data-room-folio-url="{% if estancia.folio %}{% url 'facturacion:folio_detail' estancia.folio.pk %}{% endif %}"
+            >
                 <div class="room-card-header">
                     <div>
                         <span class="room-number">{{ habitacion.numero }}</span>
@@ -76,14 +113,33 @@
                     <span class="status-badge status-{{ habitacion.estado|lower }}">{{ habitacion.get_estado_display }}</span>
                 </div>
                 <div class="room-meta">
+                    <span><i class="bi bi-building" aria-hidden="true"></i>{{ habitacion.hotel.nombre }}</span>
                     <span><i class="bi bi-door-open" aria-hidden="true"></i>{{ habitacion.tipo.nombre }}</span>
                     <span><i class="bi bi-people" aria-hidden="true"></i>{{ habitacion.tipo.capacidad }} personas</span>
                 </div>
+                {% if estancia %}
+                    <div class="room-occupancy-summary">
+                        <i class="bi bi-person-check" aria-hidden="true"></i>
+                        <div>
+                            <strong>{{ estancia.reserva.huesped.nombre_completo }}</strong>
+                            <small>Estancia #{{ estancia.id }} · Reserva #{{ estancia.reserva.id }}</small>
+                        </div>
+                    </div>
+                {% endif %}
                 <div class="ops-actions">
+                    <button
+                        class="btn btn-sm room-action room-action-detail"
+                        type="button"
+                        data-room-detail
+                        data-bs-toggle="modal"
+                        data-bs-target="#roomDetailModal"
+                        title="Ver detalle"
+                        aria-label="Ver detalle de habitacion {{ habitacion.numero }}"
+                    ><i class="bi bi-eye" aria-hidden="true"></i></button>
                     {% if user_is_admin %}
                     <a class="btn btn-sm room-action room-action-edit" href="{% url 'habitaciones:editar_habitacion' habitacion.pk %}" title="Editar" aria-label="Editar habitacion"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                     {% endif %}
-                    <form class="room-state-form" method="post" action="{% url 'habitaciones:cambiar_estado_habitacion' habitacion.pk %}" aria-label="Cambiar estado de habitacion {{ habitacion.numero }}">
+                    <form class="room-state-form" method="post" action="{% url 'habitaciones:cambiar_estado_habitacion' habitacion.pk %}" aria-label="Cambiar estado de habitacion {{ habitacion.numero }}" data-submit-lock data-confirm="Confirma el cambio manual de estado de la habitacion {{ habitacion.numero }}.">
                         {% csrf_token %}
                         <button class="room-state-button state-disponible {% if habitacion.estado == 'DISPONIBLE' %}active{% endif %}" type="submit" name="estado" value="DISPONIBLE" title="Disponible" aria-label="Marcar disponible"><i class="bi bi-check-circle" aria-hidden="true"></i></button>
                         <button class="room-state-button state-ocupada {% if habitacion.estado == 'OCUPADA' %}active{% endif %}" type="submit" name="estado" value="OCUPADA" title="Ocupada" aria-label="Marcar ocupada"><i class="bi bi-person-fill-lock" aria-hidden="true"></i></button>
@@ -92,6 +148,7 @@
                     </form>
                 </div>
             </article>
+            {% endwith %}
         {% empty %}
             <div class="ops-empty ops-list-card">
                 <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay habitaciones registradas.
@@ -105,6 +162,39 @@
         <a class="flow-link" href="{% url 'limpieza:panel_limpieza' %}"><i class="bi bi-stars" aria-hidden="true"></i>Limpieza</a>
     </div>
 </div>
+
+<div class="modal fade" id="roomDetailModal" tabindex="-1" aria-labelledby="roomDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content room-detail-modal">
+            <div class="modal-header">
+                <div>
+                    <span class="ops-kicker mb-1">Detalle operativo</span>
+                    <h2 class="modal-title h4 mb-0" id="roomDetailModalLabel">Habitacion <span data-detail-number></span></h2>
+                </div>
+                <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="room-detail-status" data-detail-status></div>
+                <dl class="room-detail-list">
+                    <div><dt>Hotel</dt><dd data-detail-hotel></dd></div>
+                    <div><dt>Ubicacion</dt><dd data-detail-location></dd></div>
+                    <div><dt>Tipo y capacidad</dt><dd data-detail-type></dd></div>
+                    <div><dt>Huesped actual</dt><dd data-detail-guest></dd></div>
+                    <div><dt>Reserva / estancia</dt><dd data-detail-operation></dd></div>
+                    <div><dt>Check-in</dt><dd data-detail-checkin></dd></div>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <a class="btn btn-outline-primary d-none" href="#" data-detail-reservation-link>Ver reserva</a>
+                <a class="btn btn-primary d-none" href="#" data-detail-folio-link>Ver folio</a>
+                <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
-{% block extra_js %}<script src="{% static 'js/habitaciones.js' %}"></script>{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/room_realtime.js' %}"></script>
+<script src="{% static 'js/habitaciones.js' %}"></script>
+{% endblock %}

@@ -155,6 +155,13 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# Jean puede publicar una URL relativa (mismo host) o absoluta. Debe incluir
+# ``{hotel_id}``, por ejemplo: /ws/hoteles/{hotel_id}/habitaciones/.
+ROOM_PLAN_WEBSOCKET_URL_TEMPLATE = config(
+    'ROOM_PLAN_WEBSOCKET_URL_TEMPLATE',
+    default='',
+)
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',

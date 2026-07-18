@@ -11,7 +11,7 @@
 {% block page_subtitle %}Monitoreo rapido de ocupacion, reservas, habitaciones, huespedes e ingresos del hotel.{% endblock %}
 
 {% block page_actions %}
-<form method="get" class="dashboard-date-filter">
+<form method="get" class="dashboard-date-filter" data-submit-lock>
     <label class="visually-hidden" for="fecha">Fecha de consulta</label>
     <input
         id="fecha"
@@ -33,6 +33,19 @@
     </div>
 {% endif %}
 
+{{ websocket_hoteles_ids|json_script:"dashboard-websocket-hoteles" }}
+<div
+    data-room-realtime
+    data-hotels-script-id="dashboard-websocket-hoteles"
+    data-websocket-url-template="{{ websocket_url_template }}"
+    data-total-rooms="{{ reporte.habitaciones.total }}"
+    data-report-date="{{ reporte.fecha|date:'Y-m-d' }}"
+>
+<div class="realtime-status" data-realtime-status data-status="idle" role="status" aria-live="polite">
+    <span class="realtime-status-dot" aria-hidden="true"></span>
+    <span data-realtime-status-text>Actualizacion en tiempo real pendiente</span>
+</div>
+
 <section class="dashboard-hero" aria-label="Resumen operativo">
     <div class="dashboard-hero-content">
         <span class="dashboard-kicker">Operacion del dia</span>
@@ -41,8 +54,8 @@
 
         <div class="dashboard-hero-stats">
             <div>
-                <span>Ocupadas</span>
-                <strong>{{ reporte.habitaciones.ocupadas }}</strong>
+                <span>Ocupacion real</span>
+                <strong data-occupancy-count>{{ reporte.ocupacion.ocupadas }}</strong>
             </div>
             <div>
                 <span>Disponibles</span>
@@ -56,7 +69,7 @@
     </div>
 
     <div class="dashboard-hero-visual">
-        <div class="dashboard-donut" aria-label="Ocupacion {{ reporte.habitaciones.ocupacion_porcentaje|floatformat:0 }} por ciento">
+        <div class="dashboard-donut" data-occupancy-donut aria-label="Ocupacion {{ reporte.ocupacion.ocupacion_porcentaje|floatformat:0 }} por ciento">
             <svg viewBox="0 0 42 42" role="img">
                 <circle class="donut-track" cx="21" cy="21" r="15.915"></circle>
                 <circle
@@ -65,17 +78,17 @@
                     cy="21"
                     r="15.915"
                     pathLength="100"
-                    stroke-dasharray="{{ reporte.habitaciones.ocupacion_porcentaje|floatformat:0 }} 100"
+                    stroke-dasharray="{{ reporte.ocupacion.ocupacion_porcentaje|floatformat:0 }} 100"
                 ></circle>
             </svg>
-            <strong>{{ reporte.habitaciones.ocupacion_porcentaje|floatformat:0 }}%</strong>
+            <strong data-occupancy-percentage>{{ reporte.ocupacion.ocupacion_porcentaje|floatformat:0 }}%</strong>
             <span>ocupacion</span>
         </div>
 
         <div class="dashboard-hero-income">
-            <span>Ingresos folios</span>
-            <strong>S/ {{ reporte.ingresos.folios_pagados|floatformat:2 }}</strong>
-            <small>pagados o cerrados</small>
+            <span>Ingresos confirmados</span>
+            <strong>S/ {{ reporte.ingresos.confirmados|floatformat:2 }}</strong>
+            <small>folios pagados o cerrados; no incluye reservas impagas</small>
         </div>
     </div>
 </section>
@@ -94,7 +107,7 @@
         <span class="kpi-icon"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
         <div>
             <small>Disponibles</small>
-            <strong>{{ reporte.habitaciones.disponibles }}</strong>
+            <strong data-room-state-count="DISPONIBLE">{{ reporte.habitaciones.disponibles }}</strong>
             <em>listas para asignar</em>
         </div>
     </article>
@@ -103,7 +116,7 @@
         <span class="kpi-icon"><i class="bi bi-person-workspace" aria-hidden="true"></i></span>
         <div>
             <small>Ocupadas</small>
-            <strong>{{ reporte.habitaciones.ocupadas }}</strong>
+            <strong data-room-state-count="OCUPADA">{{ reporte.habitaciones.ocupadas }}</strong>
             <em>{{ reporte.estancias.activas }} estancias activas</em>
         </div>
     </article>
@@ -121,8 +134,8 @@
         <span class="kpi-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
         <div>
             <small>Reservas fecha</small>
-            <strong>S/ {{ reporte.ingresos.reservas_fecha|floatformat:2 }}</strong>
-            <em>monto estimado</em>
+            <strong>S/ {{ reporte.ingresos.reservas_estimadas_fecha|floatformat:2 }}</strong>
+            <em>reservas estimadas; no es ingreso recibido</em>
         </div>
     </article>
 
@@ -149,19 +162,19 @@
         <div class="dashboard-room-status">
             <div class="room-status-card status-available">
                 <span>Disponibles</span>
-                <strong>{{ reporte.habitaciones.disponibles }}</strong>
+                <strong data-room-state-count="DISPONIBLE">{{ reporte.habitaciones.disponibles }}</strong>
             </div>
             <div class="room-status-card status-busy">
                 <span>Ocupadas</span>
-                <strong>{{ reporte.habitaciones.ocupadas }}</strong>
+                <strong data-room-state-count="OCUPADA">{{ reporte.habitaciones.ocupadas }}</strong>
             </div>
             <div class="room-status-card status-cleaning">
                 <span>Limpieza</span>
-                <strong>{{ reporte.habitaciones.limpieza }}</strong>
+                <strong data-room-state-count="LIMPIEZA">{{ reporte.habitaciones.limpieza }}</strong>
             </div>
             <div class="room-status-card status-maintenance">
                 <span>Mantenimiento</span>
-                <strong>{{ reporte.habitaciones.mantenimiento }}</strong>
+                <strong data-room-state-count="MANTENIMIENTO">{{ reporte.habitaciones.mantenimiento }}</strong>
             </div>
         </div>
 
@@ -228,6 +241,125 @@
     </aside>
 </section>
 
+<section class="dashboard-panel dashboard-daily-panel" aria-label="Panel diario">
+    <div class="dashboard-panel-header">
+        <div>
+            <span class="dashboard-kicker">Panel diario</span>
+            <h2>Llegadas, alojados y salidas</h2>
+        </div>
+        <span class="dashboard-pill">{{ reporte.panel_diario.fecha|date:'d/m/Y' }}</span>
+    </div>
+
+    <div class="dashboard-daily-grid">
+        <section class="dashboard-daily-column daily-arrivals" aria-labelledby="daily-arrivals-title">
+            <header>
+                <span class="daily-icon"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i></span>
+                <div>
+                    <h3 id="daily-arrivals-title">Llegadas</h3>
+                    <small>{{ reporte.panel_diario.totales.llegadas }} pendientes de ingreso</small>
+                </div>
+            </header>
+            <div class="dashboard-daily-list">
+                {% for reserva in reporte.panel_diario.llegadas %}
+                    <article>
+                        <div>
+                            <strong>{{ reserva.huesped.nombre_completo }}</strong>
+                            <small>Hab. {{ reserva.habitacion.numero }} · {{ reserva.get_estado_display }}</small>
+                        </div>
+                        <div class="daily-actions">
+                            <a class="btn btn-sm btn-outline-primary" href="{% url 'reservas:detail' reserva.pk %}" aria-label="Ver reserva {{ reserva.id }}"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                            {% if reserva.estado == 'CONFIRMADA' %}
+                                <a class="btn btn-sm btn-primary" href="{% url 'estancias:realizar_checkin' reserva.pk %}">Check-in</a>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <p class="daily-empty">No hay llegadas pendientes.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="dashboard-daily-column daily-hosted" aria-labelledby="daily-hosted-title">
+            <header>
+                <span class="daily-icon"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+                <div>
+                    <h3 id="daily-hosted-title">Alojados</h3>
+                    <small>{{ reporte.panel_diario.totales.alojados }} estancias activas</small>
+                </div>
+            </header>
+            <div class="dashboard-daily-list">
+                {% for estancia in reporte.panel_diario.alojados %}
+                    <article>
+                        <div>
+                            <strong>{{ estancia.reserva.huesped.nombre_completo }}</strong>
+                            <small>Hab. {{ estancia.habitacion.numero }} · desde {{ estancia.fecha_checkin|date:'d/m H:i' }}</small>
+                        </div>
+                        <div class="daily-actions">
+                            {% if estancia.folio %}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'facturacion:folio_detail' estancia.folio.pk %}">Folio</a>
+                            {% endif %}
+                            <a class="btn btn-sm btn-primary" href="{% url 'estancias:realizar_checkout' estancia.pk %}">Checkout</a>
+                        </div>
+                    </article>
+                {% empty %}
+                    <p class="daily-empty">No hay huespedes alojados.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="dashboard-daily-column daily-departures" aria-labelledby="daily-departures-title">
+            <header>
+                <span class="daily-icon"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></span>
+                <div>
+                    <h3 id="daily-departures-title">Salidas</h3>
+                    <small>{{ reporte.panel_diario.totales.salidas }} programadas o realizadas</small>
+                </div>
+            </header>
+            <div class="dashboard-daily-list">
+                {% for estancia in reporte.panel_diario.salidas %}
+                    <article>
+                        <div>
+                            <strong>{{ estancia.reserva.huesped.nombre_completo }}</strong>
+                            <small>Hab. {{ estancia.habitacion.numero }} · {{ estancia.get_estado_display }}</small>
+                        </div>
+                        <div class="daily-actions">
+                            {% if estancia.folio %}
+                                <a class="btn btn-sm btn-outline-primary" href="{% url 'facturacion:folio_detail' estancia.folio.pk %}">Folio</a>
+                            {% endif %}
+                            {% if estancia.estado == 'ACTIVA' %}
+                                <a class="btn btn-sm btn-primary" href="{% url 'estancias:realizar_checkout' estancia.pk %}">Checkout</a>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <p class="daily-empty">No hay salidas para la fecha.</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</section>
+
+<section class="dashboard-panel dashboard-trend-panel" aria-label="Ocupacion de los ultimos siete dias">
+    <div class="dashboard-panel-header">
+        <div>
+            <span class="dashboard-kicker">Criterio uniforme</span>
+            <h2>Ocupacion real de los ultimos 7 dias</h2>
+        </div>
+        <span class="dashboard-pill">Basado en estancias</span>
+    </div>
+    <div class="dashboard-occupancy-trend">
+        {% for dia in reporte.ocupacion.diaria %}
+            <div class="occupancy-trend-item">
+                <strong>{{ dia.porcentaje|floatformat:0 }}%</strong>
+                <div class="occupancy-trend-bar" aria-label="{{ dia.fecha|date:'d/m' }}: {{ dia.porcentaje|floatformat:0 }} por ciento">
+                    <span style="--occupancy-value: {{ dia.porcentaje|floatformat:0 }}%;"></span>
+                </div>
+                <small>{{ dia.fecha|date:'d/m' }}</small>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
 <section class="dashboard-bottom-grid" aria-label="Agenda e indicadores secundarios">
     <div class="dashboard-panel">
         <div class="dashboard-panel-header">
@@ -282,4 +414,10 @@
         </div>
     </div>
 </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/room_realtime.js' %}"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

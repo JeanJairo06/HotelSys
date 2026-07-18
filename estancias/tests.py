@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
@@ -40,6 +40,7 @@ class CheckinFolioTests(TestCase):
             num_doc='12345678',
             nombres='Ana',
             apellidos='Torres',
+            fecha_nacimiento=date(1990, 1, 1),
         )
 
     def _crear_reserva_confirmada(self):
