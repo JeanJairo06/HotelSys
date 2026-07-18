@@ -99,12 +99,11 @@ class HabitacionForm(forms.ModelForm):
 
     class Meta:
         model = Habitacion
-        fields = ['tipo', 'numero', 'piso', 'estado']
+        fields = ['tipo', 'numero', 'piso']
         labels = {
             'tipo': 'Tipo de habitacion',
             'numero': 'Numero',
             'piso': 'Piso',
-            'estado': 'Estado',
         }
 
 

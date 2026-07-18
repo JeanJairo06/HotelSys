@@ -21,7 +21,7 @@
 {% block content %}
 <div class="ops-page">
     <section class="ops-filter-card">
-        <div class="ops-compact-bar mb-3">
+        <div class="ops-compact-bar mb-2">
             <div class="ops-status-summary" aria-label="Resumen de estados">
                 <a class="ops-status-chip status-disponible {% if request.GET.estado == 'DISPONIBLE' %}active{% endif %}" href="?estado=DISPONIBLE"><strong>{{ total_disponibles }}</strong> Disponibles</a>
                 <a class="ops-status-chip status-ocupada {% if request.GET.estado == 'OCUPADA' %}active{% endif %}" href="?estado=OCUPADA"><strong>{{ total_ocupadas }}</strong> Ocupadas</a>
@@ -30,36 +30,30 @@
             </div>
             <a class="btn btn-sm btn-light" href="{% url 'habitaciones:listar_habitaciones' %}"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpiar filtros</a>
         </div>
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label" for="tipo">Tipo</label>
+        <form method="get" class="room-filter-form row g-2 align-items-end">
+            {% if request.GET.estado %}
+                <input type="hidden" name="estado" value="{{ request.GET.estado }}">
+            {% endif %}
+            <div class="col-md-3 col-lg-2">
+                <label class="visually-hidden" for="tipo">Tipo</label>
                 <select class="form-select" id="tipo" name="tipo" data-auto-submit>
-                    <option value="">Todos</option>
+                    <option value="">Todos los tipos</option>
                     {% for tipo in tipos_habitacion %}
                         <option value="{{ tipo.id }}" {% if request.GET.tipo == tipo.id|stringformat:'s' %}selected{% endif %}>{{ tipo.nombre }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <label class="form-label" for="estado">Estado</label>
-                <select class="form-select" id="estado" name="estado" data-auto-submit>
-                    <option value="">Todos</option>
-                    {% for valor, texto in estados %}
-                        <option value="{{ valor }}" {% if request.GET.estado == valor %}selected{% endif %}>{{ texto }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label" for="piso">Piso</label>
+            <div class="col-md-2 col-lg-2">
+                <label class="visually-hidden" for="piso">Piso</label>
                 <select class="form-select" id="piso" name="piso" data-auto-submit>
-                    <option value="">Todos</option>
+                    <option value="">Todos los pisos</option>
                     {% for piso in pisos %}
                         <option value="{{ piso }}" {% if request.GET.piso == piso|stringformat:'s' %}selected{% endif %}>Piso {{ piso }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-5">
-                <label class="form-label" for="buscar_habitacion">Buscar en resultado</label>
+            <div class="col-md-7 col-lg-8">
+                <label class="visually-hidden" for="buscar_habitacion">Buscar en resultado</label>
                 <input class="form-control" id="buscar_habitacion" type="search" placeholder="Numero, tipo o estado" data-room-search>
             </div>
         </form>
