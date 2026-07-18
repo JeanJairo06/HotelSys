@@ -22,7 +22,7 @@
             <div class="col-md-6">
                 <label class="form-label" for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
                 {{ form.nombre }}
-                {% for error in form.nombre.errors %}<div class="invalid-feedback d-block">%s</div>{% endfor %}
+                {% for error in form.nombre.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
             </div>
 
             <div class="col-md-6">

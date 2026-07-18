@@ -116,18 +116,19 @@ class FacturaCreateView(CreateView):
         return context
 
     def form_valid(self, form):
-        folio = get_object_or_404(Folio, pk=self.kwargs['folio_id'])
-        
-        factura = form.save(commit=False)
-        factura.folio = folio
-        factura.monto_subtotal = folio.subtotal
-        factura.monto_igv = folio.igv
-        factura.monto_total = folio.total
-        factura.creado_por = self.request.user
-        factura.save()
-
-        messages.success(self.request, f'Comprobante emitido correctamente para el Folio #{folio.id}.')
-        return super().form_valid(form)
+        try:
+            FolioService.emitir_comprobante_y_cerrar(
+                folio_id=self.kwargs['folio_id'],
+                ruc_dni=form.cleaned_data['ruc_dni'],
+                razon_social=form.cleaned_data['razon_social'],
+                usuario=self.request.user
+            )
+            messages.success(self.request, 'Comprobante emitido correctamente y Folio cerrado.')
+        except ReglaNegocioViolada as e:
+            messages.error(self.request, str(e))
+            return redirect(self.get_success_url())
+            
+        return redirect(self.get_success_url())
 
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
