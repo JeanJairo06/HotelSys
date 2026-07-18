@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from config.views import home
-from cuentas.views import CuentaLoginView, CuentaLogoutView
+from cuentas.views import CuentaLoginView, CuentaLogoutView, SessionActivityView
 from reportes.views import DashboardView, ReporteOcupacionAPIView, ReportesView
 
 urlpatterns = [
@@ -27,6 +27,7 @@ urlpatterns = [
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('login/', CuentaLoginView.as_view(), name='login'),
     path('logout/', CuentaLogoutView.as_view(), name='logout'),
+    path('sesion/actividad/', SessionActivityView.as_view(), name='session_activity'),
     path('usuarios/', include('cuentas.urls')),
     path('empleados/', include('empleados.urls')),
     path('hoteles/', include('hoteles.urls')),

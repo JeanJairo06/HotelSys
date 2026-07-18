@@ -1,15 +1,17 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth.models import Group, User
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from config.choices import CargoEmpleado, EstadoGeneral
 from cuentas.exceptions import EmpleadoNoDisponible, RolUsuarioInvalido, UsuarioDuplicado, UsuarioNoDesactivable
 from cuentas.models import AuditoriaSesion, MotivoExpiracionSesion, UsuarioEmpleado
 from cuentas.session_audit import registrar_expiracion_sesion
 from cuentas.session_policy import get_session_policy
+from cuentas.session_state import SESSION_LAST_ACTIVITY_AT, SESSION_STARTED_AT
 from cuentas.services import UsuarioService
 from empleados.models import Empleado
 
@@ -96,6 +98,187 @@ class SessionPolicyTests(TestCase):
         self.assertEqual(audit.roles_efectivos, 'admin')
         self.assertEqual(audit.motivo, MotivoExpiracionSesion.INACTIVIDAD)
         self.assertEqual(audit.ruta, '/reservas/')
+
+
+@override_settings(
+    SESSION_ROLE_POLICIES={
+        'admin': {'idle_timeout': 60, 'absolute_timeout': 600},
+        'recepcionista': {'idle_timeout': 120, 'absolute_timeout': 1200},
+        'housekeeping': {'idle_timeout': 60, 'absolute_timeout': 600},
+        'default': {'idle_timeout': 60, 'absolute_timeout': 600},
+    },
+)
+class SessionExpirationTests(TestCase):
+    def setUp(self):
+        self.admin_group = Group.objects.get(name='admin')
+        self.recepcion_group = Group.objects.get(name='recepcionista')
+        self.user = User.objects.create_user(username='admin-sesion', password='testpass123')
+        self.user.groups.add(self.admin_group)
+
+    def authenticate(self, user=None):
+        self.client.force_login(user or self.user)
+
+    def set_session_timestamps(self, *, started_at, last_activity_at):
+        session = self.client.session
+        session[SESSION_STARTED_AT] = int(started_at.timestamp())
+        session[SESSION_LAST_ACTIVITY_AT] = int(last_activity_at.timestamp())
+        session.save()
+
+    def test_login_inicializa_las_marcas_de_sesion(self):
+        self.authenticate()
+
+        self.assertIsInstance(self.client.session[SESSION_STARTED_AT], int)
+        self.assertIsInstance(self.client.session[SESSION_LAST_ACTIVITY_AT], int)
+
+    def test_expira_por_inactividad_y_registra_auditoria(self):
+        self.authenticate()
+        now = timezone.now()
+        self.set_session_timestamps(
+            started_at=now - timedelta(seconds=30),
+            last_activity_at=now - timedelta(seconds=61),
+        )
+
+        response = self.client.get(reverse('usuarios:list'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(reverse('login')))
+        audit = AuditoriaSesion.objects.get()
+        self.assertEqual(audit.motivo, MotivoExpiracionSesion.INACTIVIDAD)
+        self.assertEqual(audit.ruta, reverse('usuarios:list'))
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_expira_por_limite_absoluto_aunque_haya_actividad_reciente(self):
+        self.authenticate()
+        now = timezone.now()
+        self.set_session_timestamps(
+            started_at=now - timedelta(seconds=601),
+            last_activity_at=now,
+        )
+
+        response = self.client.get(reverse('usuarios:list'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            AuditoriaSesion.objects.get().motivo,
+            MotivoExpiracionSesion.LIMITE_ABSOLUTO,
+        )
+
+    def test_cambio_de_rol_aplica_la_politica_mas_restrictiva_en_la_siguiente_solicitud(self):
+        user = User.objects.create_user(username='recepcion-sesion', password='testpass123')
+        user.groups.add(self.recepcion_group)
+        self.authenticate(user)
+        now = timezone.now()
+        self.set_session_timestamps(
+            started_at=now - timedelta(seconds=30),
+            last_activity_at=now - timedelta(seconds=61),
+        )
+        user.groups.add(self.admin_group)
+
+        response = self.client.get(reverse('home'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(reverse('login')))
+        self.assertEqual(
+            AuditoriaSesion.objects.get().motivo,
+            MotivoExpiracionSesion.INACTIVIDAD,
+        )
+
+    def test_navegacion_html_renueva_la_actividad(self):
+        self.authenticate()
+        now = timezone.now()
+        previous_activity = now - timedelta(seconds=30)
+        self.set_session_timestamps(
+            started_at=now - timedelta(seconds=60),
+            last_activity_at=previous_activity,
+        )
+
+        response = self.client.get(reverse('usuarios:list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(self.client.session[SESSION_LAST_ACTIVITY_AT], int(previous_activity.timestamp()))
+
+    def test_endpoint_de_actividad_renueva_solo_el_tiempo_inactivo(self):
+        self.authenticate()
+        now = timezone.now()
+        started_at = now - timedelta(seconds=30)
+        previous_activity = now - timedelta(seconds=30)
+        self.set_session_timestamps(
+            started_at=started_at,
+            last_activity_at=previous_activity,
+        )
+
+        response = self.client.post(reverse('session_activity'), HTTP_ACCEPT='application/json')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertGreater(self.client.session[SESSION_LAST_ACTIVITY_AT], int(previous_activity.timestamp()))
+        self.assertEqual(self.client.session[SESSION_STARTED_AT], int(started_at.timestamp()))
+        self.assertIn('expires_at', response.json())
+
+    def test_solicitud_json_expirada_recibe_401_estandar(self):
+        self.authenticate()
+        now = timezone.now()
+        self.set_session_timestamps(
+            started_at=now - timedelta(seconds=30),
+            last_activity_at=now - timedelta(seconds=61),
+        )
+
+        response = self.client.post(reverse('session_activity'), HTTP_ACCEPT='application/json')
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['code'], 'session_expired')
+
+    def test_rutas_api_no_renuevan_la_actividad(self):
+        self.authenticate()
+        now = timezone.now()
+        previous_activity = now - timedelta(seconds=30)
+        self.set_session_timestamps(
+            started_at=now - timedelta(seconds=60),
+            last_activity_at=previous_activity,
+        )
+
+        self.client.get('/api/v1/reservas/huespedes-autocomplete/', HTTP_ACCEPT='application/json')
+
+        self.assertEqual(
+            self.client.session[SESSION_LAST_ACTIVITY_AT],
+            int(previous_activity.timestamp()),
+        )
+
+    def test_sesion_sin_marcas_se_invalida_como_heredada(self):
+        self.client.force_login(self.user)
+        session = self.client.session
+        session.pop(SESSION_STARTED_AT, None)
+        session.pop(SESSION_LAST_ACTIVITY_AT, None)
+        session.save()
+
+        response = self.client.get(reverse('usuarios:list'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            AuditoriaSesion.objects.get().motivo,
+            MotivoExpiracionSesion.SESION_LEGADA,
+        )
+
+    def test_ruta_de_retorno_permanece_interna(self):
+        self.authenticate()
+        now = timezone.now()
+        self.set_session_timestamps(
+            started_at=now - timedelta(seconds=30),
+            last_activity_at=now - timedelta(seconds=61),
+        )
+
+        response = self.client.get(f'{reverse("usuarios:list")}?next=https://evil.example')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response.url.startswith(reverse('login')))
+        self.assertFalse(response.url.startswith('https://evil.example'))
+
+    def test_endpoint_de_actividad_exige_csrf(self):
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+
+        response = client.post(reverse('session_activity'), HTTP_ACCEPT='application/json')
+
+        self.assertEqual(response.status_code, 403)
 
 
 class UsuarioServiceTests(TestCase):

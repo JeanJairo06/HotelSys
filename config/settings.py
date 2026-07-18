@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'cuentas.middleware.SessionExpirationMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -127,6 +128,16 @@ LOGIN_RATE_LIMIT_WINDOW = config('LOGIN_RATE_LIMIT_WINDOW', cast=int, default=90
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', cast=int, default=43200)
 SESSION_SAVE_EVERY_REQUEST = False
+SESSION_EXPIRATION_EXCLUDED_PREFIXES = (
+    '/login/',
+    '/logout/',
+    '/api/',
+    '/static/',
+)
+SESSION_ACTIVITY_EXCLUDED_PREFIXES = (
+    *SESSION_EXPIRATION_EXCLUDED_PREFIXES,
+    '/sesion/actividad/',
+)
 SESSION_ROLE_POLICIES = {
     'admin': {
         'idle_timeout': config('SESSION_IDLE_TIMEOUT_ADMIN', cast=int, default=900),
