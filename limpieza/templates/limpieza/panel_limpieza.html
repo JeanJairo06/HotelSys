@@ -7,22 +7,22 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">
-<link rel="stylesheet" href="{% static 'css/limpieza.css' %}">
+<link rel="stylesheet" href="{% static 'css/limpieza.css' %}?v=compact-housekeeping-2">
 {% endblock %}
 
 {% block content %}
 <div class="ops-page">
-    <section class="ops-filter-card">
-        <div class="ops-compact-bar mb-3">
+    <section class="ops-filter-card housekeeping-toolbar">
+        <div class="ops-compact-bar mb-2">
             <div class="ops-status-summary" aria-label="Resumen de limpieza">
                 <span class="ops-status-chip status-limpieza"><strong>{{ total_limpieza }}</strong> En limpieza</span>
                 <span class="ops-status-chip status-mantenimiento"><strong>{{ total_mantenimiento }}</strong> Mantenimiento</span>
             </div>
             <a class="btn btn-sm btn-light" href="{% url 'limpieza:panel_limpieza' %}"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpiar filtros</a>
         </div>
-        <form method="get" class="row g-3 align-items-end">
+        <form method="get" class="row g-2 align-items-end">
             <div class="col-md-12">
-                <label class="form-label" for="piso">Piso</label>
+                <label class="visually-hidden" for="piso">Piso</label>
                 <select class="form-select" id="piso" name="piso" data-housekeeping-piso>
                     <option value="">Todos</option>
                     {% for piso in pisos %}
@@ -34,30 +34,31 @@
     </section>
 
     <section class="housekeeping-board">
-        <div class="housekeeping-column">
+        <div class="housekeeping-column housekeeping-column-limpieza">
             <div class="housekeeping-column-header">
-                <h2 class="h5 mb-0">Limpieza</h2>
-                <span class="status-badge status-limpieza">{{ total_limpieza }}</span>
+                <div>
+                    <h2 class="h5 mb-0">Limpieza</h2>
+                    <small>Preparar habitaciones para venta</small>
+                </div>
+                <span class="housekeeping-count">{{ total_limpieza }}</span>
             </div>
-            <div class="housekeeping-list">
+            <div class="housekeeping-list housekeeping-compact-list">
                 {% for habitacion in habitaciones %}
                     {% if habitacion.estado == 'LIMPIEZA' %}
-                        <article class="housekeeping-card housekeeping-card-limpieza">
-                            <div class="housekeeping-card-header">
-                                <div>
-                                    <span class="housekeeping-room">{{ habitacion.numero }}</span>
-                                    <span class="text-secondary">Piso {{ habitacion.piso }} - {{ habitacion.tipo.nombre }}</span>
-                                </div>
-                                <span class="status-badge status-limpieza">{{ habitacion.get_estado_display }}</span>
+                        <article class="housekeeping-mini-card housekeeping-mini-limpieza">
+                            <span class="room-tile room-tile-limpieza">{{ habitacion.numero }}</span>
+                            <div class="housekeeping-mini-detail">
+                                <strong>{{ habitacion.tipo.nombre }}</strong>
+                                <small>Piso {{ habitacion.piso }} - {{ habitacion.get_estado_display }}</small>
                             </div>
                             <div class="housekeeping-actions">
                                 <form method="post" action="{% url 'limpieza:marcar_habitacion_disponible' habitacion.pk %}">
                                     {% csrf_token %}
-                                    <button class="btn btn-sm room-action room-action-disponible" type="submit"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Disponible</button>
+                                    <button class="room-action room-action-disponible" type="submit" title="Disponible"><i class="bi bi-check-circle" aria-hidden="true"></i></button>
                                 </form>
                                 <form method="post" action="{% url 'limpieza:marcar_habitacion_mantenimiento' habitacion.pk %}">
                                     {% csrf_token %}
-                                    <button class="btn btn-sm room-action room-action-mantenimiento" type="submit"><i class="bi bi-tools me-1" aria-hidden="true"></i>Mantenimiento</button>
+                                    <button class="room-action room-action-mantenimiento" type="submit" title="Mantenimiento"><i class="bi bi-tools" aria-hidden="true"></i></button>
                                 </form>
                             </div>
                         </article>
@@ -65,26 +66,27 @@
                 {% endfor %}
             </div>
         </div>
-        <div class="housekeeping-column">
+        <div class="housekeeping-column housekeeping-column-mantenimiento">
             <div class="housekeeping-column-header">
-                <h2 class="h5 mb-0">Mantenimiento</h2>
-                <span class="status-badge status-mantenimiento">{{ total_mantenimiento }}</span>
+                <div>
+                    <h2 class="h5 mb-0">Mantenimiento</h2>
+                    <small>Habitaciones fuera de servicio</small>
+                </div>
+                <span class="housekeeping-count">{{ total_mantenimiento }}</span>
             </div>
-            <div class="housekeeping-list">
+            <div class="housekeeping-list housekeeping-compact-list">
                 {% for habitacion in habitaciones %}
                     {% if habitacion.estado == 'MANTENIMIENTO' %}
-                        <article class="housekeeping-card housekeeping-card-mantenimiento">
-                            <div class="housekeeping-card-header">
-                                <div>
-                                    <span class="housekeeping-room">{{ habitacion.numero }}</span>
-                                    <span class="text-secondary">Piso {{ habitacion.piso }} - {{ habitacion.tipo.nombre }}</span>
-                                </div>
-                                <span class="status-badge status-mantenimiento">{{ habitacion.get_estado_display }}</span>
+                        <article class="housekeeping-mini-card housekeeping-mini-mantenimiento">
+                            <span class="room-tile room-tile-mantenimiento">{{ habitacion.numero }}</span>
+                            <div class="housekeeping-mini-detail">
+                                <strong>{{ habitacion.tipo.nombre }}</strong>
+                                <small>Piso {{ habitacion.piso }} - {{ habitacion.get_estado_display }}</small>
                             </div>
                             <div class="housekeeping-actions">
                                 <form method="post" action="{% url 'limpieza:marcar_habitacion_disponible' habitacion.pk %}">
                                     {% csrf_token %}
-                                    <button class="btn btn-sm room-action room-action-disponible" type="submit"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Disponible</button>
+                                    <button class="room-action room-action-disponible" type="submit" title="Disponible"><i class="bi bi-check-circle" aria-hidden="true"></i></button>
                                 </form>
                             </div>
                         </article>

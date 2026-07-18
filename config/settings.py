@@ -33,6 +33,7 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,8 +46,10 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     'rest_framework',
+    'channels',
 
     # Apps del sistema HotelSys
+    'core',
     'api',
     'cuentas',
     'empleados',
@@ -62,12 +65,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'cuentas.middleware.SessionExpirationMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -84,12 +89,91 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'cuentas.context_processors.user_roles',
+                'cuentas.context_processors.session_timeout',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [
+                (
+                    config('REDIS_HOST', default='localhost'),
+                    config('REDIS_PORT', cast=int, default=6379),
+                )
+            ],
+        },
+    },
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://{}:{}/1'.format(
+            config('REDIS_HOST', default='localhost'),
+            config('REDIS_PORT', cast=int, default=6379),
+        ),
+        'KEY_PREFIX': 'hotelsys',
+    },
+}
+
+LOGIN_RATE_LIMIT_ATTEMPTS = config('LOGIN_RATE_LIMIT_ATTEMPTS', cast=int, default=5)
+LOGIN_RATE_LIMIT_WINDOW = config('LOGIN_RATE_LIMIT_WINDOW', cast=int, default=900)
+
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = config('SESSION_COOKIE_AGE', cast=int, default=43200)
+SESSION_SAVE_EVERY_REQUEST = False
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', cast=bool, default=not DEBUG)
+SESSION_COOKIE_SAMESITE = config('SESSION_COOKIE_SAMESITE', default='Lax')
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', cast=bool, default=not DEBUG)
+CSRF_COOKIE_SAMESITE = config('CSRF_COOKIE_SAMESITE', default='Lax')
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', cast=bool, default=not DEBUG)
+SECURE_HSTS_SECONDS = config('SECURE_HSTS_SECONDS', cast=int, default=0 if DEBUG else 31536000)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = config('SECURE_HSTS_INCLUDE_SUBDOMAINS', cast=bool, default=not DEBUG)
+SECURE_HSTS_PRELOAD = config('SECURE_HSTS_PRELOAD', cast=bool, default=False)
+SECURE_REFERRER_POLICY = config('SECURE_REFERRER_POLICY', default='same-origin')
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+if config('USE_X_FORWARDED_PROTO', cast=bool, default=False):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+SESSION_EXPIRATION_EXCLUDED_PREFIXES = (
+    '/login/',
+    '/logout/',
+    '/api/',
+    '/static/',
+)
+SESSION_ACTIVITY_EXCLUDED_PREFIXES = (
+    *SESSION_EXPIRATION_EXCLUDED_PREFIXES,
+    '/sesion/actividad/',
+)
+SESSION_WARNING_SECONDS = config('SESSION_WARNING_SECONDS', cast=int, default=120)
+SESSION_ACTIVITY_DEBOUNCE_SECONDS = config('SESSION_ACTIVITY_DEBOUNCE_SECONDS', cast=int, default=60)
+SESSION_ROLE_POLICIES = {
+    'admin': {
+        'idle_timeout': config('SESSION_IDLE_TIMEOUT_ADMIN', cast=int, default=900),
+        'absolute_timeout': config('SESSION_ABSOLUTE_TIMEOUT_ADMIN', cast=int, default=28800),
+    },
+    'recepcionista': {
+        'idle_timeout': config('SESSION_IDLE_TIMEOUT_RECEPCIONISTA', cast=int, default=1200),
+        'absolute_timeout': config('SESSION_ABSOLUTE_TIMEOUT_RECEPCIONISTA', cast=int, default=43200),
+    },
+    'housekeeping': {
+        'idle_timeout': config('SESSION_IDLE_TIMEOUT_HOUSEKEEPING', cast=int, default=900),
+        'absolute_timeout': config('SESSION_ABSOLUTE_TIMEOUT_HOUSEKEEPING', cast=int, default=28800),
+    },
+    'default': {
+        'idle_timeout': config('SESSION_IDLE_TIMEOUT_DEFAULT', cast=int, default=900),
+        'absolute_timeout': config('SESSION_ABSOLUTE_TIMEOUT_DEFAULT', cast=int, default=28800),
+    },
+}
 
 
 # Database
@@ -142,7 +226,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'

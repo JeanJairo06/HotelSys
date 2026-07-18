@@ -47,6 +47,23 @@
         <!--{% include 'partials/footer.html' %}-->
     </div>
 
+    {% if session_expires_at %}
+        <div class="modal fade" id="session-timeout-modal" tabindex="-1" aria-labelledby="session-timeout-title" aria-describedby="session-timeout-description" aria-modal="true" role="dialog" data-session-expires-at="{{ session_expires_at }}" data-session-activity-url="{% url 'session_activity' %}" data-session-login-url="{% url 'login' %}" data-session-warning-seconds="{{ session_warning_seconds }}" data-session-activity-debounce-seconds="{{ session_activity_debounce_seconds }}" data-session-broadcast-key="hotelsys-session-timeout">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content session-timeout-modal-content">
+                    <div class="modal-body p-4 p-md-5 text-center">
+                        <span class="session-timeout-icon" aria-hidden="true"><i class="bi bi-shield-exclamation"></i></span>
+                        <h2 class="h4 fw-bold mt-3" id="session-timeout-title">Tu sesión está por expirar</h2>
+                        <p class="text-secondary mb-2" id="session-timeout-description">Por seguridad, la sesión se cerrará por inactividad.</p>
+                        <p class="session-timeout-countdown mb-4" aria-hidden="true" data-session-countdown>--:--</p>
+                        <p class="visually-hidden" aria-live="assertive" aria-atomic="true" data-session-announcement></p>
+                        <button class="btn btn-primary w-100" type="button" data-session-continue>Continuar sesión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
         (function () {
@@ -88,6 +105,8 @@
             });
         })();
     </script>
+    <script src="{% static 'js/app.js' %}" defer></script>
+    <script src="{% static 'js/session.js' %}" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -29,20 +29,20 @@
         <div class="card border-0 shadow-sm mt-4">
             <div class="card-body p-4">
                 <h2 class="h5 mb-4"><i class="bi bi-person-badge me-2" aria-hidden="true"></i>Empleado vinculado</h2>
-                {% if usuario.perfil_empleado %}
+                {% if perfil_usuario %}
                     <dl class="row mb-0 app-dl">
                         <dt class="col-sm-4">Código</dt>
-                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.codigo }}</dd>
+                        <dd class="col-sm-8">{{ perfil_usuario.empleado.codigo }}</dd>
                         <dt class="col-sm-4">Nombres</dt>
-                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.nombres }}</dd>
+                        <dd class="col-sm-8">{{ perfil_usuario.empleado.nombres }}</dd>
                         <dt class="col-sm-4">Apellidos</dt>
-                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.apellidos }}</dd>
+                        <dd class="col-sm-8">{{ perfil_usuario.empleado.apellidos }}</dd>
                         <dt class="col-sm-4">Cargo</dt>
-                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.get_cargo_display }}</dd>
+                        <dd class="col-sm-8">{{ perfil_usuario.empleado.get_cargo_display }}</dd>
                         <dt class="col-sm-4">Correo</dt>
-                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.email }}</dd>
+                        <dd class="col-sm-8">{{ perfil_usuario.empleado.email }}</dd>
                         <dt class="col-sm-4">Teléfono</dt>
-                        <dd class="col-sm-8">{{ usuario.perfil_empleado.empleado.telefono|default:'-' }}</dd>
+                        <dd class="col-sm-8">{{ perfil_usuario.empleado.telefono|default:'-' }}</dd>
                     </dl>
                 {% else %}
                     <p class="mb-0 text-secondary">Este usuario no tiene empleado vinculado.</p>
@@ -70,6 +70,28 @@
                 {% empty %}
                     <p class="mb-0 text-secondary">Sin roles asignados.</p>
                 {% endfor %}
+
+                <h3 class="h6 mt-4">Auditoría del perfil</h3>
+                {% if perfil_usuario %}
+                    <dl class="mb-0 app-dl">
+                        <dt>Perfil activo</dt>
+                        <dd>
+                            {% if perfil_usuario.activo %}
+                                <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Sí</span>
+                            {% else %}
+                                <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>No</span>
+                            {% endif %}
+                        </dd>
+                        <dt>Creado por</dt>
+                        <dd>{{ perfil_usuario.creado_por.username|default:'-' }}</dd>
+                        <dt>Creado en</dt>
+                        <dd>{{ perfil_usuario.creado_en|date:'d/m/Y H:i' }}</dd>
+                        <dt>Actualizado en</dt>
+                        <dd>{{ perfil_usuario.actualizado_en|date:'d/m/Y H:i' }}</dd>
+                    </dl>
+                {% else %}
+                    <p class="mb-0 text-secondary">Sin perfil auditable.</p>
+                {% endif %}
             </div>
         </div>
     </div>

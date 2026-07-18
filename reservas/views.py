@@ -1,6 +1,7 @@
 from django.contrib import messages
 from datetime import date, datetime, timedelta
 
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -14,6 +15,7 @@ from cuentas.roles import ROLE_ADMIN, ROLE_RECEPCIONISTA
 from habitaciones.models import Habitacion, TipoHabitacion
 from reservas.forms import ReservaForm
 from reservas.models import Reserva
+from reservas.services import cancelar_reserva
 
 
 def _parse_date(value, default):
@@ -33,7 +35,7 @@ class ReservaListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = Reserva.objects.select_related(
+        queryset = Reserva.todos.select_related(
             'hotel',
             'huesped',
             'habitacion',
@@ -50,6 +52,7 @@ class ReservaListView(ListView):
                 | Q(huesped__nombres__icontains=query)
                 | Q(huesped__apellidos__icontains=query)
                 | Q(habitacion__numero__icontains=query)
+                | Q(codigo__icontains=query)
             )
             if query.isdigit():
                 filters |= Q(id=int(query))
@@ -84,7 +87,7 @@ class ReservaDetailView(DetailView):
     model = Reserva
     template_name = 'reservas/detail.html'
     context_object_name = 'reserva'
-    queryset = Reserva.objects.select_related('hotel', 'huesped', 'habitacion', 'habitacion__tipo')
+    queryset = Reserva.todos.select_related('hotel', 'huesped', 'habitacion', 'habitacion__tipo')
 
 
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
@@ -95,6 +98,7 @@ class ReservaCreateView(ReservaFormContextMixin, CreateView):
     success_url = reverse_lazy('reservas:list')
 
     def form_valid(self, form):
+        form.usuario = self.request.user
         messages.success(self.request, 'Reserva creada correctamente.')
         return super().form_valid(form)
 
@@ -105,8 +109,16 @@ class ReservaUpdateView(ReservaFormContextMixin, UpdateView):
     form_class = ReservaForm
     template_name = 'reservas/form.html'
     success_url = reverse_lazy('reservas:list')
+    queryset = Reserva.objects.select_related('hotel', 'huesped', 'habitacion', 'habitacion__tipo')
+
+    def dispatch(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        if not self.object.es_modificable:
+            raise PermissionDenied('No se puede editar una reserva con check-in, finalizada o cancelada.')
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
+        form.usuario = self.request.user
         messages.success(self.request, 'Reserva actualizada correctamente.')
         return super().form_valid(form)
 
@@ -114,7 +126,7 @@ class ReservaUpdateView(ReservaFormContextMixin, UpdateView):
 @method_decorator(any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA), name='dispatch')
 class ReservaCancelView(View):
     def get(self, request, pk):
-        reserva = get_object_or_404(Reserva, pk=pk)
+        reserva = get_object_or_404(Reserva.todos, pk=pk)
 
         if reserva.estado in [EstadoReserva.CHECKIN, EstadoReserva.FINALIZADA]:
             messages.error(request, 'No se puede cancelar una reserva con check-in o finalizada.')
@@ -127,18 +139,12 @@ class ReservaCancelView(View):
         return render(request, 'reservas/confirm_cancel.html', {'reserva': reserva})
 
     def post(self, request, pk):
-        reserva = get_object_or_404(Reserva, pk=pk)
-
-        if reserva.estado in [EstadoReserva.CHECKIN, EstadoReserva.FINALIZADA]:
-            messages.error(request, 'No se puede cancelar una reserva con check-in o finalizada.')
+        reserva = get_object_or_404(Reserva.todos, pk=pk)
+        try:
+            cancelar_reserva(reserva, usuario=request.user)
+        except ValidationError as error:
+            messages.error(request, '; '.join(error.messages))
             return redirect('reservas:list')
-
-        if reserva.estado == EstadoReserva.CANCELADA:
-            messages.info(request, 'La reserva ya estaba cancelada.')
-            return redirect('reservas:list')
-
-        reserva.estado = EstadoReserva.CANCELADA
-        reserva.save(update_fields=['estado'])
         messages.success(request, 'Reserva cancelada correctamente.')
         return redirect('reservas:list')
 
@@ -165,13 +171,17 @@ class ReservaCalendarView(TemplateView):
         if tipo:
             habitaciones = habitaciones.filter(tipo_id=tipo)
 
-        reservas = Reserva.objects.select_related('huesped', 'habitacion').filter(
+        estado = self.request.GET.get('estado')
+
+        reservas = Reserva.todos.select_related('huesped', 'habitacion').filter(
             habitacion__in=habitaciones,
             fecha_entrada__lte=fin,
             fecha_salida__gt=inicio,
-        ).exclude(
-            estado__in=[EstadoReserva.CANCELADA, EstadoReserva.FINALIZADA],
         )
+        if estado:
+            reservas = reservas.filter(estado=estado)
+        else:
+            reservas = reservas.exclude(estado__in=[EstadoReserva.CANCELADA, EstadoReserva.FINALIZADA])
 
         reservas_por_habitacion = {}
         for reserva in reservas:
@@ -196,6 +206,7 @@ class ReservaCalendarView(TemplateView):
             'dias': dias,
             'filas': filas,
             'tipos_habitacion': TipoHabitacion.objects.order_by('nombre'),
+            'estados_reserva': EstadoReserva.choices,
             'desde': inicio,
             'hasta': fin,
         })

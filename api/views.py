@@ -23,9 +23,9 @@ from api.serializers import (
 )
 
 from api.throttles import AutocompleteRateThrottle, UserApiRateThrottle, WriteRateThrottle
-from config.choices import EstadoGeneral, EstadoHabitacion, EstadoReserva
+from config.choices import EstadoHabitacion
 from cuentas.roles import ROLE_ADMIN, ROLE_HOUSEKEEPING, ROLE_RECEPCIONISTA
-from empleados.models import Empleado
+from cuentas.services import UsuarioService
 from estancias.models import Estancia
 from estancias.services import registrar_checkin, registrar_checkout
 from habitaciones.models import Habitacion
@@ -33,6 +33,7 @@ from huespedes.models import Huesped
 from habitaciones.services import cambiar_estado_manual
 from limpieza.services import marcar_disponible, marcar_mantenimiento
 from reservas.models import Reserva
+from reservas.services import habitaciones_disponibles
 
 
 API_AUTHENTICATION_CLASSES = [SessionAuthentication, JWTAuthentication]
@@ -71,10 +72,7 @@ class EmpleadosDisponiblesUsuarioAPIView(generics.ListAPIView):
     ordering = ['apellidos', 'nombres']
 
     def get_queryset(self):
-        queryset = Empleado.objects.filter(
-            estado=EstadoGeneral.ACTIVO,
-            cuenta_usuario__isnull=True,
-        )
+        queryset = UsuarioService.empleados_disponibles_queryset()
         search = self.request.query_params.get('search')
         if search:
             queryset = queryset.filter(
@@ -144,21 +142,24 @@ class HabitacionesDisponiblesReservaAutocompleteAPIView(generics.ListAPIView):
         fecha_entrada = parse_date(self.request.query_params.get('fecha_entrada') or '')
         fecha_salida = parse_date(self.request.query_params.get('fecha_salida') or '')
         reserva_id = self.request.query_params.get('reserva_id')
+        num_huespedes = self.request.query_params.get('num_huespedes')
         search = self.request.query_params.get('search')
 
         if tipo and tipo.isdigit():
             queryset = queryset.filter(tipo_id=tipo)
 
+        if num_huespedes and num_huespedes.isdigit():
+            queryset = queryset.filter(tipo__capacidad__gte=int(num_huespedes))
+
         if fecha_entrada and fecha_salida and fecha_salida > fecha_entrada:
-            reservas_ocupadas = Reserva.objects.filter(
-                fecha_entrada__lt=fecha_salida,
-                fecha_salida__gt=fecha_entrada,
-            ).exclude(
-                estado__in=[EstadoReserva.CANCELADA, EstadoReserva.FINALIZADA],
+            queryset = habitaciones_disponibles(
+                fecha_entrada=fecha_entrada,
+                fecha_salida=fecha_salida,
+                num_huespedes=int(num_huespedes) if num_huespedes and num_huespedes.isdigit() else None,
+                reserva_id=int(reserva_id) if reserva_id and reserva_id.isdigit() else None,
             )
-            if reserva_id and reserva_id.isdigit():
-                reservas_ocupadas = reservas_ocupadas.exclude(pk=reserva_id)
-            queryset = queryset.exclude(pk__in=reservas_ocupadas.values('habitacion_id'))
+            if tipo and tipo.isdigit():
+                queryset = queryset.filter(tipo_id=tipo)
 
         if search:
             queryset = queryset.filter(
@@ -180,7 +181,7 @@ class ReservaListCreateAPIView(ApiThrottleMixin, generics.ListCreateAPIView):
     allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['estado', 'habitacion', 'huesped', 'origen']
-    search_fields = ['huesped__nombres', 'huesped__apellidos', 'huesped__num_doc', 'habitacion__numero']
+    search_fields = ['codigo', 'huesped__nombres', 'huesped__apellidos', 'huesped__num_doc', 'habitacion__numero']
     ordering_fields = ['fecha_entrada', 'fecha_salida', 'precio_total']
     ordering = ['-fecha_entrada']
 
@@ -206,6 +207,7 @@ class ReservaListCreateAPIView(ApiThrottleMixin, generics.ListCreateAPIView):
             OpenApiParameter('fecha_entrada', str, OpenApiParameter.QUERY),
             OpenApiParameter('fecha_salida', str, OpenApiParameter.QUERY),
             OpenApiParameter('tipo', int, OpenApiParameter.QUERY),
+            OpenApiParameter('num_huespedes', int, OpenApiParameter.QUERY),
         ],
     )
 )
@@ -222,6 +224,7 @@ class HabitacionesDisponiblesAPIView(ApiThrottleMixin, generics.ListAPIView):
         fecha_entrada = parse_date(self.request.query_params.get('fecha_entrada', ''))
         fecha_salida = parse_date(self.request.query_params.get('fecha_salida', ''))
         tipo = self.request.query_params.get('tipo')
+        num_huespedes = self.request.query_params.get('num_huespedes')
 
         queryset = Habitacion.objects.select_related('hotel', 'tipo').filter(
             estado=EstadoHabitacion.DISPONIBLE,
@@ -230,14 +233,17 @@ class HabitacionesDisponiblesAPIView(ApiThrottleMixin, generics.ListAPIView):
         if tipo:
             queryset = queryset.filter(tipo_id=tipo)
 
+        if num_huespedes and num_huespedes.isdigit():
+            queryset = queryset.filter(tipo__capacidad__gte=int(num_huespedes))
+
         if fecha_entrada and fecha_salida and fecha_salida > fecha_entrada:
-            habitaciones_reservadas = Reserva.objects.filter(
-                fecha_entrada__lt=fecha_salida,
-                fecha_salida__gt=fecha_entrada,
-            ).exclude(
-                estado__in=[EstadoReserva.CANCELADA, EstadoReserva.FINALIZADA],
-            ).values('habitacion_id')
-            queryset = queryset.exclude(pk__in=habitaciones_reservadas)
+            disponibles = habitaciones_disponibles(
+                fecha_entrada=fecha_entrada,
+                fecha_salida=fecha_salida,
+                tipo=int(tipo) if tipo and tipo.isdigit() else None,
+                num_huespedes=int(num_huespedes) if num_huespedes and num_huespedes.isdigit() else None,
+            )
+            queryset = queryset.filter(pk__in=disponibles.values('pk'))
 
         return queryset
 
@@ -252,7 +258,7 @@ class EstanciaDetailAPIView(generics.RetrieveAPIView):
     allowed_roles = [ROLE_ADMIN, ROLE_RECEPCIONISTA]
 
     def get_queryset(self):
-        return Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion', 'habitacion__hotel')
+        return Estancia.objects.select_related('reserva', 'reserva__huesped', 'habitacion', 'habitacion__hotel', 'folio')
 
 
 @extend_schema(

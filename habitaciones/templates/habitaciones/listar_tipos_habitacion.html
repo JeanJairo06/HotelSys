@@ -16,24 +16,37 @@
 {% endif %}
 {% endblock %}
 
-{% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/habitaciones.css' %}?v=room-types-5">{% endblock %}
 
 {% block content %}
 <div class="ops-page">
+    <section class="room-type-summary" aria-label="Resumen de tipos de habitacion">
+        <span><strong>{{ resumen_tipos.total|default:0 }}</strong> tipos</span>
+        <span><strong>{{ resumen_tipos.capacidad_total|default:0 }}</strong> plazas</span>
+        <span>Rango: <strong>S/ {{ resumen_tipos.precio_min|default:"0.00" }}</strong> - <strong>S/ {{ resumen_tipos.precio_max|default:"0.00" }}</strong></span>
+    </section>
+
     <section class="room-type-grid">
         {% for tipo in tipos_habitacion %}
             <article class="room-type-card">
                 <div class="room-type-card-header">
-                    <div>
-                        <h2 class="h5 mb-1">{{ tipo.nombre }}</h2>
-                        <span class="text-secondary">S/ {{ tipo.precio_base }}</span>
+                    <div class="room-type-title">
+                        <span class="room-type-icon"><i class="bi bi-door-open" aria-hidden="true"></i></span>
+                        <div>
+                            <h2>{{ tipo.nombre }}</h2>
+                            <small>{{ tipo.habitaciones_count }} habitacion{{ tipo.habitaciones_count|pluralize:"es" }} registrada{{ tipo.habitaciones_count|pluralize:"s" }}</small>
+                        </div>
                     </div>
                     {% if user_is_admin %}
-                        <a class="btn btn-sm btn-outline-primary" href="{% url 'habitaciones:editar_tipo_habitacion' tipo.pk %}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
+                        <a class="room-type-edit" href="{% url 'habitaciones:editar_tipo_habitacion' tipo.pk %}" aria-label="Editar {{ tipo.nombre }}"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                     {% endif %}
                 </div>
+                <div class="room-type-price">
+                    <small>Precio base</small>
+                    <strong>S/ {{ tipo.precio_base }}</strong>
+                </div>
                 <div class="room-type-meta">
-                    <span><i class="bi bi-people" aria-hidden="true"></i>{{ tipo.capacidad }} personas</span>
+                    <span class="room-type-capacity"><i class="bi bi-people" aria-hidden="true"></i>{{ tipo.capacidad }} persona{{ tipo.capacidad|pluralize:"s" }}</span>
                     {% for amenidad in tipo.amenidades_lista %}
                         <span><i class="bi bi-stars" aria-hidden="true"></i>{{ amenidad }}</span>
                     {% empty %}

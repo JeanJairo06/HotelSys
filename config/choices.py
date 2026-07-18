@@ -11,6 +11,8 @@ class EstadoHabitacion(models.TextChoices):
 class TipoDocumento(models.TextChoices):
     DNI = 'DNI', 'DNI'
     RUC = 'RUC', 'RUC'
+    PASAPORTE = 'PAS', 'Pasaporte'
+    CARNET_EXTRANJERIA = 'CE', 'Carné de Extranjería'
 
 
 class EstadoGeneral(models.IntegerChoices):
@@ -37,11 +39,11 @@ class EstadoReserva(models.TextChoices):
 
 
 class OrigenReserva(models.TextChoices):
-    WEB = 'WEB', 'Web'
+    #WEB = 'WEB', 'Web'
     TELEFONO = 'TELEFONO', 'Teléfono'
     RECEPCION = 'RECEPCION', 'Recepción'
-    AGENCIA = 'AGENCIA', 'Agencia'
-    OTRO = 'OTRO', 'Otro'
+    #AGENCIA = 'AGENCIA', 'Agencia'
+    #OTRO = 'OTRO', 'Otro'
 
 
 class EstadoEstancia(models.TextChoices):
@@ -71,3 +73,10 @@ class RolUsuario(models.TextChoices):
     ADMIN = 'ADMIN', 'Administrador'
     RECEPCIONISTA = 'RECEPCIONISTA', 'Recepcionista'
     HOUSEKEEPING = 'HOUSEKEEPING', 'Housekeeping'
+
+
+class MetodoPago(models.TextChoices):
+    EFECTIVO = 'EFECTIVO', 'Efectivo'
+    TARJETA = 'TARJETA', 'Tarjeta de Crédito/Débito'
+    TRANSFERENCIA = 'TRANSFERENCIA', 'Transferencia Bancaria'
+    YAPE_PLIN = 'YAPE_PLIN', 'Yape / Plin'

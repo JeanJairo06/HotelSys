@@ -44,8 +44,54 @@
                 <h2 class="h5 mb-3">Documento</h2>
                 <span class="badge text-bg-light border">{{ huesped.get_tipo_doc_display }}</span>
                 <p class="mt-3 mb-0 fw-semibold">{{ huesped.num_doc }}</p>
-                <p class="mt-4 mb-0 text-secondary">Este registro puede asociarse luego a reservas y estancias.</p>
+                {% if estancia_actual %}
+                    <p class="mt-4 mb-2 text-secondary">Estancia actual</p>
+                    <p class="mb-1 fw-semibold">Hab. {{ estancia_actual.habitacion.numero }}</p>
+                    <p class="mb-0 small text-secondary">Check-in {{ estancia_actual.fecha_checkin|date:'d/m/Y H:i' }}</p>
+                {% else %}
+                    <p class="mt-4 mb-0 text-secondary">Sin estancia activa registrada.</p>
+                {% endif %}
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body p-0">
+        <div class="p-4 border-bottom">
+            <h2 class="h5 mb-1"><i class="bi bi-clock-history me-2" aria-hidden="true"></i>Historial de reservas</h2>
+            <p class="mb-0 text-secondary">Reservas asociadas al huesped, incluidas canceladas e historicas.</p>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 app-table">
+                <thead>
+                    <tr>
+                        <th>Codigo</th>
+                        <th>Habitacion</th>
+                        <th>Fechas</th>
+                        <th>Estado</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reserva in historial_reservas %}
+                        <tr>
+                            <td>
+                                <a class="fw-semibold text-decoration-none" href="{% url 'reservas:detail' reserva.pk %}">{{ reserva.codigo|default:reserva.pk }}</a>
+                                <span class="d-block small text-secondary">{{ reserva.hotel.nombre }}</span>
+                            </td>
+                            <td>Hab. {{ reserva.habitacion.numero }} <span class="text-secondary">({{ reserva.habitacion.tipo.nombre }})</span></td>
+                            <td>{{ reserva.fecha_entrada|date:'d/m/Y' }} - {{ reserva.fecha_salida|date:'d/m/Y' }}</td>
+                            <td><span class="badge text-bg-light border">{{ reserva.get_estado_display }}</span></td>
+                            <td class="text-end">S/ {{ reserva.precio_total|floatformat:2 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-secondary"><i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay reservas registradas para este huesped.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

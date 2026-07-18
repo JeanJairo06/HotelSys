@@ -7,6 +7,11 @@
 {% block page_actions %}
 <a class="btn btn-outline-primary" href="{% url 'empleados:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
 <a class="btn btn-primary" href="{% url 'empleados:update' empleado.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Editar</a>
+{% if empleado.estado == 1 and empleado.activo %}
+<a class="btn btn-outline-danger" href="{% url 'empleados:deactivate' empleado.pk %}"><i class="bi bi-person-dash me-2" aria-hidden="true"></i>Desactivar</a>
+{% else %}
+<a class="btn btn-outline-success" href="{% url 'empleados:activate' empleado.pk %}"><i class="bi bi-person-check me-2" aria-hidden="true"></i>Activar</a>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -33,17 +38,69 @@
                 </dl>
             </div>
         </div>
+
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-4"><i class="bi bi-person-lock me-2" aria-hidden="true"></i>Usuario asociado</h2>
+                {% if perfil_usuario %}
+                    <dl class="row mb-0 app-dl">
+                        <dt class="col-sm-4">Usuario</dt>
+                        <dd class="col-sm-8"><a href="{% url 'usuarios:detail' perfil_usuario.usuario.pk %}">{{ perfil_usuario.usuario.username }}</a></dd>
+                        <dt class="col-sm-4">Cuenta activa</dt>
+                        <dd class="col-sm-8">
+                            {% if perfil_usuario.usuario.is_active %}
+                                <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Sí</span>
+                            {% else %}
+                                <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>No</span>
+                            {% endif %}
+                        </dd>
+                        <dt class="col-sm-4">Perfil activo</dt>
+                        <dd class="col-sm-8">
+                            {% if perfil_usuario.activo %}
+                                <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Sí</span>
+                            {% else %}
+                                <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>No</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                {% else %}
+                    <p class="mb-0 text-secondary">Este empleado no tiene usuario asociado.</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
     <div class="col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
+        <div class="card border-0 shadow-sm">
             <div class="card-body p-4">
                 <h2 class="h5 mb-3">Estado</h2>
-                {% if empleado.estado == 1 %}
+                {% if empleado.estado == 1 and empleado.activo %}
                     <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Activo</span>
                 {% else %}
                     <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>Inactivo</span>
                 {% endif %}
                 <p class="mt-4 mb-0 text-secondary">Los empleados activos pueden ser asociados a operaciones futuras del sistema.</p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mt-4">
+            <div class="card-body p-4">
+                <h2 class="h5 mb-3">Auditoría</h2>
+                <dl class="mb-0 app-dl">
+                    <dt>Registro activo</dt>
+                    <dd>
+                        {% if empleado.activo %}
+                            <span class="badge text-bg-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Sí</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary"><i class="bi bi-dash-circle me-1" aria-hidden="true"></i>No</span>
+                        {% endif %}
+                    </dd>
+                    <dt>Creado por</dt>
+                    <dd>{{ empleado.creado_por.username|default:'-' }}</dd>
+                    <dt>Creado en</dt>
+                    <dd>{{ empleado.creado_en|date:'d/m/Y H:i' }}</dd>
+                    <dt>Actualizado en</dt>
+                    <dd>{{ empleado.actualizado_en|date:'d/m/Y H:i' }}</dd>
+                </dl>
             </div>
         </div>
     </div>

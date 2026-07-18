@@ -6,6 +6,7 @@ from cuentas.roles import ROLE_ADMIN
 
 from .forms import HotelForm
 from .models import Hotel
+from .services import guardar_hotel_desde_formulario
 
 
 @role_required(ROLE_ADMIN)
@@ -21,7 +22,7 @@ def crear_hotel(request):
     if request.method == 'POST':
         form = HotelForm(request.POST)
         if form.is_valid():
-            form.save()
+            guardar_hotel_desde_formulario(form)
             messages.success(request, 'Hotel registrado correctamente.')
             return redirect('hoteles:listar_hoteles')
     else:
@@ -42,7 +43,7 @@ def editar_hotel(request, pk):
     if request.method == 'POST':
         form = HotelForm(request.POST, instance=hotel)
         if form.is_valid():
-            form.save()
+            guardar_hotel_desde_formulario(form)
             messages.success(request, 'Hotel actualizado correctamente.')
             return redirect('hoteles:listar_hoteles')
     else:

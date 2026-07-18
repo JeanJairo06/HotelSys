@@ -21,51 +21,122 @@
         {% endif %}
 
         <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label" for="{{ form.huesped.id_for_label }}">{{ form.huesped.label }}</label>
-                <div data-huesped-autocomplete-url="{% url 'api:reservas_huespedes_autocomplete' %}">
-                    {{ form.huesped }}
-                </div>
-                {% for error in form.huesped.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            <!-- Huésped -->
+
+        <div class="col-12">
+        
+            <div class="d-flex justify-content-between align-items-center mb-2">
+        
+                <label class="form-label mb-0" for="{{ form.huesped.id_for_label }}">
+                    {{ form.huesped.label }}
+                </label>
+        
+                <a href="{% url 'huespedes:create' %}?next={{ request.get_full_path|urlencode }}"
+                    class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg me-1"></i>
+                    Nuevo huésped
+                </a>
+        
             </div>
-            <div class="col-md-6">
-                <label class="form-label" for="{{ form.tipo_habitacion.id_for_label }}">{{ form.tipo_habitacion.label }}</label>
-                {{ form.tipo_habitacion }}
-                {% for error in form.tipo_habitacion.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        
+            <div data-huesped-autocomplete-url="{% url 'api:reservas_huespedes_autocomplete' %}">
+                {{ form.huesped }}
             </div>
-            <div class="col-md-6">
-                <label class="form-label" for="{{ form.habitacion.id_for_label }}">{{ form.habitacion.label }}</label>
-                <div data-habitacion-autocomplete-url="{% url 'api:reservas_habitaciones_disponibles' %}" data-reserva-id="{{ reserva_id }}">
-                    {{ form.habitacion }}
-                </div>
-                {% for error in form.habitacion.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        
+            {% for error in form.huesped.errors %}
+            <div class="invalid-feedback d-block">
+                {{ error }}
             </div>
-            <div class="col-md-4">
-                <label class="form-label" for="{{ form.fecha_entrada.id_for_label }}">{{ form.fecha_entrada.label }}</label>
-                {{ form.fecha_entrada }}
-                {% for error in form.fecha_entrada.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="{{ form.fecha_salida.id_for_label }}">{{ form.fecha_salida.label }}</label>
-                {{ form.fecha_salida }}
-                {% for error in form.fecha_salida.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="{{ form.num_adultos.id_for_label }}">{{ form.num_adultos.label }}</label>
-                {{ form.num_adultos }}
-                {% for error in form.num_adultos.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="{{ form.origen.id_for_label }}">{{ form.origen.label }}</label>
-                {{ form.origen }}
-                {% for error in form.origen.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-            <div class="col-md-4">
-                <label class="form-label" for="{{ form.precio_total.id_for_label }}">{{ form.precio_total.label }}</label>
-                {{ form.precio_total }}
-                {% for error in form.precio_total.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
+            {% endfor %}
+        
         </div>
+
+        <!-- Fecha entrada -->
+        <div class="col-md-6">
+            <label class="form-label" for="{{ form.fecha_entrada.id_for_label }}">{{ form.fecha_entrada.label }}</label>
+            {{ form.fecha_entrada }}
+            {% for error in form.fecha_entrada.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Fecha salida -->
+        <div class="col-md-6">
+            <label class="form-label" for="{{ form.fecha_salida.id_for_label }}">{{ form.fecha_salida.label }}</label>
+            {{ form.fecha_salida }}
+            {% for error in form.fecha_salida.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Tipo de habitación -->
+        <div class="col-md-6">
+            <label class="form-label" for="{{ form.tipo_habitacion.id_for_label }}">{{ form.tipo_habitacion.label }}</label>
+            {{ form.tipo_habitacion }}
+            {% for error in form.tipo_habitacion.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+
+        <!-- Cantidad de huéspedes -->
+        <div class="col-md-6">
+            <label class="form-label" for="{{ form.num_adultos.id_for_label }}">
+                {{ form.num_adultos.label }}
+            </label>
+
+            <select
+                name="{{ form.num_adultos.html_name }}"
+                id="{{ form.num_adultos.id_for_label }}"
+                class="form-select">
+            </select>
+
+            {% for error in form.num_adultos.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Habitación disponible -->
+        <div class="col-12">
+            <label class="form-label" for="{{ form.habitacion.id_for_label }}">{{ form.habitacion.label }}</label>
+            <div
+                data-habitacion-autocomplete-url="{% url 'api:reservas_habitaciones_disponibles' %}"
+                data-reserva-id="{{ reserva_id }}">
+                {{ form.habitacion }}
+            </div>
+            {% for error in form.habitacion.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Origen -->
+        <div class="col-md-6">
+            <label class="form-label" for="{{ form.origen.id_for_label }}">{{ form.origen.label }}</label>
+            {{ form.origen }}
+            {% for error in form.origen.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Total preliminar -->
+        <div class="col-md-6">
+            <label class="form-label" for="{{ form.precio_total.id_for_label }}">{{ form.precio_total.label }}</label>
+            {{ form.precio_total }}
+            <div class="tariff-summary mt-2" id="resumen-tarifa" hidden aria-live="polite">
+                <div class="tariff-summary-icon" aria-hidden="true"><i class="bi bi-tag"></i></div>
+                <div>
+                    <p class="tariff-summary-title mb-1" id="resumen-tarifa-titulo"></p>
+                    <p class="tariff-summary-base mb-2" id="resumen-tarifa-base"></p>
+                    <ul class="tariff-summary-detail mb-0" id="resumen-tarifa-detalle"></ul>
+                </div>
+            </div>
+            {% for error in form.precio_total.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+            {% endfor %}
+        </div>
+
+    </div>
+
     </div>
     <div class="card-footer bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
         <a class="btn btn-light" href="{% url 'reservas:list' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
@@ -85,8 +156,18 @@
         const habitacionWrapper = document.querySelector('[data-habitacion-autocomplete-url]');
         const entrada = document.getElementById('{{ form.fecha_entrada.id_for_label }}');
         const salida = document.getElementById('{{ form.fecha_salida.id_for_label }}');
+        const numAdultos = document.getElementById('{{ form.num_adultos.id_for_label }}');
         const total = document.getElementById('{{ form.precio_total.id_for_label }}');
-
+        const resumenTarifa = document.getElementById('resumen-tarifa');
+        const resumenTarifaTitulo = document.getElementById('resumen-tarifa-titulo');
+        const resumenTarifaBase = document.getElementById('resumen-tarifa-base');
+        const resumenTarifaDetalle = document.getElementById('resumen-tarifa-detalle');
+        const capacidades = {
+            {% for t in form.fields.tipo_habitacion.queryset %}
+                "{{ t.id }}": {{ t.capacidad }},
+            {% endfor %}
+        };
+        
         if (!huesped || !habitacion || !huespedWrapper || !habitacionWrapper || typeof TomSelect === 'undefined') {
             return;
         }
@@ -112,6 +193,9 @@
             }
             if (salida.value) {
                 params.set('fecha_salida', salida.value);
+            }
+            if (numAdultos && numAdultos.value) {
+                params.set('num_huespedes', numAdultos.value);
             }
             if (habitacionWrapper.dataset.reservaId) {
                 params.set('reserva_id', habitacionWrapper.dataset.reservaId);
@@ -218,13 +302,56 @@
             },
             onChange: calcularTotal,
             onFocus: function () {
-                if (!Object.keys(this.options).length) {
-                    this.loadedSearches = {};
-                    this.setNextUrl('', buildHabitacionUrl(''));
-                    this.load('');
-                }
-            },
+
+                if (
+                !entrada.value ||
+                !salida.value ||
+                !tipo.value ||
+                !numAdultos.value
+            ) {
+                return;
+            }
+
+            if (!Object.keys(this.options).length) {
+                this.loadedSearches = {};
+                this.setNextUrl('', buildHabitacionUrl(''));
+                this.load('');
+            }
+        },
         });
+        habitacionSelect.disable();
+
+        function actualizarCantidadHuespedes() {
+
+            const capacidad = capacidades[tipo.value];
+
+            numAdultos.innerHTML = '';
+
+            if (!capacidad) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = '---------';
+                numAdultos.appendChild(option);
+                refrescarHabitaciones();
+                return;
+            }
+
+            for (let i = 1; i <= capacidad; i++) {
+
+                const option = document.createElement('option');
+
+                option.value = i;
+                option.textContent = i;
+
+                if (i === capacidad) {
+                    option.selected = true;
+                }
+
+                numAdultos.appendChild(option);
+            }
+
+            refrescarHabitaciones();
+        }
 
         function diasEstadia() {
             if (!entrada.value || !salida.value) {
@@ -236,9 +363,91 @@
             return dias > 0 ? dias : 0;
         }
 
+        function formatearMonto(monto) {
+            return new Intl.NumberFormat('es-PE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(monto);
+        }
+
+        function formatearFecha(fecha) {
+            const partes = fecha.split('-');
+            return partes[2] + '/' + partes[1] + '/' + partes[0];
+        }
+
+        function actualizarResumenTarifa(precioBase, noches, detalleNoches) {
+            if (!precioBase || !noches) {
+                resumenTarifa.hidden = true;
+                return;
+            }
+
+            const hayTarifa = detalleNoches.some(function (detalle) {
+                return detalle.tarifa;
+            });
+            resumenTarifa.hidden = false;
+            resumenTarifaTitulo.textContent = hayTarifa
+                ? 'El total incluye una tarifa vigente.'
+                : 'El total se calcula con el precio base.';
+            resumenTarifaBase.textContent = 'Precio base: S/ ' + formatearMonto(precioBase) + ' por noche';
+            resumenTarifaDetalle.innerHTML = '';
+
+            const detallesAgrupados = {};
+            detalleNoches.forEach(function (detalle) {
+                const tarifa = detalle.tarifa;
+                const clave = tarifa
+                    ? 'tarifa-' + tarifa.nombre + '-' + tarifa.precio + '-' + tarifa.fechaInicio + '-' + tarifa.fechaFin
+                    : 'base-' + detalle.precio;
+                if (!detallesAgrupados[clave]) {
+                    detallesAgrupados[clave] = {
+                        tarifa: tarifa,
+                        precio: detalle.precio,
+                        noches: 0,
+                    };
+                }
+                detallesAgrupados[clave].noches += 1;
+            });
+
+            Object.keys(detallesAgrupados).forEach(function (clave) {
+                const detalle = detallesAgrupados[clave];
+                const linea = document.createElement('li');
+                const etiquetaNoches = detalle.noches === 1 ? 'noche' : 'noches';
+
+                if (detalle.tarifa) {
+                    linea.textContent = detalle.tarifa.nombre + ': S/ '
+                        + formatearMonto(detalle.precio) + ' por noche · '
+                        + detalle.noches + ' ' + etiquetaNoches + ' · Vigente del '
+                        + formatearFecha(detalle.tarifa.fechaInicio) + ' al '
+                        + formatearFecha(detalle.tarifa.fechaFin);
+                } else {
+                    linea.textContent = 'Precio base: S/ ' + formatearMonto(detalle.precio)
+                        + ' por noche · ' + detalle.noches + ' ' + etiquetaNoches;
+                }
+                resumenTarifaDetalle.appendChild(linea);
+            });
+        }
+
         function refrescarHabitaciones() {
+
+            const listo =
+            entrada.value &&
+            salida.value &&
+            tipo.value &&
+            numAdultos.value;
+
+            if (!listo) {
+                habitacionSelect.disable();
+                habitacionSelect.clear(true);
+                habitacionSelect.clearOptions();
+                calcularTotal();
+                return;
+            }
+
+            habitacionSelect.enable();
+
             const seleccionActual = habitacionSelect.getValue();
-            const itemActual = seleccionActual ? habitacionSelect.options[seleccionActual] : null;
+            const itemActual = seleccionActual
+                ? habitacionSelect.options[seleccionActual]
+                : null;
 
             habitacionSelect.clearOptions();
             habitacionSelect.loadedSearches = {};
@@ -247,32 +456,31 @@
             if (itemActual) {
                 habitacionSelect.addOption(itemActual);
                 habitacionSelect.setValue(seleccionActual, true);
-            } else {
-                habitacionSelect.clear(true);
             }
 
             habitacionSelect.load('');
 
-            if (!seleccionActual || !itemActual || !entrada.value || !salida.value) {
+            if (!seleccionActual || !itemActual) {
                 calcularTotal();
                 return;
             }
 
             fetchHabitaciones(itemActual.numero || '')
                 .then(function (data) {
-                    const resultados = data.results || [];
-                    const sigueDisponible = resultados.some(function (item) {
+
+                    const disponible = (data.results || []).some(function (item) {
                         return String(item.id) === String(seleccionActual);
                     });
 
-                    if (!sigueDisponible) {
+                    if (!disponible) {
                         habitacionSelect.clear(true);
                     }
 
                     calcularTotal();
+
                 })
                 .catch(calcularTotal);
-        }
+}
 
         function calcularTotal() {
             const value = habitacionSelect.getValue();
@@ -282,16 +490,19 @@
 
             if (!value) {
                 total.value = '0';
+                actualizarResumenTarifa(0, 0, []);
                 return;
             }
 
             if (!precioBase || !noches) {
                 total.value = '';
+                actualizarResumenTarifa(0, 0, []);
                 return;
             }
 
             const tarifas = item.tarifas || [];
             let acumulado = 0;
+            const detalleNoches = [];
             let fecha = new Date(entrada.value + 'T00:00:00');
 
             for (let i = 0; i < noches; i += 1) {
@@ -299,16 +510,23 @@
                 const tarifa = tarifas.find(function (item) {
                     return item.fechaInicio <= fechaNoche && fechaNoche <= item.fechaFin;
                 });
-                acumulado += tarifa ? Number(tarifa.precio) : precioBase;
+                const precioNoche = tarifa ? Number(tarifa.precio) : precioBase;
+                acumulado += precioNoche;
+                detalleNoches.push({ tarifa: tarifa, precio: precioNoche });
                 fecha.setDate(fecha.getDate() + 1);
             }
 
             total.value = acumulado.toFixed(2);
+            actualizarResumenTarifa(precioBase, noches, detalleNoches);
         }
 
-        tipo.addEventListener('change', refrescarHabitaciones);
+        tipo.addEventListener('change', actualizarCantidadHuespedes);
         entrada.addEventListener('change', refrescarHabitaciones);
         salida.addEventListener('change', refrescarHabitaciones);
+        if (numAdultos) {
+            numAdultos.addEventListener('change', refrescarHabitaciones);
+        }
+        actualizarCantidadHuespedes();
         calcularTotal();
     })();
 </script>

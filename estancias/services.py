@@ -1,78 +1,134 @@
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
 from config.choices import EstadoEstancia, EstadoFolio, EstadoHabitacion, EstadoReserva
+from habitaciones.exceptions import HabitacionNoDisponible
+from habitaciones.services import publicar_evento_estado_habitacion, tiene_estancia_activa
 
+from .exceptions import (
+    CheckinNoPermitido,
+    CheckinYaRealizado,
+    CheckoutNoPermitido,
+    CheckoutYaRealizado,
+    EstanciaActivaExistente,
+)
 from .models import Estancia
 
 
-@transaction.atomic
 def registrar_checkin(reserva):
-    """
-    Realiza el check-in de una reserva confirmada.
-
-    Crea la estancia y actualiza reserva/habitacion dentro de una transaccion para
-    evitar estados parciales si alguna validacion falla.
-    """
-    if hasattr(reserva, 'estancia'):
-        raise ValidationError('La reserva ya tiene una estancia registrada.')
-
-    if reserva.estado != EstadoReserva.CONFIRMADA:
-        raise ValidationError('Solo se puede realizar check-in de reservas confirmadas.')
-
-    hoy = timezone.localdate()
-    if not (reserva.fecha_entrada <= hoy < reserva.fecha_salida):
-        raise ValidationError('El check-in solo se puede realizar dentro del rango de fechas de la reserva.')
-
-    if reserva.habitacion.estado != EstadoHabitacion.DISPONIBLE:
-        raise ValidationError('La habitacion no esta disponible para check-in.')
-
-    estancia = Estancia.objects.create(
-        reserva=reserva,
-        habitacion=reserva.habitacion,
-        fecha_checkin=timezone.now(),
-        precio_final=reserva.precio_total,
-        estado=EstadoEstancia.ACTIVA,
-    )
-
-    from facturacion.models import Folio
-
-    folio = Folio.objects.create(estancia=estancia)
-    folio.calcular_totales()
-
-    reserva.estado = EstadoReserva.CHECKIN
-    reserva.save(update_fields=['estado'])
-
-    reserva.habitacion.estado = EstadoHabitacion.OCUPADA
-    reserva.habitacion.save(update_fields=['estado'])
-
-    return estancia
+    return EstanciaService.checkin(reserva)
 
 
-@transaction.atomic
 def registrar_checkout(estancia):
+    return EstanciaService.checkout(estancia)
+
+
+class EstanciaService:
     """
-    Finaliza una estancia activa.
+    Centraliza el flujo operativo de check-in y checkout.
 
-    Deja la reserva finalizada y mueve la habitacion a LIMPIEZA para continuar el
-    flujo operativo de housekeeping.
+    Las funciones registrar_checkin y registrar_checkout se mantienen como wrappers
+    para no romper vistas, API ni tests existentes.
     """
-    if estancia.estado != EstadoEstancia.ACTIVA:
-        raise ValidationError('Solo se puede finalizar una estancia activa.')
 
-    folio = getattr(estancia, 'folio', None)
-    if folio and folio.estado not in [EstadoFolio.PAGADO, EstadoFolio.CERRADO]:
-        raise ValidationError('No se puede hacer checkout con folio pendiente de pago.')
+    @staticmethod
+    @transaction.atomic
+    def checkin(reserva):
+        """
+        Realiza el check-in de una reserva confirmada.
 
-    estancia.estado = EstadoEstancia.FINALIZADA
-    estancia.fecha_checkout = timezone.now()
-    estancia.save(update_fields=['estado', 'fecha_checkout'])
+        Crea la estancia y actualiza reserva/habitacion dentro de una transaccion
+        para evitar estados parciales si alguna validacion falla.
+        """
+        EstanciaService._validar_checkin(reserva)
 
-    estancia.reserva.estado = EstadoReserva.FINALIZADA
-    estancia.reserva.save(update_fields=['estado'])
+        estancia = Estancia.objects.create(
+            reserva=reserva,
+            habitacion=reserva.habitacion,
+            fecha_checkin=timezone.now(),
+            precio_final=reserva.precio_total,
+            estado=EstadoEstancia.ACTIVA,
+        )
 
-    estancia.habitacion.estado = EstadoHabitacion.LIMPIEZA
-    estancia.habitacion.save(update_fields=['estado'])
+        from facturacion.models import Folio
+        from facturacion.services import FolioService
 
-    return estancia
+        folio = Folio.objects.create(estancia=estancia)
+        FolioService.recalcular_totales(folio)
+
+        reserva.estado = EstadoReserva.CHECKIN
+        reserva.save(update_fields=['estado'])
+
+        EstanciaService._cambiar_estado_habitacion(reserva.habitacion, EstadoHabitacion.OCUPADA)
+
+        return estancia
+
+    @staticmethod
+    @transaction.atomic
+    def checkout(estancia):
+        """
+        Finaliza una estancia activa.
+
+        Deja la reserva finalizada y mueve la habitacion a LIMPIEZA para continuar
+        el flujo operativo de housekeeping.
+        """
+        folio = EstanciaService._validar_checkout(estancia)
+
+        estancia.estado = EstadoEstancia.FINALIZADA
+        estancia.fecha_checkout = timezone.now()
+        estancia.save(update_fields=['estado', 'fecha_checkout'])
+
+        estancia.reserva.estado = EstadoReserva.FINALIZADA
+        estancia.reserva.save(update_fields=['estado'])
+
+        if folio and folio.estado != EstadoFolio.CERRADO:
+            folio.estado = EstadoFolio.CERRADO
+            folio.save(update_fields=['estado'])
+
+        EstanciaService._cambiar_estado_habitacion(estancia.habitacion, EstadoHabitacion.LIMPIEZA)
+
+        return estancia
+
+    @staticmethod
+    def _validar_checkin(reserva):
+        if hasattr(reserva, 'estancia'):
+            raise CheckinYaRealizado('La reserva ya tiene una estancia registrada.')
+
+        if reserva.estado != EstadoReserva.CONFIRMADA:
+            raise CheckinNoPermitido('Solo se puede realizar check-in de reservas confirmadas.')
+
+        hoy = timezone.localdate()
+        if not (reserva.fecha_entrada <= hoy < reserva.fecha_salida):
+            raise CheckinNoPermitido('El check-in solo se puede realizar dentro del rango de fechas de la reserva.')
+
+        if reserva.habitacion.estado != EstadoHabitacion.DISPONIBLE:
+            raise HabitacionNoDisponible('La habitacion no esta disponible para check-in.')
+
+        if tiene_estancia_activa(reserva.habitacion):
+            raise EstanciaActivaExistente('La habitacion ya tiene una estancia activa.')
+
+    @staticmethod
+    def _validar_checkout(estancia):
+        if estancia.estado != EstadoEstancia.ACTIVA:
+            raise CheckoutYaRealizado('Solo se puede finalizar una estancia activa.')
+
+        folio = getattr(estancia, 'folio', None)
+        if not folio:
+            raise CheckoutNoPermitido('No se puede hacer checkout porque la estancia no tiene folio.')
+
+        from facturacion.exceptions import CheckoutBloqueadoError
+        from facturacion.services import FolioService
+
+        FolioService.recalcular_totales(folio)
+        saldo_pendiente = folio.saldo_pendiente
+        if saldo_pendiente > 0:
+            raise CheckoutBloqueadoError(f'No se puede hacer checkout. Saldo pendiente: S/ {saldo_pendiente}.')
+
+        return folio
+
+    @staticmethod
+    def _cambiar_estado_habitacion(habitacion, nuevo_estado):
+        estado_anterior = habitacion.estado
+        habitacion.estado = nuevo_estado
+        habitacion.save(update_fields=['estado'])
+        publicar_evento_estado_habitacion(habitacion, estado_anterior)

@@ -1,12 +1,14 @@
 {% extends 'base.html' %}
 
-{% block title %}Reserva #{{ reserva.id }} | HotelSys{% endblock %}
-{% block page_title %}Reserva #{{ reserva.id }}{% endblock %}
+{% block title %}Reserva {{ reserva.codigo|default:reserva.id }} | HotelSys{% endblock %}
+{% block page_title %}Reserva {{ reserva.codigo|default:reserva.id }}{% endblock %}
 {% block page_subtitle %}Detalle de fechas, huesped, habitacion y estado de la reserva.{% endblock %}
 
 {% block page_actions %}
 <a class="btn btn-outline-primary" href="{% url 'reservas:list' %}"><i class="bi bi-arrow-left me-2" aria-hidden="true"></i>Volver</a>
-<a class="btn btn-primary" href="{% url 'reservas:update' reserva.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Editar</a>
+{% if reserva.es_modificable %}
+    <a class="btn btn-primary" href="{% url 'reservas:update' reserva.pk %}"><i class="bi bi-pencil-square me-2" aria-hidden="true"></i>Editar</a>
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -18,6 +20,8 @@
                 <dl class="row mb-0 app-dl">
                     <dt class="col-sm-4">Huesped</dt>
                     <dd class="col-sm-8">{{ reserva.huesped.nombre_completo }} <span class="text-secondary">({{ reserva.huesped.num_doc }})</span></dd>
+                    <dt class="col-sm-4">Codigo</dt>
+                    <dd class="col-sm-8">{{ reserva.codigo }}</dd>
                     <dt class="col-sm-4">Habitacion</dt>
                     <dd class="col-sm-8">Hab. {{ reserva.habitacion.numero }} - {{ reserva.habitacion.tipo.nombre }}</dd>
                     <dt class="col-sm-4">Entrada</dt>

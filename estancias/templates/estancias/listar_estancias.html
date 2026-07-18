@@ -5,31 +5,27 @@
 {% block page_title %}Estancias{% endblock %}
 {% block page_subtitle %}Consulta el estado operativo de check-in y checkout.{% endblock %}
 
-{% block page_actions %}
-<a class="btn btn-outline-primary" href="{% url 'estancias:listar_reservas_checkin' %}">
-    <i class="bi bi-box-arrow-in-right me-2" aria-hidden="true"></i>Check-in
-</a>
-{% endblock %}
+{% block page_actions %}{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">
-<link rel="stylesheet" href="{% static 'css/estancias.css' %}">
+<link rel="stylesheet" href="{% static 'css/estancias.css' %}?v=estancias-board-2">
 {% endblock %}
 
 {% block content %}
 <div class="ops-page">
-    <section class="ops-filter-card">
-        <div class="ops-compact-bar mb-3">
+    <section class="ops-filter-card stay-toolbar">
+        <div class="ops-compact-bar mb-2">
             <div class="ops-status-summary" aria-label="Resumen de estancias">
-                <span class="ops-status-chip status-activa"><strong>{{ total_activas }}</strong> Activas</span>
-                <span class="ops-status-chip status-finalizada"><strong>{{ total_finalizadas }}</strong> Finalizadas</span>
-                <span class="ops-status-chip status-cancelada"><strong>{{ total_canceladas }}</strong> Canceladas</span>
+                <a class="ops-status-chip status-activa {% if estado_actual == 'ACTIVA' %}active{% endif %}" href="?estado=ACTIVA"><strong>{{ total_activas }}</strong> Activas</a>
+                <a class="ops-status-chip status-finalizada {% if estado_actual == 'FINALIZADA' %}active{% endif %}" href="?estado=FINALIZADA"><strong>{{ total_finalizadas }}</strong> Finalizadas</a>
+                <a class="ops-status-chip status-cancelada {% if estado_actual == 'CANCELADA' %}active{% endif %}" href="?estado=CANCELADA"><strong>{{ total_canceladas }}</strong> Canceladas</a>
             </div>
             <a class="btn btn-sm btn-light" href="{% url 'estancias:listar_estancias' %}"><i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpiar filtros</a>
         </div>
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-12">
-                <label class="form-label" for="estado">Estado</label>
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <label class="visually-hidden" for="estado">Estado</label>
                 <select class="form-select" id="estado" name="estado" data-estancia-estado>
                     <option value="">Todos</option>
                     {% for valor, texto in estados %}
@@ -40,37 +36,80 @@
         </form>
     </section>
 
-    <section class="stay-timeline">
-        {% for estancia in estancias %}
-            <article class="stay-card stay-card-{{ estancia.estado|lower }}">
-                <div class="stay-detail">
-                    <span class="stay-label">Estancia #{{ estancia.id }}</span>
-                    <strong>{{ estancia.reserva.huesped }}</strong>
-                    <span class="text-secondary">Habitacion {{ estancia.habitacion.numero }}</span>
+    <div class="stay-workspace">
+        <section class="stay-checkin-panel" id="checkin-pendientes" aria-label="Reservas listas para check-in">
+            <div class="stay-section-header">
+                <div>
+                    <h2>Check-in</h2>
+                    <small>Reservas listas para iniciar estancia</small>
                 </div>
-                <div class="stay-detail">
-                    <span><i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i>{{ estancia.fecha_checkin|date:'d/m/Y H:i' }}</span>
-                    <span><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>{{ estancia.fecha_checkout|date:'d/m/Y H:i'|default:'Pendiente' }}</span>
-                    <span class="status-badge status-{{ estancia.estado|lower }}">{{ estancia.get_estado_display }}</span>
-                </div>
-                <div class="text-lg-end d-flex gap-2 justify-content-lg-end flex-wrap">
-                    {% if estancia.folio %}
-                        <a class="btn btn-sm btn-outline-success" href="{% url 'facturacion:folio_detail' estancia.folio.pk %}"><i class="bi bi-receipt-cutoff me-1" aria-hidden="true"></i>Ver cuenta</a>
-                    {% else %}
-                        <span class="text-secondary small align-self-center">Cuenta no generada</span>
-                    {% endif %}
-
-                    {% if estancia.estado == 'ACTIVA' %}
-                        <a class="btn btn-sm btn-primary" href="{% url 'estancias:realizar_checkout' estancia.pk %}"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Checkout</a>
-                    {% endif %}
-                </div>
-            </article>
-        {% empty %}
-            <div class="ops-empty ops-list-card">
-                <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay estancias registradas.
+                <span>{{ reservas_checkin|length }}</span>
             </div>
-        {% endfor %}
-    </section>
+            <div class="stay-checkin-list">
+                {% for reserva in reservas_checkin %}
+                    <article class="stay-checkin-card">
+                        <div>
+                            <span class="stay-label">Reserva #{{ reserva.id }}</span>
+                            <strong>{{ reserva.huesped }}</strong>
+                            <small>Hab. {{ reserva.habitacion.numero }} - {{ reserva.fecha_entrada|date:'d/m/Y' }} a {{ reserva.fecha_salida|date:'d/m/Y' }}</small>
+                        </div>
+                        <form method="post" action="{% url 'estancias:realizar_checkin' reserva.pk %}">
+                            {% csrf_token %}
+                            <button class="stay-action stay-action-primary" type="submit" title="Check-in"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i></button>
+                        </form>
+                    </article>
+                {% empty %}
+                    <div class="stay-empty-inline">
+                        <i class="bi bi-calendar-check" aria-hidden="true"></i>No hay check-in pendiente para hoy.
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="stay-history-panel" aria-label="Estancias registradas">
+            <div class="stay-section-header">
+                <div>
+                    <h2>{% if estado_actual == 'FINALIZADA' %}Historial{% elif estado_actual == 'CANCELADA' %}Canceladas{% else %}Estancias activas{% endif %}</h2>
+                    <small>{% if estado_actual == 'FINALIZADA' %}Ultimas estancias cerradas{% elif estado_actual == 'CANCELADA' %}Registros cancelados{% else %}Checkout, detalle y cuenta desde la misma tarjeta{% endif %}</small>
+                </div>
+                <span>{{ estancias|length }}</span>
+            </div>
+            <div class="stay-timeline">
+                {% for estancia in estancias %}
+                    <article class="stay-card stay-card-{{ estancia.estado|lower }}">
+                        <div class="stay-detail">
+                            <span class="stay-label">Estancia #{{ estancia.id }}</span>
+                            <strong>{{ estancia.reserva.huesped }}</strong>
+                            <span class="stay-muted">Hab. {{ estancia.habitacion.numero }}</span>
+                        </div>
+                        <div class="stay-detail stay-dates">
+                            <span><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>{{ estancia.fecha_checkin|date:'d/m/Y H:i' }}</span>
+                            <span><i class="bi bi-box-arrow-right" aria-hidden="true"></i>{{ estancia.fecha_checkout|date:'d/m/Y H:i'|default:'Pendiente' }}</span>
+                            <span class="status-badge status-{{ estancia.estado|lower }}">{{ estancia.get_estado_display }}</span>
+                        </div>
+                        <div class="stay-actions">
+                            <a class="stay-action" href="{% url 'estancias:detalle_estancia' estancia.pk %}" title="Detalle"><i class="bi bi-eye" aria-hidden="true"></i></a>
+
+                            {% if estancia.folio %}
+                                <a class="stay-action" href="{% url 'facturacion:folio_detail' estancia.folio.pk %}" title="Cuenta"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></a>
+                            {% endif %}
+
+                            {% if estancia.estado == 'ACTIVA' %}
+                                <form method="post" action="{% url 'estancias:realizar_checkout' estancia.pk %}">
+                                    {% csrf_token %}
+                                    <button class="stay-action stay-action-primary" type="submit" title="Checkout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i></button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="stay-empty-inline">
+                        <i class="bi bi-inbox" aria-hidden="true"></i>No hay registros para este estado.
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
 </div>
 {% endblock %}
 

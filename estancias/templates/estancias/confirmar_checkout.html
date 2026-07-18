@@ -13,13 +13,13 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">
-<link rel="stylesheet" href="{% static 'css/estancias.css' %}">
+<link rel="stylesheet" href="{% static 'css/estancias.css' %}?v=inline-checkin-1">
 {% endblock %}
 
 {% block content %}
 <div class="confirm-card">
     <div class="confirm-card-header">
-        <span class="ops-kicker text-white-75"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Salida operativa</span>
+        <span class="ops-kicker"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Salida operativa</span>
         <h2 class="h4 mb-1">Estancia #{{ estancia.id }}</h2>
         <p class="mb-0">Al confirmar, la habitacion pasara al flujo de limpieza.</p>
     </div>
@@ -34,8 +34,33 @@
             <dt class="col-sm-4">Estado</dt>
             <dd class="col-sm-8">{{ estancia.get_estado_display }}</dd>
         </dl>
+        <div class="checkout-summary mt-4">
+            <div>
+                <span class="stay-label">Total folio</span>
+                <strong>S/ {{ folio.total }}</strong>
+            </div>
+            <div>
+                <span class="stay-label">Pagado</span>
+                <strong>S/ {{ folio.total_pagado }}</strong>
+            </div>
+            <div class="{% if folio.saldo_pendiente > 0 %}text-danger{% else %}text-success{% endif %}">
+                <span class="stay-label">Saldo pendiente</span>
+                <strong>S/ {{ folio.saldo_pendiente }}</strong>
+            </div>
+        </div>
+        {% if folio.saldo_pendiente > 0 %}
+        <div class="alert alert-warning mt-4 mb-0" role="alert">
+            <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i>
+            El checkout se bloqueara hasta que el folio quede totalmente pagado.
+        </div>
+        {% else %}
+        <div class="alert alert-success mt-4 mb-0" role="alert">
+            <i class="bi bi-check-circle me-2" aria-hidden="true"></i>
+            El folio no tiene saldo pendiente. La habitacion pasara a limpieza al confirmar.
+        </div>
+        {% endif %}
     </div>
-    <div class="bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+    <div class="confirm-actions">
         <a class="btn btn-light" href="{% url 'estancias:listar_estancias' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
         <form method="post">
             {% csrf_token %}
