@@ -13,13 +13,13 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/habitaciones.css' %}">
-<link rel="stylesheet" href="{% static 'css/estancias.css' %}">
+<link rel="stylesheet" href="{% static 'css/estancias.css' %}?v=inline-checkin-1">
 {% endblock %}
 
 {% block content %}
 <div class="confirm-card">
     <div class="confirm-card-header">
-        <span class="ops-kicker text-white-75"><i class="bi bi-calendar-check" aria-hidden="true"></i>Ingreso confirmado</span>
+        <span class="ops-kicker"><i class="bi bi-calendar-check" aria-hidden="true"></i>Ingreso confirmado</span>
         <h2 class="h4 mb-1">Reserva #{{ reserva.id }}</h2>
         <p class="mb-0">Revisa los datos antes de crear la estancia.</p>
     </div>
@@ -35,7 +35,7 @@
             <dd class="col-sm-8">{{ reserva.get_estado_display }}</dd>
         </dl>
     </div>
-    <div class="bg-white border-0 p-4 pt-0 d-flex gap-2 justify-content-end">
+    <div class="confirm-actions">
         <a class="btn btn-light" href="{% url 'estancias:listar_reservas_checkin' %}"><i class="bi bi-x-lg me-2" aria-hidden="true"></i>Cancelar</a>
         <form method="post">
             {% csrf_token %}
