@@ -1,20 +1,27 @@
 .report-filter {
-    display: flex;
-    justify-content: flex-end;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .65rem;
+    width: 100%;
+    max-width: 32rem;
+    margin-left: auto;
 }
 
 .report-filter-actions {
-    display: flex;
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: .65rem;
 }
 
 .report-filter .btn {
+    width: 100%;
     white-space: nowrap;
 }
 
 .report-filter .form-control {
-    min-width: 10.5rem;
+    width: 100%;
+    min-width: 0;
     border-color: rgba(23, 32, 51, 0.14);
     border-radius: .65rem;
 }
@@ -290,21 +297,9 @@
 }
 
 @media (max-width: 767.98px) {
-    .report-filter,
     .report-section-header {
         align-items: stretch;
         flex-direction: column;
-    }
-
-    .report-filter-actions {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .report-filter,
-    .report-filter .btn,
-    .report-filter .form-control {
-        width: 100%;
     }
 
     .report-summary,
@@ -327,7 +322,18 @@
     }
 }
 
-@media (max-width: 479.98px) {
+@media (max-width: 575.98px) {
+    .report-filter {
+        grid-template-columns: 1fr;
+        max-width: none;
+    }
+
+    .report-filter-actions {
+        grid-column: 1;
+    }
+}
+
+@media (max-width: 359.98px) {
     .report-filter-actions {
         grid-template-columns: 1fr;
     }
