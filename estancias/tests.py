@@ -2,12 +2,15 @@ from datetime import date, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 
 from config.choices import EstadoFolio, EstadoHabitacion, EstadoReserva
 from core.events import EVENTO_HABITACION_EN_LIMPIEZA, EVENTO_HABITACION_OCUPADA
+from cuentas.roles import ROLE_RECEPCIONISTA
 from estancias.services import registrar_checkin, registrar_checkout
 from facturacion.exceptions import CheckoutBloqueadoError
 from facturacion.models import Folio
@@ -110,3 +113,18 @@ class CheckinFolioTests(TestCase):
 
         folio.refresh_from_db()
         self.assertEqual(folio.estado, EstadoFolio.CERRADO)
+
+    def test_detalle_estancia_muestra_resumen_operativo(self):
+        grupo, _ = Group.objects.get_or_create(name=ROLE_RECEPCIONISTA)
+        usuario = User.objects.create_user(username='recepcion', password='testpass123')
+        usuario.groups.add(grupo)
+        reserva = self._crear_reserva_confirmada()
+        estancia = registrar_checkin(reserva)
+        self.client.force_login(usuario)
+
+        response = self.client.get(reverse('estancias:detalle_estancia', args=[estancia.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'Detalle estancia #{estancia.id}')
+        self.assertContains(response, 'Folio operativo')
+        self.assertContains(response, 'Saldo')

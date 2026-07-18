@@ -47,6 +47,31 @@ def listar_reservas_checkin(request):
 
 
 @any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
+def detalle_estancia(request, estancia_id):
+    """Muestra la informacion operativa de una estancia y su folio asociado."""
+    estancia = get_object_or_404(
+        Estancia.objects.select_related(
+            'reserva',
+            'reserva__hotel',
+            'reserva__huesped',
+            'habitacion',
+            'habitacion__hotel',
+            'habitacion__tipo',
+            'folio',
+        ).prefetch_related('cargos', 'folio__pagos'),
+        pk=estancia_id,
+    )
+
+    folio = getattr(estancia, 'folio', None)
+    return render(request, 'estancias/detalle_estancia.html', {
+        'estancia': estancia,
+        'folio': folio,
+        'cargos': estancia.cargos.all(),
+        'pagos': folio.pagos.filter(activo=True) if folio else [],
+    })
+
+
+@any_role_required(ROLE_ADMIN, ROLE_RECEPCIONISTA)
 def realizar_checkin(request, reserva_id):
     """Confirma el ingreso de un huesped y crea la estancia asociada."""
     reserva = get_object_or_404(
