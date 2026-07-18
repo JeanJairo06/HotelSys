@@ -13,3 +13,4 @@ python-decouple==3.8
 sqlparse==0.5.5
 tzdata==2026.1
 whitenoise==6.8.2
+weasyprint==69.0
