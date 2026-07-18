@@ -65,33 +65,42 @@
         </form>
     </section>
 
-    <section class="room-grid">
+    <section class="room-board">
         {% for habitacion in habitaciones %}
-            <article class="room-card room-card-{{ habitacion.estado|lower }}" data-room-card>
+            {% ifchanged habitacion.piso %}
+                {% if not forloop.first %}</div></div>{% endif %}
+                <div class="room-floor" data-room-floor="{{ habitacion.piso }}">
+                    <div class="room-floor-header">
+                        <span>Piso {{ habitacion.piso }}</span>
+                        <small>Habitaciones operativas</small>
+                    </div>
+                    <div class="room-floor-grid">
+            {% endifchanged %}
+
+            <article class="room-card room-card-{{ habitacion.estado|lower }}" data-room-card data-habitacion-id="{{ habitacion.id }}" data-estado="{{ habitacion.estado }}">
                 <div class="room-card-header">
                     <div>
                         <span class="room-number">{{ habitacion.numero }}</span>
-                        <span class="text-secondary">Piso {{ habitacion.piso }}</span>
+                        <span class="room-type">{{ habitacion.tipo.nombre }}</span>
                     </div>
-                    <span class="status-badge status-{{ habitacion.estado|lower }}">{{ habitacion.get_estado_display }}</span>
+                    <span class="status-badge status-{{ habitacion.estado|lower }}" data-room-status>{{ habitacion.get_estado_display }}</span>
                 </div>
                 <div class="room-meta">
-                    <span><i class="bi bi-door-open" aria-hidden="true"></i>{{ habitacion.tipo.nombre }}</span>
+                    <span><i class="bi bi-layers" aria-hidden="true"></i>Piso {{ habitacion.piso }}</span>
                     <span><i class="bi bi-people" aria-hidden="true"></i>{{ habitacion.tipo.capacidad }} personas</span>
                 </div>
-                <div class="ops-actions">
+                <div class="room-card-footer">
+                    <a class="btn btn-sm btn-outline-primary" href="{% url 'habitaciones:cambiar_estado_habitacion' habitacion.pk %}">
+                        <i class="bi bi-sliders me-1" aria-hidden="true"></i>Gestionar
+                    </a>
                     {% if user_is_admin %}
-                    <a class="btn btn-sm room-action room-action-edit" href="{% url 'habitaciones:editar_habitacion' habitacion.pk %}" title="Editar" aria-label="Editar habitacion"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                        <a class="btn btn-sm btn-light" href="{% url 'habitaciones:editar_habitacion' habitacion.pk %}" title="Editar habitacion">
+                            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                        </a>
                     {% endif %}
-                    <form class="room-state-form" method="post" action="{% url 'habitaciones:cambiar_estado_habitacion' habitacion.pk %}" aria-label="Cambiar estado de habitacion {{ habitacion.numero }}">
-                        {% csrf_token %}
-                        <button class="room-state-button state-disponible {% if habitacion.estado == 'DISPONIBLE' %}active{% endif %}" type="submit" name="estado" value="DISPONIBLE" title="Disponible" aria-label="Marcar disponible"><i class="bi bi-check-circle" aria-hidden="true"></i></button>
-                        <button class="room-state-button state-ocupada {% if habitacion.estado == 'OCUPADA' %}active{% endif %}" type="submit" name="estado" value="OCUPADA" title="Ocupada" aria-label="Marcar ocupada"><i class="bi bi-person-fill-lock" aria-hidden="true"></i></button>
-                        <button class="room-state-button state-limpieza {% if habitacion.estado == 'LIMPIEZA' %}active{% endif %}" type="submit" name="estado" value="LIMPIEZA" title="Limpieza" aria-label="Marcar en limpieza"><i class="bi bi-stars" aria-hidden="true"></i></button>
-                        <button class="room-state-button state-mantenimiento {% if habitacion.estado == 'MANTENIMIENTO' %}active{% endif %}" type="submit" name="estado" value="MANTENIMIENTO" title="Mantenimiento" aria-label="Marcar en mantenimiento"><i class="bi bi-tools" aria-hidden="true"></i></button>
-                    </form>
                 </div>
             </article>
+            {% if forloop.last %}</div></div>{% endif %}
         {% empty %}
             <div class="ops-empty ops-list-card">
                 <i class="bi bi-inbox me-2" aria-hidden="true"></i>No hay habitaciones registradas.

@@ -10,6 +10,11 @@
                 const text = card.textContent.toLowerCase();
                 card.hidden = query !== '' && !text.includes(query);
             });
+
+            document.querySelectorAll('[data-room-floor]').forEach(function (floor) {
+                const visibleCards = floor.querySelectorAll('[data-room-card]:not([hidden])');
+                floor.hidden = visibleCards.length === 0;
+            });
         });
     }
 
