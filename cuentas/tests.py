@@ -197,6 +197,16 @@ class SessionExpirationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertGreater(self.client.session[SESSION_LAST_ACTIVITY_AT], int(previous_activity.timestamp()))
 
+    def test_renderiza_el_aviso_de_expiracion_para_sesiones_activas(self):
+        self.authenticate()
+
+        response = self.client.get(reverse('usuarios:list'))
+
+        self.assertContains(response, 'id="session-timeout-modal"')
+        self.assertContains(response, 'data-session-expires-at=')
+        self.assertContains(response, 'data-session-continue')
+        self.assertContains(response, 'src="/static/js/session.')
+
     def test_endpoint_de_actividad_renueva_solo_el_tiempo_inactivo(self):
         self.authenticate()
         now = timezone.now()

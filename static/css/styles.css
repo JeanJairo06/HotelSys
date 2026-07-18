@@ -600,6 +600,32 @@ body.sidebar-collapsed .app-footer {
     color: var(--app-primary-dark);
 }
 
+.session-timeout-modal-content {
+    border: 0;
+    border-radius: 1.25rem;
+    box-shadow: 0 24px 64px rgba(23, 32, 51, 0.2);
+}
+
+.session-timeout-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    background: rgba(214, 168, 79, 0.16);
+    color: var(--app-primary-dark);
+    font-size: 1.5rem;
+}
+
+.session-timeout-countdown {
+    color: var(--app-primary-dark);
+    font-size: 2.25rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    letter-spacing: .04em;
+}
+
 @media (max-width: 991.98px) {
     .auth-shell {
         grid-template-columns: 1fr;

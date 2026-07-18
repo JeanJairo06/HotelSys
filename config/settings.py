@@ -89,6 +89,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'cuentas.context_processors.user_roles',
+                'cuentas.context_processors.session_timeout',
             ],
         },
     },
@@ -138,6 +139,8 @@ SESSION_ACTIVITY_EXCLUDED_PREFIXES = (
     *SESSION_EXPIRATION_EXCLUDED_PREFIXES,
     '/sesion/actividad/',
 )
+SESSION_WARNING_SECONDS = config('SESSION_WARNING_SECONDS', cast=int, default=120)
+SESSION_ACTIVITY_DEBOUNCE_SECONDS = config('SESSION_ACTIVITY_DEBOUNCE_SECONDS', cast=int, default=60)
 SESSION_ROLE_POLICIES = {
     'admin': {
         'idle_timeout': config('SESSION_IDLE_TIMEOUT_ADMIN', cast=int, default=900),

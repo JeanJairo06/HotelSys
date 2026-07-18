@@ -5,6 +5,7 @@ from django.contrib.auth.views import redirect_to_login
 from django.http import JsonResponse
 
 from cuentas.session_audit import registrar_expiracion_sesion
+from cuentas.session_events import notify_session_expired
 from cuentas.session_policy import get_session_policy
 from cuentas.session_state import get_expiration_reason, refresh_session_activity
 
@@ -22,10 +23,9 @@ class SessionExpirationMiddleware:
         if reason:
             return self._expire_session(request, policy, reason)
 
-        response = self.get_response(request)
         if not self._is_activity_excluded(request):
             refresh_session_activity(request)
-        return response
+        return self.get_response(request)
 
     @staticmethod
     def _is_expiration_excluded(request):
@@ -56,6 +56,7 @@ class SessionExpirationMiddleware:
             motivo=reason,
             ruta=request.get_full_path(),
         )
+        notify_session_expired(request.user.id)
         logout(request)
 
         if SessionExpirationMiddleware._expects_json(request):
