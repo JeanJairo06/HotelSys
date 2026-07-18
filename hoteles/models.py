@@ -1,7 +1,9 @@
 from django.db import models
 
+from core.models import ModeloBase
 
-class Hotel(models.Model):
+
+class Hotel(ModeloBase):
     nombre = models.CharField(max_length=150)
     ruc = models.CharField(max_length=11, unique=True)
     direccion = models.TextField()

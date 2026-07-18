@@ -2,10 +2,11 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from config.choices import EstadoHabitacion
+from core.models import ModeloBase
 from hoteles.models import Hotel
 
 
-class TipoHabitacion(models.Model):
+class TipoHabitacion(ModeloBase):
     nombre = models.CharField(max_length=100)
     capacidad = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     precio_base = models.DecimalField(
@@ -50,7 +51,7 @@ class TipoHabitacion(models.Model):
         return especiales.get(texto.lower(), texto.capitalize())
 
 
-class Habitacion(models.Model):
+class Habitacion(ModeloBase):
     hotel = models.ForeignKey(
         Hotel,
         on_delete=models.PROTECT,
